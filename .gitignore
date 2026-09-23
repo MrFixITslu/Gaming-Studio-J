@@ -1,0 +1,30 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Logs / temp
+*.log
+*.tmp
+*.swp
+
+# Node (future multiplayer/backend extensions)
+node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Build / archive output
+*.zip
+dist/
+build/
+coverage/
+
+# Local dev
+.python-version
+__pycache__/
