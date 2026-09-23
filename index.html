@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0d0f13">
+<meta name="description" content="Gaming Studio J — Kash's games and apps.">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Gaming Studio J</title>
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./assets/icon-192.png">
+<link rel="apple-touch-icon" href="./assets/icon-192.png">
+<link rel="stylesheet" href="./assets/styles.css?v=2">
+</head>
+<body>
+<div class="app safe-area">
+  <aside class="sidebar" aria-label="Primary navigation">
+    <a class="side-logo" href="./" aria-label="Gaming Studio J home"><img src="./assets/logo.svg" alt=""></a>
+    <button class="nav-btn active" data-nav="all" aria-label="Home"><span class="nav-ico">⌂</span><span>Home</span></button>
+    <button class="nav-btn" data-nav="game" aria-label="Games"><span class="nav-ico">🎮</span><span>Games</span></button>
+    <button class="nav-btn" data-nav="app" aria-label="Apps"><span class="nav-ico">▦</span><span>Apps</span></button>
+    <button class="nav-btn" data-nav="favorites" aria-label="Favourites"><span class="nav-ico">♡</span><span>Saved</span></button>
+    <button class="nav-btn" id="profileNav" aria-label="Profile"><span class="nav-ico" id="sideAvatar">🍈</span><span>Profile</span></button>
+  </aside>
+
+  <header class="topbar">
+    <a class="brand" href="./"><img src="./assets/logo.svg" alt=""><div><span class="brand-name" id="studioName">Gaming Studio J</span><span class="brand-sub" id="studioTagline">Play. Create. Explore.</span></div></a>
+    <label class="search">
+      <input id="search" type="search" autocomplete="off" placeholder="Search games and apps…" aria-label="Search games and apps">
+      <span class="search-icon">⌕</span>
+    </label>
+    <div class="top-actions">
+      <button class="install-btn" id="installBtn" hidden>＋ Install</button>
+      <button class="profile-chip" id="profileBtn"><span id="topAvatar">🍈</span><span class="profile-chip-copy"><b id="topName">Player 1</b><small id="topLevel">Level 1</small></span></button>
+      <button class="icon-btn" id="settingsBtn" aria-label="Settings">⚙</button>
+    </div>
+  </header>
+
+  <main class="main">
+    <section class="hero">
+      <div class="hero-copy">
+        <span class="eyebrow">★ Featured Adventure</span>
+        <h1>Welcome to Gaming Studio J.</h1>
+        <p>Kash's home for games, experiments and apps. Play on desktop, tablet or phone and build one Studio profile across the collection.</p>
+        <div class="hero-actions">
+          <button class="btn primary" id="heroPlay">▶ Play Mr. Melon</button>
+          <button class="btn secondary" id="heroDetails">View details</button>
+        </div>
+        <div class="hero-profile">
+          <span id="heroAvatar">🍈</span>
+          <div class="hero-profile-main"><b id="heroName">Player 1</b><div class="xp-track"><i id="heroXpFill"></i></div><small id="heroXpText">0 XP</small></div>
+        </div>
+      </div>
+      <div class="hero-art" aria-label="Mr. Melon's Adventure artwork"></div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <div><h2>Continue playing</h2><p>Pick up where this Studio profile left off.</p></div>
+      </div>
+      <div class="shelf" id="recentShelf"></div>
+    </section>
+
+    <section class="section" id="discover">
+      <div class="section-head">
+        <div><h2 id="gridTitle">Discover</h2><p>Games and apps made for Gaming Studio J.</p></div>
+        <div class="spacer"></div>
+        <span class="result-count" id="resultCount"></span>
+      </div>
+      <div class="filter-tabs" aria-label="Content filters">
+        <button class="tab active" data-filter="all">All</button>
+        <button class="tab" data-filter="featured">Featured</button>
+        <button class="tab" data-filter="new">New</button>
+        <button class="tab" data-filter="game">Games</button>
+        <button class="tab" data-filter="app">Apps</button>
+        <button class="tab" data-filter="favorites">Favourites</button>
+      </div>
+      <div class="game-grid" id="gameGrid"></div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <div><h2>Studio achievements</h2><p>Achievements from Gaming Studio J and supported games are collected in one place.</p></div>
+        <div class="spacer"></div>
+        <button class="text-btn" id="viewProfileAchievements">View profile</button>
+      </div>
+      <div class="achievement-grid" id="achievementGrid"></div>
+    </section>
+
+    <section class="section">
+      <div class="section-head"><div><h2>Built for every screen</h2><p>Gaming Studio J is designed around touch-first play.</p></div></div>
+      <div class="shelf">
+        <div class="shelf-card"><div class="shelf-icon">📱</div><div><b>Mobile friendly</b><span>Large tap targets, responsive cards and safe-area support.</span></div></div>
+        <div class="shelf-card"><div class="shelf-icon">🎮</div><div><b>Touch-ready games</b><span>Every published game can declare touchscreen support in the catalogue.</span></div></div>
+        <div class="shelf-card"><div class="shelf-icon">🏆</div><div><b>One Studio profile</b><span>XP, favourites, ratings and achievements stay with each local player profile.</span></div></div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <div>© Gaming Studio J. Built for Kash's games and apps.</div>
+      <div>No ads • No third-party trackers • Profiles stay on this device</div>
+    </footer>
+  </main>
+
+  <nav class="mobile-nav" aria-label="Mobile navigation">
+    <button class="active" data-nav="all"><span>⌂</span>Home</button>
+    <button data-nav="game"><span>🎮</span>Games</button>
+    <button data-nav="app"><span>▦</span>Apps</button>
+    <button data-nav="favorites"><span>♡</span>Saved</button>
+    <button id="mobileProfileBtn"><span id="mobileAvatar">🍈</span>Profile</button>
+  </nav>
+
+  <div class="modal" id="detailsModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-card detail-modal">
+      <div class="modal-cover"><img id="modalCover" alt=""></div>
+      <div class="modal-content">
+        <div class="section-head">
+          <div><h2 id="modalTitle"></h2><p id="modalMeta"></p></div>
+          <div class="spacer"></div><button class="icon-btn" data-close="detailsModal" aria-label="Close">✕</button>
+        </div>
+        <p id="modalDescription" class="modal-description"></p>
+        <div class="tag-row" id="modalTags"></div>
+        <div class="detail-info" id="modalInfo"></div>
+        <div class="rating-block">
+          <b>Your rating</b><div class="stars" id="modalStars" aria-label="Rate this title"></div>
+        </div>
+        <div class="modal-actions"><button class="btn primary" id="modalPlay">▶ Play now</button><button class="btn secondary" id="modalFav">♡ Save</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="profileModal" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <div class="modal-content">
+        <div class="section-head">
+          <div><span class="eyebrow">STUDIO PROFILE</span><h2 class="modal-heading">Players</h2></div>
+          <div class="spacer"></div><button class="icon-btn" data-close="profileModal" aria-label="Close">✕</button>
+        </div>
+        <div class="profile-overview">
+          <div class="big-avatar" id="profileAvatar">🍈</div>
+          <div class="profile-overview-copy"><h3 id="profileName">Player 1</h3><p id="profileLevel">Level 1</p><div class="xp-track large"><i id="profileXpFill"></i></div><small id="profileXpText">0 XP</small></div>
+        </div>
+        <div class="stat-grid" id="profileStats"></div>
+        <h3>Switch profile</h3>
+        <div class="profile-list" id="profileList"></div>
+        <div class="profile-editor">
+          <h3>Create or rename a profile</h3>
+          <div class="editor-grid">
+            <input class="field" id="profileNameInput" maxlength="18" placeholder="Player name">
+            <select class="field" id="profileAvatarInput">
+              <option>🍈</option><option>🎮</option><option>🚀</option><option>⚡</option><option>🦁</option><option>🐉</option><option>⭐</option><option>🤖</option>
+            </select>
+            <button class="btn primary" id="saveProfileBtn">Save current profile</button>
+            <button class="btn secondary" id="newProfileBtn">＋ New profile</button>
+          </div>
+        </div>
+        <h3>Achievements & badges</h3>
+        <div class="achievement-grid compact" id="profileAchievementGrid"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="settingsModal" role="dialog" aria-modal="true">
+    <div class="modal-card small-modal">
+      <div class="modal-content">
+        <div class="section-head">
+          <div><span class="eyebrow">SETTINGS</span><h2 class="modal-heading">Studio settings</h2></div>
+          <div class="spacer"></div><button class="icon-btn" data-close="settingsModal" aria-label="Close">✕</button>
+        </div>
+        <div class="setting-row">
+          <div><b>Family mode</b><p>Locally filters catalogue content above the selected age rating.</p></div>
+          <label class="switch"><input type="checkbox" id="familyMode"><span></span></label>
+        </div>
+        <div class="setting-row">
+          <div><b>Maximum content rating</b><p>Applies only when Family mode is enabled.</p></div>
+          <select class="field narrow" id="maxRating"><option>Everyone</option><option>7+</option><option>Teen</option><option>All</option></select>
+        </div>
+        <p class="settings-note">These are local convenience controls, not account-level parental controls. They can be changed by someone with access to this browser.</p>
+        <div class="setting-row">
+          <div><b>Install Gaming Studio J</b><p>Add the portal to a supported phone, tablet or desktop as an app.</p></div>
+          <button class="btn secondary" id="settingsInstallBtn">Install</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-area" id="toastArea" aria-live="polite"></div>
+</div>
+<script src="./assets/app.js?v=2" defer></script>
+</body>
+</html>
