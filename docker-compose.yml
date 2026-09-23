@@ -1,0 +1,7 @@
+services:
+  gaming-studio-j:
+    build: .
+    container_name: gaming-studio-j
+    restart: unless-stopped
+    ports:
+      - "8095:80"
