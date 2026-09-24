@@ -4,6 +4,10 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#11172b" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<link rel="manifest" href="./manifest.webmanifest" />
 <title>Mr. Melon's Adventure</title>
 <style>
 :root{
@@ -69,9 +73,14 @@ canvas{width:100%;height:100%;display:block;background:#7ad8ff}
 .statline{display:flex;justify-content:space-between;gap:12px;margin:8px 0}
 #touch{display:none;position:absolute;inset:auto 12px 12px 12px;z-index:11;justify-content:space-between;pointer-events:none}
 .touchGroup{display:flex;gap:8px;align-items:flex-end;pointer-events:auto}
-.touchBtn{width:60px;height:60px;border-radius:50%;border:1px solid rgba(255,255,255,.22);background:rgba(18,25,51,.72);backdrop-filter:blur(8px);color:white;font-size:21px;font-weight:1000}
+.touchBtn{width:60px;height:60px;border-radius:50%;border:1px solid rgba(255,255,255,.22);background:rgba(18,25,51,.58);backdrop-filter:blur(8px);color:white;font-size:21px;font-weight:1000;touch-action:none;user-select:none;-webkit-user-select:none}
 .touchBtn.big{width:70px;height:70px}
-.touchBtn:active,.touchBtn.pressed{background:rgba(126,232,103,.8);color:#10261b;transform:scale(.94)}
+.touchBtn:active,.touchBtn.pressed{background:rgba(126,232,103,.86);color:#10261b;transform:scale(.96)}
+#rotateOverlay{display:none;position:absolute;inset:0;z-index:40;align-items:center;justify-content:center;padding:22px;background:radial-gradient(circle at 50% 20%,rgba(36,54,98,.98),rgba(7,10,20,.99));text-align:center}
+.rotateCard{width:min(520px,94%);padding:24px;border-radius:24px}
+.rotateIcon{font-size:56px;line-height:1;margin-bottom:10px}
+.rotateCard h2{margin:6px 0 8px;font-size:clamp(24px,7vw,38px)}
+.rotateCard p{margin:0 auto 18px;max-width:36ch;color:var(--muted);line-height:1.5}
 button:focus-visible,.studio-link:focus-visible{outline:3px solid #ffe584;outline-offset:3px}
 #questBox{position:absolute;left:14px;top:78px;bottom:auto;z-index:7;padding:10px 12px;border-radius:14px;max-width:300px;font-size:12px;line-height:1.4;pointer-events:auto;cursor:pointer;user-select:none;transition:.22s ease;box-shadow:0 10px 28px rgba(0,0,0,.26)}
 #questBox .labelRow{display:flex;justify-content:space-between;gap:10px;align-items:center}
@@ -96,58 +105,131 @@ button:focus-visible,.studio-link:focus-visible{outline:3px solid #ffe584;outlin
 .charPreview{display:flex;align-items:center;gap:10px;font-size:32px}.charPreview small{font-size:11px;color:var(--muted)}
 @media (max-width:800px), (pointer:coarse){
   #app{padding:0}.shell{width:100%;height:100%;border:0;border-radius:0}
-  .bar{width:84px}.chip{padding:7px 8px;font-size:11px}
   .cardgrid{grid-template-columns:1fr}.shopItems{grid-template-columns:1fr 1fr}
-  .answers{grid-template-columns:1fr}.modal,.quizBox,.shopBox{padding:20px}
+  .answers{grid-template-columns:1fr}.modal,.quizBox,.shopBox{padding:18px}
+  canvas{touch-action:none}
 
-  /* Keep every gameplay control on-screen, including Jump, on narrow phones. */
+  /* Minimal gameplay HUD: health/freeze plus compact score/reward counters. */
+  #hud{
+    inset:max(6px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) auto max(8px,env(safe-area-inset-left));
+    gap:5px;
+    align-items:flex-start;
+  }
+  #hud .chip{padding:5px 7px;font-size:10px;border-radius:11px;background:rgba(15,21,42,.60);box-shadow:none}
+  #hud .bar{width:62px;height:7px}
+  #hud .chip:nth-child(4),
+  #hud .chip:nth-child(5){display:none}
+  #hud .grow{min-width:4px}
+  #hud .chip:last-child{margin-left:auto}
+
+  /* Controls sit only in the lower corners and remain translucent when idle. */
   #touch{
     display:flex;
-    inset:auto max(10px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left));
+    inset:auto max(10px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left));
     align-items:flex-end;
-    gap:12px;
+    gap:14px;
   }
   #touch .touchGroup:first-child{
     display:grid;
-    grid-template-columns:58px 58px;
-    gap:8px;
+    grid-template-columns:60px 60px;
+    gap:10px;
   }
   #touch .touchGroup:last-child{
     display:grid;
-    grid-template-columns:56px 64px;
-    grid-template-rows:56px 64px;
-    gap:8px;
+    grid-template-columns:56px 66px;
+    grid-template-rows:56px 66px;
+    gap:9px;
     margin-left:auto;
   }
-  .touchBtn{width:56px;height:56px;font-size:20px}
-  #touch .touchGroup:first-child .touchBtn{width:58px;height:58px}
+  .touchBtn{width:56px;height:56px;font-size:20px;opacity:.72}
+  #touch .touchGroup:first-child .touchBtn{width:60px;height:60px}
   #touch .touchGroup:last-child .touchBtn{width:56px;height:56px}
   #touch .touchGroup:last-child .touchBtn.big{
-    width:64px;
-    height:64px;
-    font-size:28px;
-    background:rgba(34,57,77,.86);
-    border:2px solid rgba(185,255,112,.7);
-    box-shadow:0 0 0 3px rgba(185,255,112,.10);
+    width:66px;
+    height:66px;
+    font-size:29px;
+    background:rgba(34,57,77,.68);
+    border:2px solid rgba(185,255,112,.62);
+    box-shadow:0 0 0 2px rgba(185,255,112,.08);
   }
+  .touchBtn:active,.touchBtn.pressed{opacity:1}
 
-  /* Move level progress away from the gameplay/control area. */
+  /* Progress is a thin strip at the very top, not in the playfield. */
   #minimap{
     left:50%;
     right:auto;
-    top:54px;
+    top:max(7px,env(safe-area-inset-top));
     bottom:auto;
     transform:translateX(-50%);
-    width:min(150px,42vw);
-    height:20px;
-    padding:4px 7px;
+    width:min(150px,30vw);
+    height:16px;
+    padding:3px 7px;
     border-radius:999px;
+    background:rgba(15,21,42,.58);
+    box-shadow:none;
   }
   #minimap .small{display:none}
-  #miniTrack{height:6px;margin-top:3px}
-  #miniDot{top:-4px}
-  #questBox{top:82px;left:10px;max-width:min(220px,58vw)}
+  #miniTrack{height:5px;margin-top:2px}
+  #miniDot{top:-4px;width:12px;height:12px}
+
+  /* Objective stays collapsed unless the player deliberately opens it. */
+  #questBox{
+    top:max(44px,calc(env(safe-area-inset-top) + 38px));
+    left:max(8px,env(safe-area-inset-left));
+    max-width:min(230px,42vw);
+    padding:7px 9px;
+    font-size:11px;
+    background:rgba(15,21,42,.62);
+    box-shadow:none;
+  }
+  #questBox.collapsed{max-width:126px;padding:6px 9px}
+
+  /* Notifications/rewards are compact and confined to the upper-right rail. */
+  #toastStack{
+    top:max(44px,calc(env(safe-area-inset-top) + 38px));
+    right:max(8px,env(safe-area-inset-right));
+    width:min(220px,38vw);
+    gap:5px;
+  }
+  .toast{
+    gap:7px;
+    padding:7px 9px;
+    border-radius:12px;
+    font-size:11px;
+    background:rgba(15,21,42,.72);
+    animation:toastIn .22s ease,toastOut .28s 2.05s ease forwards;
+  }
+  .toast .ico{font-size:20px;width:30px;height:30px;border-radius:9px}
+  .toast .small{font-size:9px}
+
+  /* Large centre-screen rewards become small status notices. */
+  #levelBanner{
+    top:max(46px,calc(env(safe-area-inset-top) + 40px));
+    padding:7px 12px;
+    border-radius:12px;
+    font-size:13px;
+    background:rgba(12,18,38,.68);
+  }
+  #levelBanner.show{animation:banner 1.3s ease}
+  #checkpointFlash{
+    top:max(72px,calc(env(safe-area-inset-top) + 66px));
+    font-size:14px;
+  }
+  #checkpointFlash.show{animation:checkpoint 1.05s ease}
+  #comboMeter{
+    top:auto;
+    bottom:max(88px,calc(env(safe-area-inset-bottom) + 82px));
+    padding:5px 9px;
+    font-size:11px;
+    background:rgba(19,26,50,.62);
+  }
+
   .portalGrid,.charGrid{grid-template-columns:1fr}
+}
+
+/* Portrait gameplay is intentionally blocked on touch devices. */
+@media (orientation:portrait) and (pointer:coarse){
+  #rotateOverlay{display:flex}
 }
 </style>
 </head>
@@ -155,6 +237,16 @@ button:focus-visible,.studio-link:focus-visible{outline:3px solid #ffe584;outlin
 <div id="app">
 <div class="shell">
 <canvas id="game" width="1280" height="720"></canvas>
+
+<div id="rotateOverlay" aria-live="polite">
+  <div class="rotateCard glass">
+    <div class="rotateIcon">📱↻</div>
+    <div class="badge">LANDSCAPE PLAY</div>
+    <h2>Turn your device sideways</h2>
+    <p>Mr. Melon's Adventure is designed for landscape play. Tap below to enter fullscreen and lock landscape when your browser supports it.</p>
+    <button class="btn" id="rotateStartBtn">⛶ Play fullscreen</button>
+  </div>
+</div>
 
 <div id="hud" style="display:none">
   <div class="chip glass">❤️ <div class="bar"><i id="hpFill"></i></div><span id="hpText"></span></div>
@@ -217,7 +309,7 @@ button:focus-visible,.studio-link:focus-visible{outline:3px solid #ffe584;outlin
 <div id="pauseOverlay">
   <div class="quizBox glass" style="text-align:center">
     <h2>Adventure Paused</h2><p class="subtitle">The melons are safe for now.</p>
-    <div class="row" style="justify-content:center"><button class="btn" id="resumeBtn">Resume</button><a class="studio-link" href="../../index.html">← Gaming Studio J</a></div>
+    <div class="row" style="justify-content:center"><button class="btn" id="resumeBtn">Resume</button><button class="btn alt" id="fullscreenBtn">⛶ Fullscreen</button><a class="studio-link" href="../../index.html">← Gaming Studio J</a></div>
   </div>
 </div>
 
@@ -324,6 +416,7 @@ const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");
 const W=canvas.width,H=canvas.height;
 const $=id=>document.getElementById(id);
 const keys={};
+const MOBILE_PLAY=window.matchMedia("(pointer:coarse)").matches||navigator.maxTouchPoints>0;
 let last=0, paused=false, inGame=false, quizOpen=false, shopOpen=false, levelStart=0;
 let camX=0, shake=0, currentQuiz=null, particles=[], shots=[], enemies=[], pickups=[], platforms=[], hazards=[], decor=[];
 let checkpoint={x:90,y:450},checkpointReached=false,combo=0,comboTimer=0,prevPlayerBottom=0,objectiveTimer=null;
@@ -413,12 +506,32 @@ function renderCharacters(){
   });
 }
 function openCharacters(){renderCharacters();$("characterOverlay").style.display="flex";}
+
+async function requestImmersiveMode(){
+  if(!MOBILE_PLAY)return;
+  try{
+    const target=document.documentElement;
+    if(!document.fullscreenElement&&target.requestFullscreen){
+      await target.requestFullscreen({navigationUI:"hide"});
+    }
+  }catch(e){}
+  try{
+    if(screen.orientation&&screen.orientation.lock){
+      await screen.orientation.lock("landscape");
+    }
+  }catch(e){}
+}
+
 function setObjective(L){
   const qb=$("questBox");
   qb.innerHTML=`<div class="labelRow"><b>🎯 Objective</b><span class="hint">Click / Q</span></div><div class="questDetails"><b>${L.quest}</b><br><span class="small">${save.nickname} • ${save.character}</span></div>`;
-  qb.classList.remove("collapsed");
   clearTimeout(objectiveTimer);
-  objectiveTimer=setTimeout(()=>qb.classList.add("collapsed"),4200);
+  if(MOBILE_PLAY){
+    qb.classList.add("collapsed");
+  }else{
+    qb.classList.remove("collapsed");
+    objectiveTimer=setTimeout(()=>qb.classList.add("collapsed"),4200);
+  }
 }
 function toggleObjective(){
   const qb=$("questBox");
@@ -500,6 +613,7 @@ function generateDecor(L){
   }
 }
 function startGame(){
+  requestImmersiveMode();
   inGame=true; paused=false; quizOpen=false; shopOpen=false;
   $("screenCover").style.display="none"; $("hud").style.display="flex";
   $("questBox").style.display="block"; $("minimap").style.display="block"; $("questBox").classList.remove("collapsed");
@@ -582,9 +696,12 @@ function achievement(id,title,icon){
   sfx("achieve");
 }
 function toast(text,icon="✨"){
+  const stack=$("toastStack");
+  while(MOBILE_PLAY&&stack.children.length>=2)stack.firstElementChild?.remove();
   const el=document.createElement("div");el.className="toast glass";
   el.innerHTML=`<div class="ico">${icon}</div><div><span class="small">MR. MELON</span><div>${text}</div></div>`;
-  $("toastStack").appendChild(el);setTimeout(()=>el.remove(),4200);
+  stack.appendChild(el);
+  setTimeout(()=>el.remove(),MOBILE_PLAY?2450:4200);
 }
 function banner(text){
   const b=$("levelBanner");b.textContent=text;b.classList.remove("show");void b.offsetWidth;b.classList.add("show");
@@ -736,10 +853,12 @@ function update(dt){
   player.freeze=Math.min(save.freezeMax,player.freeze + (player.swim && save.character==="Aqua Melon" ? .18 : .08));
   const left=keys.ArrowLeft||keys.KeyA,right=keys.ArrowRight||keys.KeyD;
   const char=currentChar();
-  const accel=(player.swim?.42:.75)*(player.swim?char.swim:char.speed),max=(player.swim?4.2*char.swim:6.2*char.speed);
+  const touchScale=MOBILE_PLAY?.72:1;
+  const accel=(player.swim?.42:.75)*(player.swim?char.swim:char.speed)*touchScale;
+  const max=(player.swim?4.2*char.swim:6.2*char.speed)*(MOBILE_PLAY?.86:1);
   if(left){player.vx=Math.max(-max,player.vx-accel);player.facing=-1}
   if(right){player.vx=Math.min(max,player.vx+accel);player.facing=1}
-  if(!left&&!right)player.vx*=player.onGround?.78:.95;
+  if(!left&&!right)player.vx*=player.onGround?(MOBILE_PLAY?.66:.78):(MOBILE_PLAY?.91:.95);
   coyote=player.onGround?7:Math.max(0,coyote-1);
   jumpBuffer=Math.max(0,jumpBuffer-1);
   const wantsJump=keys.Space||keys.ArrowUp||keys.KeyW;
@@ -774,7 +893,11 @@ function update(dt){
   hazards.forEach(h=>{if(rects(player,h))damagePlayer(1,h.x+h.w/2)});
   if(!checkpointReached&&L.checkpoint&&player.x>=L.checkpoint[0]){
     checkpointReached=true;checkpoint={x:L.checkpoint[0],y:L.checkpoint[1]};
-    const f=$("checkpointFlash");f.classList.remove("show");void f.offsetWidth;f.classList.add("show");
+    if(MOBILE_PLAY){
+      toast("Checkpoint reached! +100 points","🚩");
+    }else{
+      const f=$("checkpointFlash");f.classList.remove("show");void f.offsetWidth;f.classList.add("show");
+    }
     save.score+=100;persist();spawnBurst(checkpoint.x,checkpoint.y,"#ffe36b");sfx("checkpoint");achievement("checkpoint","Halfway Hero","🚩");
   }
 
@@ -1076,7 +1199,9 @@ $("closeCrew").onclick=()=>$("crewOverlay").style.display="none";
 $("closeVillage").onclick=()=>$("villageOverlay").style.display="none";
 $("closeCharacters").onclick=()=>$("characterOverlay").style.display="none";
 $("questBox").onclick=()=>toggleObjective();
-$("resumeBtn").onclick=()=>{paused=false;$("pauseOverlay").style.display="none"};
+$("resumeBtn").onclick=()=>{paused=false;$("pauseOverlay").style.display="none";requestImmersiveMode()};
+$("fullscreenBtn").onclick=()=>requestImmersiveMode();
+$("rotateStartBtn").onclick=()=>requestImmersiveMode();
 $("resetBtn").onclick=()=>{
   if(confirm("Reset all Mr. Melon progress on this device?")){save=defaultSave();persist();updateMenuSummary();toast("Save reset.","🍈")}
 };
