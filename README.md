@@ -29,45 +29,128 @@ The Melon Crew code is visible in the game and is only a playful entry step, not
 Family mode is a local content filter. It is **not** strong parental access control because a person with access to the browser can change the setting.
 
 ## Deploy with Docker
+
 ```bash
-unzip Gaming-Studio-J-Git-Ready.zip
-cd gaming-studio-j
-cp .env.example .env
+git pull origin main
+cp -n .env.example .env
 docker compose up -d --build
 docker compose ps
 ```
 
-The default host port is:
-`8095`
+The container listens on port `80` inside Docker and joins the existing external Docker network:
 
-Open:
-`http://YOUR-SERVER-IP:8095`
+`proxy_network`
 
-Edit `.env` to choose another `GAMES_PORT`. If Nginx Proxy Manager is installed on the same server, you can set `GAMES_BIND_ADDRESS=127.0.0.1` when NPM connects through the host; if NPM is in a container, keep the LAN binding and forward to the server's LAN IP. The container serves static files only. Browser profiles and progress are kept on each player's device, so clearing browser storage clears their progress.
+For local diagnostics only, Docker publishes:
 
-For updates, back up any edits you made to `data/catalog.json` or the game files, replace the project files, then run `docker compose up -d --build`. Confirm `docker compose ps` reports healthy. To see errors, run `docker compose logs --tail=100 gaming-studio-j`.
+`127.0.0.1:8095 -> gaming-studio-j:80`
 
-### Nginx Proxy Manager
-Recommended:
-- Domain: `games.v79sl.com`
-- Scheme: `http`
-- Forward IP: `192.168.100.163`
-- Forward port: `8095`
-- Enable Websockets
-- Request a Let's Encrypt certificate
-- Force SSL
+Test it from the Ubuntu server with:
 
-Keep port 8095 accessible only on your trusted network if you put it behind NPM. The catalogue builder at `/admin.html` runs in the browser and exports JSON; it does not write to your server. Restrict that page at the reverse proxy if you prefer it private.
+```bash
+curl -i http://127.0.0.1:8095/healthz
+```
+
+Expected body:
+
+```text
+ok
+```
+
+Browser profiles and progress are kept on each player's device, so clearing browser storage clears their progress.
+
+For updates:
+
+```bash
+git pull origin main
+docker compose up -d --build
+docker compose ps
+docker compose logs --tail=100 gaming-studio-j
+```
+
+## v79 Nginx reverse proxy
+
+Gaming Studio J is designed to use the existing container:
+
+`v79_nginx_proxy`
+
+Both containers must be connected to:
+
+`proxy_network`
+
+The reverse proxy must send traffic directly to:
+
+`http://gaming-studio-j:80`
+
+Do **not** proxy to `gaming-studio-j:8095`. Port `8095` is only the host-side diagnostic port.
+
+The repository includes:
+
+`deploy/v79-nginx-proxy/gaming-studio-j.conf`
+
+This configuration defines `games.v79sl.com` and proxies it to `gaming-studio-j:80`.
+
+### Install the proxy configuration
+
+From the Gaming Studio J project directory:
+
+```bash
+chmod +x scripts/install-v79-nginx-proxy.sh
+./scripts/install-v79-nginx-proxy.sh
+```
+
+The script:
+
+- verifies `gaming-studio-j` and `v79_nginx_proxy` exist
+- verifies both containers are on `proxy_network`
+- verifies the application health endpoint from inside the proxy
+- copies the Gaming Studio J server block into `v79_nginx_proxy`
+- runs `nginx -t`
+- restores the previous config if validation fails
+- reloads Nginx only after validation succeeds
+- checks the proxied `/healthz` endpoint
+
+You can manually verify connectivity with:
+
+```bash
+docker exec v79_nginx_proxy wget -S -O- http://gaming-studio-j:80/healthz
+```
+
+and verify the proxy configuration with:
+
+```bash
+docker exec v79_nginx_proxy nginx -t
+docker exec v79_nginx_proxy nginx -T
+```
+
+### Persistence note
+
+The installer copies the server block into the running `v79_nginx_proxy` container. If that proxy container is recreated, changes made only inside it will disappear.
+
+For permanent deployment, mount:
+
+`deploy/v79-nginx-proxy/gaming-studio-j.conf`
+
+from the host into:
+
+`/etc/nginx/conf.d/gaming-studio-j.conf`
+
+in the Compose project that owns `v79_nginx_proxy`.
+
+The application itself does not need its host port exposed to the LAN because the proxy reaches it directly through Docker networking.
 
 ## Game controls
 
 Move with A/D or the arrow keys. Jump with W, Up or Space. Shoot with X, freeze with F and ground pound with S or Down while airborne. P pauses. On touchscreens, use the on-screen controls. Briefly pressing jump just before landing or just after leaving a ledge is supported.
 
 ## Add a game or app
+
 Open:
+
 `/admin.html`
 
 The Catalogue Builder loads the current catalogue and lets you draft a new title. Click **Download JSON**, then replace:
+
 `data/catalog.json`
 
 The admin helper is intentionally static. It does not change server files itself and is not an authenticated admin panel.
@@ -75,6 +158,7 @@ The admin helper is intentionally static. It does not change server files itself
 You can also edit `data/catalog.json` directly.
 
 ## Game catalogue fields
+
 Each title can declare:
 - `type`: game or app
 - `status`: playable or coming-soon
@@ -89,7 +173,9 @@ Each title can declare:
 - `input`
 
 ## Cross-game achievements
+
 Supported games write achievement events into:
+
 `gsj_game_events_v1`
 
 Events include the active Gaming Studio J profile ID, so achievements are awarded to the player who launched the game.
@@ -97,10 +183,13 @@ Events include the active Gaming Studio J profile ID, so achievements are awarde
 Mr. Melon's Adventure is already integrated.
 
 ## Updating Mr. Melon
+
 Replace:
+
 `games/mr-melons-adventure/`
 
 Keep its entry point:
+
 `games/mr-melons-adventure/index.html`
 
 If you replace it with a completely new build, re-add the Studio achievement bridge and return-to-Studio links.
