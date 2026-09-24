@@ -1,12 +1,24 @@
 services:
   gaming-studio-j:
-    build: .
+    container_name: gaming-studio-j
+    build:
+      context: .
+      dockerfile: Dockerfile
     restart: unless-stopped
     ports:
       - "${GAMES_BIND_ADDRESS:-0.0.0.0}:${GAMES_PORT:-8095}:80"
+    expose:
+      - "80"
+    networks:
+      - proxy_network
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/healthz"]
       interval: 30s
       timeout: 3s
       retries: 3
       start_period: 5s
+
+networks:
+  proxy_network:
+    external: true
+    name: proxy_network
