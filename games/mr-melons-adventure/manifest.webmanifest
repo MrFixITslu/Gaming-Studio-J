@@ -1,0 +1,23 @@
+{
+  "name": "Mr. Melon's Adventure",
+  "short_name": "Mr. Melon",
+  "description": "A touch-first landscape adventure from Gaming Studio J.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#0b1020",
+  "theme_color": "#11172b",
+  "icons": [
+    {
+      "src": "../../assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "../../assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
