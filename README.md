@@ -22,122 +22,99 @@ Gaming Studio J is a self-hosted, touch-first game and app portal for Kash's pro
 - Docker + Nginx production deployment
 
 ## Important privacy model
+
 Player profiles, XP, ratings and achievements stay in the browser's local storage. Nothing is sent to an external analytics or advertising provider.
 
 The Melon Crew code is visible in the game and is only a playful entry step, not an access restriction. Use reverse proxy access rules if the game should be private.
 
 Family mode is a local content filter. It is **not** strong parental access control because a person with access to the browser can change the setting.
 
-## Deploy with Docker
-
-```bash
-git pull origin main
-cp -n .env.example .env
-docker compose up -d --build
-docker compose ps
-```
-
-The container listens on port `80` inside Docker and joins the existing external Docker network:
-
-`proxy_network`
-
-For local diagnostics only, Docker publishes:
-
-`127.0.0.1:8095 -> gaming-studio-j:80`
-
-Test it from the Ubuntu server with:
-
-```bash
-curl -i http://127.0.0.1:8095/healthz
-```
-
-Expected body:
-
-```text
-ok
-```
-
-Browser profiles and progress are kept on each player's device, so clearing browser storage clears their progress.
-
-For updates:
+## Docker deployment
 
 ```bash
 git pull origin main
 docker compose up -d --build
 docker compose ps
-docker compose logs --tail=100 gaming-studio-j
 ```
 
-## v79 Nginx reverse proxy
-
-Gaming Studio J is designed to use the existing container:
-
-`v79_nginx_proxy`
-
-Both containers must be connected to:
+Gaming Studio J does **not** publish a host port directly. It listens on port `80` inside its Docker container and joins:
 
 `proxy_network`
 
-The reverse proxy must send traffic directly to:
+The shared V79 Nginx container reaches it at:
 
 `http://gaming-studio-j:80`
 
-Do **not** proxy to `gaming-studio-j:8095`. Port `8095` is only the host-side diagnostic port.
+The public routing architecture is:
 
-The repository includes:
-
-`deploy/v79-nginx-proxy/gaming-studio-j.conf`
-
-This configuration defines `games.v79sl.com` and proxies it to `gaming-studio-j:80`.
-
-### Install the proxy configuration
-
-From the Gaming Studio J project directory:
-
-```bash
-chmod +x scripts/install-v79-nginx-proxy.sh
-./scripts/install-v79-nginx-proxy.sh
+```text
+Internet
+  ↓ HTTPS
+Nginx Proxy Manager (v79sl_DOMAIN)
+  ↓ HTTP to server port 8095
+v79_nginx_proxy:80
+  ↓ proxy_network
+gaming-studio-j:80
 ```
 
-The script:
+Host port `8095` belongs to `v79_nginx_proxy`, not to the Gaming Studio J container.
 
-- verifies `gaming-studio-j` and `v79_nginx_proxy` exist
-- verifies both containers are on `proxy_network`
-- verifies the application health endpoint from inside the proxy
-- copies the Gaming Studio J server block into `v79_nginx_proxy`
-- runs `nginx -t`
-- restores the previous config if validation fails
-- reloads Nginx only after validation succeeds
-- checks the proxied `/healthz` endpoint
+The persistent `games.v79sl.com` virtual-host configuration is maintained in the separate repository:
 
-You can manually verify connectivity with:
+`MrFixITslu/V79-Course-Builder`
+
+in:
+
+`nginx.conf`
+
+That repository's Docker Compose publishes:
+
+`8095:80`
+
+for `v79_nginx_proxy`.
+
+## Nginx Proxy Manager
+
+Configure the Proxy Host for `games.v79sl.com` as:
+
+- Scheme: `http`
+- Forward Hostname / IP: `192.168.100.163`
+- Forward Port: `8095`
+- Websockets Support: enabled
+- SSL certificate: Let's Encrypt
+- Force SSL: enabled
+
+Nginx Proxy Manager should preserve the original Host header. The V79 Nginx proxy uses `games.v79sl.com` to select the Gaming Studio J server block.
+
+## Health checks
+
+From the Gaming Studio J container:
 
 ```bash
-docker exec v79_nginx_proxy wget -S -O- http://gaming-studio-j:80/healthz
+docker exec gaming-studio-j wget -q -O - http://127.0.0.1/healthz
 ```
 
-and verify the proxy configuration with:
+From `v79_nginx_proxy`:
 
 ```bash
-docker exec v79_nginx_proxy nginx -t
-docker exec v79_nginx_proxy nginx -T
+docker exec v79_nginx_proxy wget -S -O- \
+  --header='Host: games.v79sl.com' \
+  http://127.0.0.1/healthz
 ```
 
-### Persistence note
+Through the host-published proxy port:
 
-The installer copies the server block into the running `v79_nginx_proxy` container. If that proxy container is recreated, changes made only inside it will disappear.
+```bash
+curl -i -H 'Host: games.v79sl.com' http://127.0.0.1:8095/healthz
+```
 
-For permanent deployment, mount:
+Through the public domain:
 
-`deploy/v79-nginx-proxy/gaming-studio-j.conf`
+```bash
+curl -i https://games.v79sl.com/healthz
+```
 
-from the host into:
-
-`/etc/nginx/conf.d/gaming-studio-j.conf`
-
-in the Compose project that owns `v79_nginx_proxy`.
-
-The application itself does not need its host port exposed to the LAN because the proxy reaches it directly through Docker networking.
+Each should return `200 OK` with body `ok`.
 
 ## Game controls
 
