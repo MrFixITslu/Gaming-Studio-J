@@ -25,12 +25,16 @@ jobs:
         run: |
           node --check assets/app.js
           node --check assets/admin.js
-          node -e "const fs=require('fs');const html=fs.readFileSync('games/mr-melons-adventure/index.html','utf8');const scripts=[...html.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/g)];for(const [,code] of scripts)new(require('vm').Script)(code);if(!scripts.length)process.exit(1)"
+          node -e "const fs=require('fs');const html=fs.readFileSync('games/mr-melons-adventure/index.html','utf8');const scripts=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)];for(const [,code] of scripts)new(require('vm').Script)(code);if(!scripts.length)process.exit(1)"
 
       - name: Validate JSON files
         run: |
           node -e "JSON.parse(require('fs').readFileSync('data/catalog.json','utf8'))"
           node -e "JSON.parse(require('fs').readFileSync('manifest.webmanifest','utf8'))"
+
+      - name: Validate deployment scripts
+        run: |
+          sh -n scripts/install-v79-nginx-proxy.sh
 
       - name: Verify required files
         run: |
@@ -39,6 +43,8 @@ jobs:
           test -f Dockerfile
           test -f docker-compose.yml
           test -f nginx.conf
+          test -f deploy/v79-nginx-proxy/gaming-studio-j.conf
+          test -f scripts/install-v79-nginx-proxy.sh
           test -f games/mr-melons-adventure/index.html
 
   docker-build:
@@ -46,5 +52,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Build container
+
+      - name: Build application container
         run: docker build -t gaming-studio-j:ci .
+
+      - name: Validate external v79 nginx proxy config
+        run: |
+          docker run --rm             --add-host gaming-studio-j:127.0.0.1             -v "$PWD/deploy/v79-nginx-proxy/gaming-studio-j.conf:/etc/nginx/conf.d/gaming-studio-j.conf:ro"             nginx:1.27-alpine nginx -t
