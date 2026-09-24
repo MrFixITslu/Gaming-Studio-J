@@ -1,1 +1,1051 @@
-The requested file reference is not currently visible. Use files.search or files.list to rediscover the file, then retry with a returned ref_id or file_id.
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#11172b" />
+<title>Mr. Melon's Adventure</title>
+<style>
+:root{
+  --bg:#0b1020; --panel:#141b34; --panel2:#202a4d; --ink:#f7fbff; --muted:#a9b4d2;
+  --lime:#8aef55; --green:#58c951; --pink:#ff6e8c; --blue:#58c9ff; --gold:#ffd45d; --red:#ff5a68;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:radial-gradient(circle at 35% 0,#213462 0,#10162b 46%,#070a14 100%);font-family:Inter,system-ui,Segoe UI,Arial,sans-serif;color:var(--ink);overflow:hidden}
+button,input{font:inherit}
+#app{height:100%;display:flex;align-items:center;justify-content:center;padding:12px}
+.shell{width:min(1180px,100%);height:min(760px,100%);position:relative;border-radius:26px;overflow:hidden;border:1px solid rgba(255,255,255,.12);background:#080c18;box-shadow:0 28px 90px rgba(0,0,0,.45)}
+canvas{width:100%;height:100%;display:block;background:#7ad8ff}
+.glass{background:rgba(15,21,42,.86);backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.12);box-shadow:0 16px 48px rgba(0,0,0,.28)}
+#hud{position:absolute;inset:14px 14px auto 14px;display:flex;gap:9px;align-items:center;z-index:8;pointer-events:none}
+.chip{display:flex;gap:7px;align-items:center;padding:8px 11px;border-radius:14px;font-weight:900;font-size:13px;white-space:nowrap}
+.grow{flex:1}
+.bar{height:10px;width:150px;border-radius:99px;overflow:hidden;background:#39415f}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,#52c454,#a5f36a);width:100%}
+.bar.freeze i{background:linear-gradient(90deg,#52b8ee,#b8f1ff)}
+#screenCover,#quizOverlay,#shopOverlay,#pauseOverlay,#crewOverlay,#victoryOverlay{position:absolute;inset:0;display:none;align-items:center;justify-content:center;padding:22px;background:linear-gradient(150deg,rgba(6,9,19,.91),rgba(25,35,72,.88));backdrop-filter:blur(7px);z-index:20}
+#screenCover{display:flex}
+.modal,.quizBox,.shopBox{width:min(760px,96%);max-height:92%;overflow:auto;border-radius:26px;padding:26px}
+.title{font-size:clamp(36px,6vw,70px);line-height:.95;letter-spacing:-2px;margin:6px 0 10px;font-weight:1000}
+.title .melon{color:var(--lime);text-shadow:0 5px 0 rgba(0,0,0,.18)}
+.subtitle{color:var(--muted);line-height:1.55}
+.badge{display:inline-flex;padding:5px 9px;border-radius:999px;background:#263153;color:#cde2ff;font-size:11px;font-weight:900;letter-spacing:.06em}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.btn{border:0;border-radius:14px;padding:12px 16px;font-weight:950;cursor:pointer;background:linear-gradient(#b9ff70,#75db45);color:#07100a;box-shadow:0 5px 0 #3e8e2c;transition:.12s}
+.btn:hover{transform:translateY(-1px)}
+.btn:active{transform:translateY(3px);box-shadow:0 2px 0 #3e8e2c}
+.btn.alt{background:linear-gradient(#5a668c,#374263);box-shadow:0 5px 0 #202943;color:white}
+.btn.blue{background:linear-gradient(#8fe9ff,#55bef0);box-shadow:0 5px 0 #257eae}
+.btn.gold{background:linear-gradient(#ffe986,#ffc63e);box-shadow:0 5px 0 #b27d16}
+.btn.red{background:linear-gradient(#ff8692,#eb5362);box-shadow:0 5px 0 #9a303c;color:white}
+.field{width:100%;padding:13px 14px;border-radius:14px;border:1px solid rgba(255,255,255,.14);background:#0d1329;color:white;outline:none}
+.small{font-size:12px;color:var(--muted)}
+.cardgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:18px 0}
+.card{padding:16px;border-radius:18px;background:#141b35;border:1px solid rgba(255,255,255,.09)}
+.card h3{margin:0 0 6px}
+.kbd{display:inline-block;padding:3px 7px;border-radius:7px;border:1px solid #6d79a1;border-bottom-width:3px;background:#30395e;font-size:12px;font-weight:900}
+#toastStack{position:absolute;top:74px;right:14px;z-index:14;display:flex;flex-direction:column;gap:10px;width:min(340px,70%);pointer-events:none}
+.toast{display:flex;gap:10px;align-items:center;padding:12px;border-radius:16px;animation:toastIn .35s ease,toastOut .45s 3.6s ease forwards}
+.toast .ico{font-size:30px;width:46px;height:46px;display:grid;place-items:center;border-radius:12px;background:rgba(255,255,255,.12)}
+.toast b{display:block}
+@keyframes toastIn{from{opacity:0;transform:translateX(50px)}to{opacity:1;transform:none}}
+@keyframes toastOut{to{opacity:0;transform:translateX(50px)}}
+#levelBanner{position:absolute;left:50%;top:22%;transform:translate(-50%,-50%);z-index:12;padding:12px 20px;border-radius:16px;background:rgba(12,18,38,.76);font-size:clamp(18px,3vw,30px);font-weight:1000;opacity:0;pointer-events:none}
+#levelBanner.show{animation:banner 2.15s ease}
+@keyframes banner{0%{opacity:0;transform:translate(-50%,-70%)}15%,72%{opacity:1;transform:translate(-50%,-50%)}100%{opacity:0}}
+#comboMeter{position:absolute;left:50%;top:80px;transform:translateX(-50%) scale(.92);z-index:13;padding:9px 15px;border-radius:14px;background:rgba(19,26,50,.84);border:1px solid rgba(255,255,255,.13);font-weight:1000;letter-spacing:.04em;opacity:0;pointer-events:none;transition:.18s}
+#comboMeter.show{opacity:1;transform:translateX(-50%) scale(1)}
+#comboMeter strong{color:#ffe26d}
+#checkpointFlash{position:absolute;left:50%;top:31%;transform:translate(-50%,-50%);z-index:13;font-weight:1000;font-size:clamp(18px,3vw,30px);text-shadow:0 4px 20px rgba(0,0,0,.45);opacity:0;pointer-events:none}
+#checkpointFlash.show{animation:checkpoint 1.7s ease}
+@keyframes checkpoint{0%{opacity:0;transform:translate(-50%,-25%) scale(.8)}18%,70%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-70%) scale(1.04)}}
+.answers{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:16px}
+.answer{border:0;border-radius:16px;padding:16px;background:#2b365e;color:white;font-weight:950;cursor:pointer}
+.answer:hover{background:#3a4776}
+.answer.good{background:#268e4d}.answer.bad{background:#a73746}
+.shopItems{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
+.shopItem{padding:14px;border-radius:16px;background:#151d39;border:1px solid rgba(255,255,255,.09);text-align:center}
+.shopItem .icon{font-size:34px}
+.statline{display:flex;justify-content:space-between;gap:12px;margin:8px 0}
+#touch{display:none;position:absolute;inset:auto 12px 12px 12px;z-index:11;justify-content:space-between;pointer-events:none}
+.touchGroup{display:flex;gap:8px;align-items:flex-end;pointer-events:auto}
+.touchBtn{width:60px;height:60px;border-radius:50%;border:1px solid rgba(255,255,255,.22);background:rgba(18,25,51,.72);backdrop-filter:blur(8px);color:white;font-size:21px;font-weight:1000}
+.touchBtn.big{width:70px;height:70px}
+.touchBtn:active,.touchBtn.pressed{background:rgba(126,232,103,.8);color:#10261b;transform:scale(.94)}
+button:focus-visible,.studio-link:focus-visible{outline:3px solid #ffe584;outline-offset:3px}
+#questBox{position:absolute;left:14px;top:78px;bottom:auto;z-index:7;padding:10px 12px;border-radius:14px;max-width:300px;font-size:12px;line-height:1.4;pointer-events:auto;cursor:pointer;user-select:none;transition:.22s ease;box-shadow:0 10px 28px rgba(0,0,0,.26)}
+#questBox .labelRow{display:flex;justify-content:space-between;gap:10px;align-items:center}
+#questBox .questDetails{margin-top:5px}
+#questBox .hint{font-size:11px;color:#c6d4f4}
+#questBox.collapsed{padding:8px 12px;max-width:164px;opacity:.94}
+#questBox.collapsed .questDetails,#questBox.collapsed .hint{display:none}
+#questBox.collapsed .labelRow b{font-size:12px}
+#minimap{position:absolute;right:14px;bottom:14px;z-index:7;width:180px;height:38px;border-radius:12px;padding:6px;pointer-events:none}
+#miniTrack{height:8px;background:#303a5d;border-radius:99px;position:relative;margin-top:5px}
+#miniDot{position:absolute;top:-3px;width:14px;height:14px;border-radius:50%;background:#a7ff64;box-shadow:0 0 0 3px rgba(167,255,100,.18)}
+.crewTable{width:100%;border-collapse:collapse;margin-top:10px}
+.crewTable td,.crewTable th{padding:8px;border-bottom:1px solid rgba(255,255,255,.08);text-align:left}
+.legal{margin-top:10px;color:#7682a5;font-size:11px}
+.studio-link{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:0 13px;border-radius:12px;background:#232b48;border:1px solid rgba(255,255,255,.13);color:#fff;text-decoration:none;font-size:12px;font-weight:900}.studio-link:hover{background:#303a61}
+.portalGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:14px}
+.portalCard,.charCard{padding:14px;border-radius:18px;background:#141b35;border:1px solid rgba(255,255,255,.09)}
+.portalCard.locked,.charCard.locked{opacity:.56;filter:saturate(.7)}
+.portalCard h3,.charCard h3{margin:0 0 6px}.portalCard .tiny,.charCard .tiny{font-size:11px;color:var(--muted)}
+.charGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:14px}
+.charCard.selected{outline:2px solid rgba(186,255,112,.8);box-shadow:0 0 0 6px rgba(186,255,112,.08)}
+.charPreview{display:flex;align-items:center;gap:10px;font-size:32px}.charPreview small{font-size:11px;color:var(--muted)}
+@media (max-width:800px){
+  #app{padding:0}.shell{width:100%;height:100%;border:0;border-radius:0}
+  .bar{width:84px}.chip{padding:7px 8px;font-size:11px}
+  .cardgrid{grid-template-columns:1fr}.shopItems{grid-template-columns:1fr 1fr}
+  .answers{grid-template-columns:1fr}.modal,.quizBox,.shopBox{padding:20px}
+  #touch{display:flex}#questBox{top:54px;left:10px;max-width:220px}#minimap{bottom:92px;width:140px}.portalGrid,.charGrid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div id="app">
+<div class="shell">
+<canvas id="game" width="1280" height="720"></canvas>
+
+<div id="hud" style="display:none">
+  <div class="chip glass">❤️ <div class="bar"><i id="hpFill"></i></div><span id="hpText"></span></div>
+  <div class="chip glass">❄️ <div class="bar freeze"><i id="freezeFill"></i></div></div>
+  <div class="chip glass">🍈 <span id="coinText">0</span></div>
+  <div class="chip glass">🛡️ <span id="armorText">0</span></div>
+  <div class="chip glass">🌟 <span id="secretText">0/4</span></div>
+  <div class="grow"></div>
+  <div class="chip glass">⭐ <span id="scoreText">0</span></div>
+</div>
+
+<div id="questBox" class="glass" style="display:none"></div>
+<div id="minimap" class="glass" style="display:none"><div class="small">Level progress</div><div id="miniTrack"><div id="miniDot"></div></div></div>
+<div id="toastStack"></div>
+<div id="levelBanner"></div>
+<div id="comboMeter">STOMP COMBO <strong id="comboText">x2</strong></div>
+<div id="checkpointFlash">🚩 CHECKPOINT!</div>
+
+<div id="touch">
+  <div class="touchGroup">
+    <button class="touchBtn" data-key="ArrowLeft">◀</button>
+    <button class="touchBtn" data-key="ArrowRight">▶</button>
+  </div>
+  <div class="touchGroup">
+    <button class="touchBtn" data-key="KeyX">●</button>
+    <button class="touchBtn" data-key="KeyF">❄</button>
+    <button class="touchBtn" data-key="KeyS">⬇</button>
+    <button class="touchBtn big" data-key="Space">⬆</button>
+  </div>
+</div>
+
+<div id="quizOverlay">
+  <div class="quizBox glass">
+    <div class="badge">MATH CHALLENGE</div>
+    <h2 id="quizQ">Question</h2>
+    <p class="subtitle">Answer correctly to earn bonus melons and freeze nearby enemies.</p>
+    <div id="quizAnswers" class="answers"></div>
+  </div>
+</div>
+
+<div id="shopOverlay">
+  <div class="shopBox glass">
+    <div class="row">
+      <div><div class="badge">MELON MART</div><h2 style="margin:7px 0">Power up Mr. Melon</h2></div>
+      <div class="grow"></div>
+      <button class="btn alt" id="closeShop">Back to adventure</button>
+    </div>
+    <div id="bottleExchange" class="card" style="display:none;margin:12px 0">
+      <h3>💧 Water Bottle Exchange</h3>
+      <p class="subtitle">Trade the Water Bottle for one legendary reward.</p>
+      <div class="row">
+        <button class="btn blue" id="unlockNova">Unlock Nova Melon ⚡</button>
+        <button class="btn gold" id="unlockSuper">Unlock Super Freeze 🌨️</button>
+      </div>
+    </div>
+    <div id="shopItems" class="shopItems"></div>
+  </div>
+</div>
+
+<div id="pauseOverlay">
+  <div class="quizBox glass" style="text-align:center">
+    <h2>Adventure Paused</h2><p class="subtitle">The melons are safe for now.</p>
+    <div class="row" style="justify-content:center"><button class="btn" id="resumeBtn">Resume</button><a class="studio-link" href="../../index.html">← Gaming Studio J</a></div>
+  </div>
+</div>
+
+<div id="crewOverlay">
+  <div class="quizBox glass">
+    <div class="row"><h2 style="margin:0">🍈 Melon Crew Scores</h2><div class="grow"></div><button class="btn alt" id="closeCrew">Close</button></div>
+    <p class="subtitle">Scores are saved on this device, perfect for taking turns with friends.</p>
+    <table class="crewTable"><thead><tr><th>Player</th><th>Best Score</th><th>Best Level</th></tr></thead><tbody id="crewRows"></tbody></table>
+  </div>
+</div>
+
+
+<div id="villageOverlay">
+  <div class="quizBox glass">
+    <div class="row"><div><div class="badge">MELON VILLAGE</div><h2 style="margin:7px 0">Choose your next adventure</h2></div><div class="grow"></div><button class="btn alt" id="closeVillage">Close</button></div>
+    <p class="subtitle">This is the first hub version of Melon Village. Use portals to replay unlocked worlds, visit the Character Hut and keep improving your crew score.</p>
+    <div id="portalGrid" class="portalGrid"></div>
+  </div>
+</div>
+
+<div id="characterOverlay">
+  <div class="quizBox glass">
+    <div class="row"><div><div class="badge">CHARACTER HUT</div><h2 style="margin:7px 0">Choose your hero</h2></div><div class="grow"></div><button class="btn alt" id="closeCharacters">Close</button></div>
+    <p class="subtitle">Each unlocked hero changes how the game feels. Nova is aggressive, Aqua is best in water, and Royal Melon is the ultimate champion form.</p>
+    <div id="charGrid" class="charGrid"></div>
+  </div>
+</div>
+
+<div id="victoryOverlay">
+  <div class="quizBox glass" style="text-align:center">
+    <div style="font-size:72px">🏆🍈✨</div>
+    <div class="badge">ADVENTURE COMPLETE</div>
+    <h1 style="font-size:42px;margin:8px 0">The Melon Kingdom is Safe!</h1>
+    <p class="subtitle" id="victoryText"></p>
+    <div class="row" style="justify-content:center">
+      <button class="btn gold" id="replayBtn">Play Again</button>
+      <button class="btn alt" id="victoryMenuBtn">Main Menu</button>
+    </div>
+  </div>
+</div>
+
+<div id="screenCover">
+  <div class="modal glass">
+    <div class="badge">MELON CREW ADVENTURE</div>
+    <h1 class="title">Mr. <span class="melon">Melon's</span><br>Adventure</h1>
+    <p class="subtitle">Jump, freeze enemies, solve quick maths, discover secret treasure and survive the dangerous Water Map.</p>
+
+    <div id="gate">
+      <div class="card">
+        <h3>Enter the Melon Crew</h3>
+        <p class="small">Choose a nickname and enter the crew code. Default code: <b>MELONCREW</b>.</p>
+        <input id="nickname" class="field" maxlength="16" placeholder="Nickname" value="Player 1">
+        <div style="height:8px"></div>
+        <input id="friendCode" class="field" maxlength="20" placeholder="Friend code">
+        <div style="height:10px"></div>
+        <button class="btn" id="enterBtn">Enter Adventure</button>
+        <p id="gateError" class="small" style="display:none;color:#ff8994">That code is not part of the Melon Crew.</p>
+      </div>
+    </div>
+
+    <div id="mainMenu" style="display:none">
+      <div class="cardgrid">
+        <div class="card">
+          <h3>🎮 Adventure Mode</h3>
+          <p class="small">4 levels, quests, upgrades, achievements and a boss battle.</p>
+          <button class="btn" id="playBtn">Play / Continue</button>
+        </div>
+        <div class="card">
+          <h3>🏆 Crew Challenge</h3>
+          <p class="small">Take turns with friends and beat each other's score.</p>
+          <button class="btn blue" id="crewBtn">View Crew Scores</button>
+        </div>
+        <div class="card">
+          <h3>🛒 Melon Mart</h3>
+          <p class="small">Spend collected melons on armour, health and freeze upgrades.</p>
+          <button class="btn gold" id="menuShopBtn">Open Shop</button>
+        </div>
+        <div class="card">
+          <h3>⌨️ Controls</h3>
+          <p class="small"><span class="kbd">← →</span> Move &nbsp; <span class="kbd">Space</span> Jump<br><span class="kbd">X</span> Seed Shot &nbsp; <span class="kbd">F</span> Freeze<br><span class="kbd">↓ / S</span> Ground Pound &nbsp; <span class="kbd">P</span> Pause</p>
+        </div>
+      </div>
+      <div class="row" style="margin:-4px 0 10px 0">
+        <button class="btn alt" id="villageBtn">🏡 Melon Village</button>
+        <button class="btn alt" id="charactersBtn">🍉 Character Hut</button>
+      </div>
+      <div class="row">
+        <span class="badge" id="profileBadge">Player</span>
+        <span class="small" id="saveSummary"></span>
+        <div class="grow"></div>
+        <a class="studio-link" id="studioMenuLink" href="../../index.html">← Gaming Studio J</a><button class="btn alt" id="resetBtn">Reset Save</button>
+      </div>
+      <p class="legal">No ads, no tracking, no accounts, and no external links. Progress stays in this browser.</p>
+    </div>
+  </div>
+</div>
+</div>
+</div>
+
+<script>
+(()=>{
+"use strict";
+const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");
+const W=canvas.width,H=canvas.height;
+const $=id=>document.getElementById(id);
+const keys={};
+let last=0, paused=false, inGame=false, quizOpen=false, shopOpen=false, levelStart=0;
+let camX=0, shake=0, currentQuiz=null, particles=[], shots=[], enemies=[], pickups=[], platforms=[], hazards=[], decor=[];
+let checkpoint={x:90,y:450},checkpointReached=false,combo=0,comboTimer=0,prevPlayerBottom=0,objectiveTimer=null;
+let jumpBuffer=0,coyote=0;
+const FRIEND_CODE="MELONCREW";
+const SAVE_KEY="mrMelonAdventure_v1";
+const CREW_KEY="mrMelonCrewScores_v1";
+
+const defaultSave=()=>({
+  nickname:"Player 1", level:0, checkpoint:0, coins:0, score:0, armor:0,
+  maxHp:5, freezeMax:100, freezePower:1, attackPower:1, bottle:false,
+  bottleTraded:false, character:"Mr. Melon", superFreeze:false,
+  achievements:{}, foundSecrets:{}, bestCombo:0, stomps:0, unlockedCharacters:{"Mr. Melon":true}, completed:false
+});
+let save=loadSave();
+save.foundSecrets=save.foundSecrets||{};save.bestCombo=save.bestCombo||0;save.stomps=save.stomps||0;
+save.unlockedCharacters=save.unlockedCharacters||{"Mr. Melon":true};save.unlockedCharacters["Mr. Melon"]=true;
+
+function loadSave(){
+  try{return Object.assign(defaultSave(),JSON.parse(localStorage.getItem(SAVE_KEY)||"{}"))}
+  catch(e){return defaultSave()}
+}
+function persist(){
+  localStorage.setItem(SAVE_KEY,JSON.stringify(save));
+  updateMenuSummary();
+}
+function crewScores(){
+  try{return JSON.parse(localStorage.getItem(CREW_KEY)||"[]")}catch(e){return[]}
+}
+function saveCrewScore(){
+  const rows=crewScores();
+  const i=rows.findIndex(r=>r.name===save.nickname);
+  const entry={name:save.nickname,score:save.score,level:save.level+1};
+  if(i>=0){
+    rows[i].score=Math.max(rows[i].score,entry.score);
+    rows[i].level=Math.max(rows[i].level,entry.level);
+  }else rows.push(entry);
+  rows.sort((a,b)=>b.score-a.score);
+  localStorage.setItem(CREW_KEY,JSON.stringify(rows.slice(0,10)));
+}
+function renderCrew(){
+  const rows=crewScores();
+  $("crewRows").innerHTML=rows.length?rows.map((r,i)=>`<tr><td>${i===0?"👑 ":""}${esc(r.name)}</td><td>${r.score}</td><td>${Math.min(r.level,4)}/4</td></tr>`).join(""):`<tr><td colspan="3" class="small">No crew scores yet. Start an adventure!</td></tr>`;
+}
+function esc(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
+
+function renderVillage(){
+  ensureUnlocks();
+  const maxUnlocked=save.completed?LEVELS.length-1:Math.min(LEVELS.length-1,save.level);
+  $("portalGrid").innerHTML=LEVELS.map((L,idx)=>{
+    const unlocked=idx<=maxUnlocked;
+    return `<div class="portalCard ${unlocked?"":"locked"}">
+      <div class="badge">${L.theme.toUpperCase()}</div>
+      <h3>${L.name}</h3>
+      <p class="tiny">${L.quest}</p>
+      <div class="row" style="margin-top:8px"><button class="btn ${unlocked?"":"alt"}" ${unlocked?`data-portal="${idx}"`:"disabled"}>${unlocked?"Enter portal":"Locked"}</button></div>
+    </div>`;
+  }).join("") + `<div class="portalCard">
+      <div class="badge">GUIDE</div>
+      <h3>Village Tips</h3>
+      <p class="tiny">Find the Water Bottle, collect all four Golden Seeds, and try each hero in the Character Hut. Press Q during a level to expand or collapse the mission card.</p>
+      <div class="row" style="margin-top:8px"><button class="btn alt" id="openCharactersFromVillage">Open Character Hut</button></div>
+    </div>`;
+  document.querySelectorAll("[data-portal]").forEach(btn=>btn.onclick=()=>{
+    save.level=+btn.dataset.portal;persist();
+    $("villageOverlay").style.display="none";
+    startGame();
+  });
+  const hut=$("openCharactersFromVillage");
+  if(hut)hut.onclick=()=>{$("villageOverlay").style.display="none";openCharacters();};
+}
+function openVillage(){renderVillage();$("villageOverlay").style.display="flex";}
+function renderCharacters(){
+  ensureUnlocks();
+  $("charGrid").innerHTML=Object.entries(CHARACTER_DATA).map(([name,data])=>{
+    const unlocked=!!save.unlockedCharacters[name], selected=save.character===name;
+    const note=name==="Nova Melon"?"Unlocked from the Water Bottle exchange.":name==="Aqua Melon"?"Unlocked by finding every Golden Seed.":name==="Royal Melon"?"Unlocked by completing the full adventure.":"Always available.";
+    return `<div class="charCard ${unlocked?"":"locked"} ${selected?"selected":""}">
+      <div class="charPreview"><span>${data.emoji}</span><div><b>${name}</b><br><small>${unlocked?"Unlocked":"Locked"}</small></div></div>
+      <p class="tiny" style="margin:10px 0">${data.desc}</p>
+      <p class="tiny" style="margin:8px 0"><b>Unlock:</b> ${note}</p>
+      <button class="btn ${unlocked?"":"alt"}" ${unlocked?`data-character="${name}"`:"disabled"}>${selected?"Selected":"Choose"}</button>
+    </div>`;
+  }).join("");
+  document.querySelectorAll("[data-character]").forEach(btn=>btn.onclick=()=>{
+    save.character=btn.dataset.character;persist();toast(`${save.character} selected!`, CHARACTER_DATA[save.character].emoji);renderCharacters();updateMenuSummary();sfx("buy");
+  });
+}
+function openCharacters(){renderCharacters();$("characterOverlay").style.display="flex";}
+function setObjective(L){
+  const qb=$("questBox");
+  qb.innerHTML=`<div class="labelRow"><b>🎯 Objective</b><span class="hint">Click / Q</span></div><div class="questDetails"><b>${L.quest}</b><br><span class="small">${save.nickname} • ${save.character}</span></div>`;
+  qb.classList.remove("collapsed");
+  clearTimeout(objectiveTimer);
+  objectiveTimer=setTimeout(()=>qb.classList.add("collapsed"),4200);
+}
+function toggleObjective(){
+  const qb=$("questBox");
+  qb.classList.toggle("collapsed");
+}
+
+const player={
+  x:90,y:450,w:42,h:54,vx:0,vy:0,onGround:false,hp:5,inv:0,freeze:100,facing:1,
+  swim:false, shootCd:0, freezeCd:0, anim:0, groundPound:false
+};
+
+const LEVELS=[
+  {
+    name:"1. Melon Meadows",world:2450,theme:"meadow",quest:"Reach the golden gate, learn the stomp attack and hunt for a Golden Seed.",
+    start:[90,450],checkpoint:[1285,536],exit:2310,
+    platforms:[[0,610,420,110],[510,555,240,165],[835,500,280,220],[1210,590,270,130],[1570,525,210,195],[1870,475,250,245],[2200,610,250,110]],
+    enemies:[["slime",620,505],["slime",930,450],["bee",1320,430],["slime",1640,475],["bee",2010,360]],
+    pickups:[["coin",270,545],["coin",560,490],["coin",890,435],["coin",1285,525],["coin",1620,460],["heart",1950,410],["quiz",1100,430],["secret",2050,400]],
+    hazards:[[430,650,80,70],[750,650,85,70],[1115,650,95,70],[1480,650,90,70],[1780,650,90,70],[2120,650,80,70]]
+  },
+  {
+    name:"2. Number Caves",world:2850,theme:"cave",quest:"Solve the crystal challenges, survive the bats and uncover the hidden Golden Seed.",
+    start:[80,480],checkpoint:[1620,481],exit:2710,
+    platforms:[[0,625,420,95],[500,565,280,155],[870,505,230,215],[1190,595,280,125],[1560,535,260,185],[1900,600,300,120],[2300,520,220,200],[2600,625,250,95]],
+    enemies:[["bat",600,360],["slime",960,455],["bat",1320,390],["slime",1650,485],["bat",2050,370],["slime",2370,470]],
+    pickups:[["coin",230,560],["quiz",620,500],["coin",930,440],["quiz",1270,520],["coin",1620,470],["quiz",2010,530],["armor",2360,450],["coin",2660,560],["secret",1430,520]],
+    hazards:[[420,650,80,70],[780,650,90,70],[1100,650,90,70],[1470,650,90,70],[1820,650,80,70],[2200,650,100,70],[2520,650,80,70]]
+  },
+  {
+    name:"3. The Water Map",world:3250,theme:"water",quest:"Recover the Water Bottle, escape the hunter fish and find the underwater Golden Seed!",
+    start:[70,450],checkpoint:[2210,466],exit:3110,
+    platforms:[[0,610,360,110],[420,560,260,160],[760,630,1350,90],[2170,520,260,200],[2510,600,260,120],[2860,540,390,180]],
+    enemies:[["fish",900,565],["fish",1330,545],["fish",1800,570],["crab",2240,470],["fish",2640,545],["crab",2940,490]],
+    pickups:[["coin",220,545],["coin",500,495],["coin",980,555],["quiz",1460,540],["bottle",1940,545],["coin",2240,450],["heart",2580,530],["coin",2980,470],["secret",1650,545]],
+    hazards:[]
+  },
+  {
+    name:"4. Melon Citadel",world:3300,theme:"citadel",quest:"Find the final Golden Seed and defeat Captain Rind through all three battle phases.",
+    start:[80,470],checkpoint:[2340,556],exit:3180,
+    platforms:[[0,625,450,95],[520,555,250,165],[850,605,300,115],[1230,520,260,200],[1580,605,300,115],[1960,550,250,170],[2290,610,350,110],[2700,610,600,110]],
+    enemies:[["bee",610,390],["slime",950,555],["bat",1320,350],["slime",1660,555],["bee",2070,400],["boss",2920,480]],
+    pickups:[["coin",250,560],["quiz",620,490],["coin",930,540],["coin",1280,455],["quiz",1760,540],["armor",2050,480],["heart",2460,545],["secret",2140,480]],
+    hazards:[[450,650,70,70],[770,650,80,70],[1150,650,80,70],[1490,650,90,70],[1880,650,80,70],[2210,650,80,70],[2640,650,60,70]]
+  }
+];
+
+function buildLevel(index){
+  const L=LEVELS[index];
+  platforms=L.platforms.map(p=>({x:p[0],y:p[1],w:p[2],h:p[3]}));
+  hazards=L.hazards.map(h=>({x:h[0],y:h[1],w:h[2],h:h[3]}));
+  enemies=L.enemies.map((e,i)=>makeEnemy(...e,i));
+  pickups=L.pickups.map((p,i)=>makePickup(...p,i));
+  shots=[];particles=[];decor=[];
+  player.x=L.start[0];player.y=L.start[1];player.vx=0;player.vy=0;
+  player.hp=save.maxHp;player.freeze=save.freezeMax;player.inv=0;player.groundPound=false;
+  checkpoint={x:L.start[0],y:L.start[1]};checkpointReached=false;combo=0;comboTimer=0;
+  jumpBuffer=0;coyote=0;
+  camX=0; levelStart=performance.now();
+  generateDecor(L);
+  banner(L.name);
+  setObjective(L);
+  updateHUD();
+}
+function makeEnemy(type,x,y,id){
+  const data={
+    slime:{w:44,h:34,hp:2,speed:1.1,damage:1},
+    bee:{w:42,h:34,hp:2,speed:1.5,damage:1},
+    bat:{w:44,h:30,hp:2,speed:1.7,damage:1},
+    fish:{w:52,h:30,hp:3,speed:2.0,damage:1},
+    crab:{w:46,h:32,hp:3,speed:1.0,damage:1},
+    boss:{w:94,h:100,hp:24,speed:1.2,damage:2}
+  }[type];
+  return {type,x,y,baseX:x,baseY:y,id,dir:-1,freeze:0,dead:false,hit:0,attackCd:40+Math.random()*50,phase:1,...data};
+}
+function makePickup(type,x,y,id){return {type,x,y,id,t:Math.random()*10,taken:false}}
+function generateDecor(L){
+  for(let x=100;x<L.world;x+=180+Math.random()*150){
+    decor.push({x,y: L.theme==="water"?560:585,type:L.theme,t:Math.random()*10});
+  }
+}
+function startGame(){
+  inGame=true; paused=false; quizOpen=false; shopOpen=false;
+  $("screenCover").style.display="none"; $("hud").style.display="flex";
+  $("questBox").style.display="block"; $("minimap").style.display="block"; $("questBox").classList.remove("collapsed");
+  save.level=Math.max(0,Math.min(save.level,LEVELS.length-1));
+  buildLevel(save.level);
+  audioStart();
+}
+function backToMenu(){
+  inGame=false; paused=false; quizOpen=false; shopOpen=false;
+  $("hud").style.display="none";$("questBox").style.display="none";$("minimap").style.display="none";
+  $("quizOverlay").style.display="none";$("shopOverlay").style.display="none";$("pauseOverlay").style.display="none";$("victoryOverlay").style.display="none";
+  $("screenCover").style.display="flex";$("gate").style.display="none";$("mainMenu").style.display="block";
+  updateMenuSummary();
+}
+const CHARACTER_DATA={
+  "Mr. Melon":{emoji:"🍈",desc:"Balanced hero with solid speed, jump control and dependable freeze power.",speed:1,swim:1,attack:0,freezeRadius:0,color:"#61ca55",accent:"#1e7a39"},
+  "Nova Melon":{emoji:"⚡",desc:"Offensive hero. Faster seed shots and stronger attacks.",speed:1.05,swim:1,attack:1,freezeRadius:10,color:"#79dfff",accent:"#2a89aa"},
+  "Aqua Melon":{emoji:"💧",desc:"Water specialist. Faster swimming and quicker freeze recovery underwater.",speed:1,swim:1.35,attack:0,freezeRadius:0,color:"#68cfff",accent:"#287ea9"},
+  "Royal Melon":{emoji:"👑",desc:"Champion form unlocked after completing the story. Stronger freeze wave and balanced power.",speed:1.08,swim:1.1,attack:1,freezeRadius:45,color:"#d7bf68",accent:"#8c6a18"}
+};
+function ensureUnlocks(){
+  save.unlockedCharacters=save.unlockedCharacters||{"Mr. Melon":true};
+  save.unlockedCharacters["Mr. Melon"]=true;
+  if(save.achievements?.nova)save.unlockedCharacters["Nova Melon"]=true;
+  if(save.achievements?.secretall)save.unlockedCharacters["Aqua Melon"]=true;
+  if(save.completed)save.unlockedCharacters["Royal Melon"]=true;
+  if(!save.unlockedCharacters[save.character])save.character="Mr. Melon";
+}
+function currentChar(){
+  ensureUnlocks();
+  return CHARACTER_DATA[save.character]||CHARACTER_DATA["Mr. Melon"];
+}
+function updateMenuSummary(){
+  ensureUnlocks();
+  $("profileBadge").textContent=`${currentChar().emoji} ${save.nickname}`;
+  $("saveSummary").textContent=`${save.character} • Level ${Math.min(save.level+1,4)}/4 • ${save.coins} melons • ${save.score} pts • ${Object.keys(save.foundSecrets||{}).length}/4 Golden Seeds`;
+}
+function showShop(fromMenu=false){
+  shopOpen=true; paused=true;
+  renderShop();
+  $("shopOverlay").style.display="flex";
+  $("bottleExchange").style.display=(save.bottle&&!save.bottleTraded)?"block":"none";
+}
+function renderShop(){
+  const items=[
+    {icon:"🛡️",name:"Rind Armour",desc:"+1 max health and +1 seed damage",cost:20,act:()=>{save.armor++;save.maxHp++;save.attackPower++;}},
+    {icon:"❄️",name:"Freeze Tank",desc:"+25 freeze energy capacity",cost:18,act:()=>{save.freezeMax+=25;}},
+    {icon:"❤️",name:"Melon Heart",desc:"+2 max health",cost:24,act:()=>{save.maxHp+=2;}},
+    {icon:"⚡",name:"Rapid Seeds",desc:"Seed shots recharge faster",cost:28,act:()=>{save.freezePower=Math.min(3,save.freezePower+.5);}}
+  ];
+  $("shopItems").innerHTML=items.map((it,i)=>`<div class="shopItem"><div class="icon">${it.icon}</div><b>${it.name}</b><p class="small">${it.desc}</p><button class="btn ${save.coins<it.cost?"alt":""}" data-buy="${i}">${it.cost} 🍈</button></div>`).join("");
+  document.querySelectorAll("[data-buy]").forEach(b=>b.onclick=()=>{
+    const it=items[+b.dataset.buy];
+    if(save.coins<it.cost){toast("Not enough melons!","🍈");sfx("no");return}
+    save.coins-=it.cost;it.act();player.hp=Math.min(save.maxHp,player.hp+1);player.freeze=save.freezeMax;
+    persist();updateHUD();renderShop();toast(`${it.name} upgraded!`,it.icon);sfx("buy");
+  });
+}
+function closeShop(){
+  shopOpen=false; paused=false;$("shopOverlay").style.display="none";
+}
+function studioAchievement(id,title,icon,xp=45){
+  try{
+    const profileId=localStorage.getItem("gsj_active_profile_id");
+    if(!profileId)return;
+    const key="gsj_game_events_v1";
+    const events=JSON.parse(localStorage.getItem(key)||"[]");
+    const eventId=`mr-melons-adventure:${id}`;
+    if(events.some(e=>e.profileId===profileId&&e.eventId===eventId))return;
+    events.push({eventId,profileId,gameId:"mr-melons-adventure",gameTitle:"Mr. Melon's Adventure",achievementId:id,title,description:`Unlocked while playing Mr. Melon's Adventure.`,icon,xp,ts:new Date().toISOString()});
+    localStorage.setItem(key,JSON.stringify(events.slice(-200)));
+  }catch(e){}
+}
+
+function achievement(id,title,icon){
+  if(save.achievements[id])return;
+  save.achievements[id]=true;persist();
+  studioAchievement(id,title,icon,50);
+  toast(`Achievement Unlocked<br><b>${title}</b>`,icon);
+  sfx("achieve");
+}
+function toast(text,icon="✨"){
+  const el=document.createElement("div");el.className="toast glass";
+  el.innerHTML=`<div class="ico">${icon}</div><div><span class="small">MR. MELON</span><div>${text}</div></div>`;
+  $("toastStack").appendChild(el);setTimeout(()=>el.remove(),4200);
+}
+function banner(text){
+  const b=$("levelBanner");b.textContent=text;b.classList.remove("show");void b.offsetWidth;b.classList.add("show");
+}
+function updateHUD(){
+  $("hpFill").style.width=`${Math.max(0,player.hp/save.maxHp*100)}%`;
+  $("hpText").textContent=`${player.hp}/${save.maxHp}`;
+  $("freezeFill").style.width=`${Math.max(0,player.freeze/save.freezeMax*100)}%`;
+  $("coinText").textContent=save.coins;$("armorText").textContent=save.armor;$("scoreText").textContent=save.score;
+  $("secretText").textContent=`${Object.keys(save.foundSecrets||{}).length}/4`;
+}
+
+function openQuiz(source){
+  if(quizOpen)return;quizOpen=true;paused=true;currentQuiz=source;
+  const level=save.level;
+  const max=level===0?10:level===1?20:level===2?50:100;
+  let a=1+Math.floor(Math.random()*max),b=1+Math.floor(Math.random()*Math.max(6,max/2));
+  const ops=level<1?["+","-"]:level<3?["+","-","×"]:["+","-","×","÷"];
+  let op=ops[Math.floor(Math.random()*ops.length)],ans,q;
+  if(op==="+"){ans=a+b;q=`${a} + ${b} = ?`}
+  else if(op==="-"){if(b>a)[a,b]=[b,a];ans=a-b;q=`${a} − ${b} = ?`}
+  else if(op==="×"){a=2+Math.floor(Math.random()*10);b=2+Math.floor(Math.random()*10);ans=a*b;q=`${a} × ${b} = ?`}
+  else {b=2+Math.floor(Math.random()*9);ans=2+Math.floor(Math.random()*10);a=b*ans;q=`${a} ÷ ${b} = ?`}
+  $("quizQ").textContent=q;
+  const opts=new Set([ans]);
+  while(opts.size<4){opts.add(Math.max(0,ans+Math.floor(Math.random()*13)-6))}
+  const arr=[...opts].sort(()=>Math.random()-.5);
+  $("quizAnswers").innerHTML=arr.map(v=>`<button class="answer" data-a="${v}">${v}</button>`).join("");
+  document.querySelectorAll(".answer").forEach(btn=>btn.onclick=()=>answerQuiz(btn,+btn.dataset.a,ans));
+  $("quizOverlay").style.display="flex";
+}
+function answerQuiz(btn,val,ans){
+  document.querySelectorAll(".answer").forEach(b=>b.disabled=true);
+  if(val===ans){
+    btn.classList.add("good");save.coins+=5;save.score+=150;player.freeze=Math.min(save.freezeMax,player.freeze+40);
+    enemies.forEach(e=>{if(Math.abs(e.x-player.x)<500)e.freeze=Math.max(e.freeze,240)});
+    toast("Correct! +5 melons and enemy freeze","🧠");sfx("quizgood");achievement("brainy","Melon Mathematician","🧠");
+  }else{
+    btn.classList.add("bad");document.querySelector(`[data-a="${ans}"]`)?.classList.add("good");
+    player.hp=Math.max(1,player.hp-1);toast(`Almost! The answer was ${ans}.`,"📘");sfx("no");
+  }
+  if(currentQuiz)currentQuiz.taken=true;persist();updateHUD();
+  setTimeout(()=>{$("quizOverlay").style.display="none";quizOpen=false;paused=false},900);
+}
+
+function rects(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y}
+function damagePlayer(amount,fromX){
+  if(player.inv>0)return;
+  combo=0;comboTimer=0;updateComboUI();
+  player.hp-=amount;player.inv=90;player.vx=player.x<fromX?-7:7;player.vy=-7;player.groundPound=false;shake=12;sfx("hit");
+  updateHUD();
+  if(player.hp<=0)respawnPlayer();
+}
+function respawnPlayer(){
+  save.score=Math.max(0,save.score-100);persist();
+  player.x=checkpoint.x;player.y=checkpoint.y;player.vx=0;player.vy=0;player.hp=save.maxHp;player.inv=150;player.groundPound=false;
+  jumpBuffer=0;coyote=0;
+  toast(checkpointReached?"Back to the checkpoint!":"Mr. Melon bounced back!","💚");sfx("checkpoint");updateHUD();
+}
+function updateComboUI(){
+  const el=$("comboMeter");
+  if(combo>1&&comboTimer>0){$("comboText").textContent=`x${Math.min(combo,9)}`;el.classList.add("show")}
+  else el.classList.remove("show");
+}
+function registerKill(e,method="seed"){
+  if(e.dead)return;
+  e.dead=true;
+  combo++;comboTimer=190;save.bestCombo=Math.max(save.bestCombo||0,combo);
+  const mult=Math.min(combo,5);
+  let reward=80+(mult-1)*30;
+  if(method==="stomp"){reward+=40;save.stomps=(save.stomps||0)+1}
+  if(e.freeze>0)reward+=50;
+  save.score+=reward;save.coins+=1+(combo>=3?1:0);player.freeze=Math.min(save.freezeMax,player.freeze+10);
+  spawnBurst(e.x+e.w/2,e.y+e.h/2,e.freeze>0?"#bdf4ff":"#92f56b");
+  updateComboUI();sfx(method==="stomp"?"stomp":"enemy");
+  if(combo>=3)achievement("combo3","Triple Melon Combo","🔥");
+  if((save.stomps||0)>=10)achievement("stomper","Head Bouncer","👟");
+  persist();updateHUD();
+}
+function hitEnemy(e,amount,method="seed"){
+  if(e.dead)return;
+  e.hp-=amount;e.hit=8;
+  if(e.hp<=0){
+    if(e.type==="boss"){
+      e.dead=true;save.score+=1000;save.coins+=20;spawnBurst(e.x+e.w/2,e.y+e.h/2,"#ffd45d");bossDefeated();
+    }else registerKill(e,method);
+  }else sfx("enemy");
+}
+function enemyContact(e){
+  if(e.dead)return;
+  const falling=player.vy>1.5;
+  const fromAbove=prevPlayerBottom<=e.y+Math.max(10,e.h*.38);
+  if(falling&&fromAbove){
+    if(e.type==="boss"){
+      hitEnemy(e,player.groundPound?4:2,"stomp");
+      player.vy=player.groundPound?-15:-12;player.groundPound=false;shake=8;spawnBurst(player.x+player.w/2,e.y,"#ffe36b");sfx("stomp");
+    }else{
+      registerKill(e,"stomp");
+      player.vy=player.groundPound?-15:-11;player.groundPound=false;shake=5;
+    }
+  }else damagePlayer(e.damage,e.x+e.w/2);
+}
+function collect(p){
+  if(p.taken)return;p.taken=true;
+  if(p.type==="coin"){save.coins++;save.score+=25;sfx("coin");spawnBurst(p.x,p.y,"#d6ff65");if(save.coins>=10)achievement("collector","Melon Collector","🍈")}
+  if(p.type==="heart"){player.hp=Math.min(save.maxHp,player.hp+2);save.score+=40;sfx("heart");toast("Health restored!","❤️")}
+  if(p.type==="armor"){save.armor++;save.maxHp++;save.attackPower++;player.hp++;save.score+=100;sfx("buy");toast("Rind Armour equipped!","🛡️");achievement("armored","Rind Ready","🛡️")}
+  if(p.type==="bottle"){save.bottle=true;save.score+=250;sfx("achieve");toast("Water Bottle found! Take it to Melon Mart.","💧");achievement("bottle","Deep Water Treasure","💧")}
+  if(p.type==="secret"){
+    const key=`${save.level}:${p.id}`;save.foundSecrets=save.foundSecrets||{};
+    if(!save.foundSecrets[key]){
+      save.foundSecrets[key]=true;save.score+=250;save.coins+=3;sfx("achieve");toast("Golden Seed discovered! +250 points","🌟");achievement("secret1","Secret Seed Hunter","🌟");
+      if(Object.keys(save.foundSecrets).length>=4){achievement("secretall","Golden Gardener","👑");save.unlockedCharacters["Aqua Melon"]=true;toast("Aqua Melon unlocked in the Character Hut!","💧")}
+    }
+  }
+  if(p.type==="quiz"){openQuiz(p);return}
+  persist();updateHUD();
+}
+function shoot(){
+  if(player.shootCd>0||paused)return;
+  const char=currentChar();
+  player.shootCd=Math.max(10,26-save.freezePower*4-(save.character==="Nova Melon"?4:0));
+  shots.push({x:player.x+player.w/2,y:player.y+20,vx:player.facing*11,w:16,h:9,life:80,damage:save.attackPower+(char.attack||0)});
+  sfx("shoot");
+}
+function freezePulse(){
+  if(player.freezeCd>0||player.freeze<32||paused)return;
+  player.freezeCd=45;player.freeze-=32;shake=4;
+  const char=currentChar();
+  const radius=(save.superFreeze?430:230+save.freezePower*35)+(char.freezeRadius||0);
+  enemies.forEach(e=>{
+    if(!e.dead&&Math.hypot((e.x+e.w/2)-(player.x+player.w/2),(e.y+e.h/2)-(player.y+player.h/2))<radius){
+      e.freeze=e.type==="boss"?(save.superFreeze?120:70):(save.superFreeze?420:220);
+    }
+  });
+  for(let i=0;i<32;i++)particles.push({x:player.x+20,y:player.y+20,vx:(Math.random()-.5)*8,vy:(Math.random()-.5)*8,life:35,size:3+Math.random()*5,color:"#bff4ff"});
+  sfx("freeze");achievement("freeze","Cool as Ice","❄️");
+}
+function spawnBurst(x,y,color){
+  for(let i=0;i<12;i++)particles.push({x,y,vx:(Math.random()-.5)*6,vy:(Math.random()-.5)*6,life:30,size:2+Math.random()*4,color});
+}
+
+function update(dt){
+  if(!inGame||paused)return;
+  const L=LEVELS[save.level];
+  player.anim+=dt;prevPlayerBottom=player.y+player.h;
+  player.inv=Math.max(0,player.inv-1);player.shootCd=Math.max(0,player.shootCd-1);player.freezeCd=Math.max(0,player.freezeCd-1);
+  if(comboTimer>0){comboTimer--;if(comboTimer<=0){combo=0;updateComboUI()}}
+  player.freeze=Math.min(save.freezeMax,player.freeze + (player.swim && save.character==="Aqua Melon" ? .18 : .08));
+  const left=keys.ArrowLeft||keys.KeyA,right=keys.ArrowRight||keys.KeyD;
+  const char=currentChar();
+  const accel=(player.swim?.42:.75)*(player.swim?char.swim:char.speed),max=(player.swim?4.2*char.swim:6.2*char.speed);
+  if(left){player.vx=Math.max(-max,player.vx-accel);player.facing=-1}
+  if(right){player.vx=Math.min(max,player.vx+accel);player.facing=1}
+  if(!left&&!right)player.vx*=player.onGround?.78:.95;
+  coyote=player.onGround?7:Math.max(0,coyote-1);
+  jumpBuffer=Math.max(0,jumpBuffer-1);
+  const wantsJump=keys.Space||keys.ArrowUp||keys.KeyW;
+  if(jumpBuffer>0&&(coyote>0||player.swim)){
+    player.vy=player.swim?-7.5:-12;player.onGround=false;player.groundPound=false;
+    coyote=0;jumpBuffer=0;sfx("jump");
+  }
+  if(player.swim&&wantsJump)player.vy-=.28;
+  if((keys.ArrowDown||keys.KeyS)&&!player.onGround&&!player.swim&&!player.groundPound){player.groundPound=true;player.vy=Math.max(15,player.vy);sfx("pound")}
+  player.vy+=player.swim?.18:.62;player.vy=Math.min(player.vy,player.swim?5.5:14);
+  player.x+=player.vx;
+  player.x=Math.max(0,Math.min(L.world-player.w,player.x));
+  // horizontal platform collision
+  for(const p of platforms){
+    if(rects(player,p)){
+      if(player.vx>0)player.x=p.x-player.w;
+      else if(player.vx<0)player.x=p.x+p.w;
+      player.vx=0;
+    }
+  }
+  player.y+=player.vy;player.onGround=false;
+  for(const p of platforms){
+    if(rects(player,p)){
+      if(player.vy>=0&&player.y+player.h-player.vy<=p.y+10){player.y=p.y-player.h;player.vy=0;player.onGround=true;player.groundPound=false;
+        if(jumpBuffer>0){player.vy=-12;player.onGround=false;jumpBuffer=0;coyote=0;sfx("jump")}}
+      else if(player.vy<0){player.y=p.y+p.h;player.vy=0}
+    }
+  }
+  player.swim=(L.theme==="water"&&player.x>730&&player.x<2130&&player.y>505);
+  if(player.swim){player.vx*=.985;if(Math.random()<.05)particles.push({x:player.x+20,y:player.y+45,vx:(Math.random()-.5),vy:-1-Math.random(),life:55,size:2+Math.random()*3,color:"#d5f7ff"})}
+  if(player.y>H+70){player.hp=0;respawnPlayer()}
+  hazards.forEach(h=>{if(rects(player,h))damagePlayer(1,h.x+h.w/2)});
+  if(!checkpointReached&&L.checkpoint&&player.x>=L.checkpoint[0]){
+    checkpointReached=true;checkpoint={x:L.checkpoint[0],y:L.checkpoint[1]};
+    const f=$("checkpointFlash");f.classList.remove("show");void f.offsetWidth;f.classList.add("show");
+    save.score+=100;persist();spawnBurst(checkpoint.x,checkpoint.y,"#ffe36b");sfx("checkpoint");achievement("checkpoint","Halfway Hero","🚩");
+  }
+
+  enemies.forEach(e=>updateEnemy(e,L));
+  shots.forEach(s=>{
+    s.x+=s.vx;s.y+=(s.vy||0);s.life--;
+    if(s.enemy){
+      if(s.life>0&&rects(player,s)){damagePlayer(s.damage||1,s.x);s.life=0}
+      return;
+    }
+    enemies.forEach(e=>{if(!e.dead&&rects(s,e)&&s.life>0){s.life=0;spawnBurst(s.x,s.y,"#d3ff77");hitEnemy(e,s.damage,"seed")}})
+  });
+  shots=shots.filter(s=>s.life>0&&s.x>-100&&s.x<L.world+100);
+  pickups.forEach(p=>{p.t+=.04;if(!p.taken&&rects(player,{x:p.x-12,y:p.y-12,w:36,h:36}))collect(p)});
+  particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.05;p.life--});particles=particles.filter(p=>p.life>0);
+
+  if(player.x>L.exit){
+    if(save.level<LEVELS.length-1){
+      save.score+=300;save.level++;saveCrewScore();persist();sfx("level");toast("Level complete! +300 points","🏁");showShop();
+    }
+  }
+  camX+=(Math.max(0,Math.min(L.world-W,player.x-W*.42))-camX)*.1;
+  $("miniDot").style.left=`${Math.min(94,Math.max(0,player.x/L.world*94))}%`;
+  updateHUD();
+}
+function updateEnemy(e,L){
+  if(e.dead)return;
+  e.hit=Math.max(0,e.hit-1);e.attackCd=Math.max(-1,e.attackCd-1);
+  if(e.freeze>0){e.freeze--;if(rects(player,e))enemyContact(e);return}
+  if(e.type==="boss"){
+    const dx=player.x-e.x;e.dir=Math.sign(dx)||1;
+    e.phase=e.hp>16?1:e.hp>8?2:3;
+    const pace=e.phase===1?1:e.phase===2?1.45:1.9;
+    if(Math.abs(dx)<760)e.x+=e.dir*e.speed*pace;
+    e.y=e.baseY-(e.phase>1?Math.abs(Math.sin(performance.now()/430))*18:0);
+    if(e.attackCd<=0&&Math.abs(dx)<900){
+      const dir=Math.sign(player.x-e.x)||-1;
+      const spread=e.phase===1?[0]:e.phase===2?[-1.3,1.3]:[-2.2,0,2.2];
+      spread.forEach(v=>shots.push({x:e.x+e.w/2,y:e.y+38,vx:dir*(e.phase===3?9:7),vy:v,w:18,h:12,life:105,enemy:true,damage:e.phase===3?2:1}));
+      e.attackCd=e.phase===1?95:e.phase===2?70:48;
+      if(e.phase===3)shake=3;
+    }
+  }else if(e.type==="fish"){
+    if(player.swim&&Math.abs(player.x-e.x)<760){
+      e.x+=Math.sign(player.x-e.x)*e.speed*1.6;
+      e.y+=Math.sign(player.y-e.y)*e.speed*.82;
+    }else{
+      e.x+=Math.sin(performance.now()/900+e.id)*1.2;e.y=e.baseY+Math.sin(performance.now()/600+e.id)*18;
+    }
+  }else if(e.type==="bee"||e.type==="bat"){
+    const chase=Math.abs(player.x-e.x)<260?Math.sign(player.x-e.x)*.45:0;
+    e.x=e.baseX+Math.sin(performance.now()/700+e.id)*85+chase*20;
+    e.y=e.baseY+Math.sin(performance.now()/430+e.id)*28;
+  }else if(e.type==="crab"){
+    e.x+=e.dir*e.speed*(Math.abs(player.x-e.x)<220?1.7:1);
+    if(Math.abs(e.x-e.baseX)>100)e.dir*=-1;
+  }else{
+    e.x+=e.dir*e.speed;e.y=e.baseY+Math.abs(Math.sin(performance.now()/360+e.id))*5;
+    if(Math.abs(e.x-e.baseX)>90)e.dir*=-1;
+  }
+  if(rects(player,e))enemyContact(e);
+}
+function bossDefeated(){
+  achievement("boss","Rind Breaker","👑");
+  if(Object.keys(save.foundSecrets||{}).length>=4){save.score+=1000;toast("All Golden Seeds found! Secret completion bonus +1000","🌟")}
+  save.completed=true;save.level=3;save.unlockedCharacters["Royal Melon"]=true;save.score+=1500;saveCrewScore();persist();
+  setTimeout(()=>{
+    inGame=false;$("hud").style.display="none";$("questBox").style.display="none";$("minimap").style.display="none";
+    $("victoryText").textContent=`${save.nickname} finished with ${save.score} points and ${save.coins} melons. Challenge a friend to beat that score!`;
+    $("victoryOverlay").style.display="flex";
+  },800);
+}
+
+function draw(){
+  const L=LEVELS[Math.min(save.level,LEVELS.length-1)];
+  ctx.clearRect(0,0,W,H);
+  drawBackground(L);
+  ctx.save();
+  if(shake>0){ctx.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);shake*=.86}
+  ctx.translate(-camX,0);
+  drawDecor(L);
+  drawCheckpoint(L);
+  hazards.forEach(drawHazard);
+  platforms.forEach(p=>drawPlatform(p,L.theme));
+  pickups.forEach(drawPickup);
+  enemies.forEach(drawEnemy);
+  shots.forEach(drawShot);
+  drawPlayer();
+  particles.forEach(p=>{ctx.globalAlpha=Math.max(0,p.life/35);ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1});
+  drawExit(L);
+  ctx.restore();
+}
+function drawBackground(L){
+  if(L.theme==="meadow"){
+    const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,"#68d6ff");g.addColorStop(.62,"#b9f2ff");g.addColorStop(.63,"#8ee76a");g.addColorStop(1,"#5fb449");ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+    ctx.fillStyle="rgba(255,255,255,.82)";for(let i=0;i<5;i++){const x=(i*290-(camX*.1)%1450)-80;cloud(x,100+(i%2)*70)}
+  }else if(L.theme==="cave"){
+    const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,"#15172d");g.addColorStop(1,"#29234a");ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+    for(let i=0;i<9;i++){ctx.fillStyle=i%2?"#403d72":"#322f5f";ctx.beginPath();ctx.moveTo(i*170-(camX*.08)%170,0);ctx.lineTo(i*170+70-(camX*.08)%170,130+(i%3)*35);ctx.lineTo(i*170+130-(camX*.08)%170,0);ctx.fill()}
+  }else if(L.theme==="water"){
+    const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,"#6ad9ff");g.addColorStop(.65,"#54b9dd");g.addColorStop(.68,"#2f90bd");g.addColorStop(1,"#176086");ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+    ctx.fillStyle="rgba(255,255,255,.18)";for(let i=0;i<10;i++){ctx.beginPath();ctx.ellipse((i*170-(camX*.15)%170),180+(i%3)*45,80,14,0,0,Math.PI*2);ctx.fill()}
+  }else{
+    const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,"#3d3159");g.addColorStop(.65,"#824c60");g.addColorStop(1,"#2a253e");ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+    ctx.fillStyle="#29233d";for(let i=0;i<12;i++){const x=i*130-(camX*.12)%130;ctx.fillRect(x,250,90,370);ctx.fillRect(x+18,210,54,55)}
+  }
+  // Distant scenery uses several camera speeds for depth without external assets.
+  if(L.theme==="meadow"){
+    ctx.fillStyle="rgba(255,246,167,.86)";ctx.beginPath();ctx.arc(1070,135,58,0,Math.PI*2);ctx.fill();
+    ridge("#77cdb5",430,44,.12);ridge("#489c86",510,36,.23);
+  }else if(L.theme==="cave"){
+    ridge("#282a50",510,55,.13);ridge("#34365b",585,38,.26);
+    for(let i=0;i<11;i++){let x=(i*190-camX*.18+2400)%2400;ctx.fillStyle="rgba(121,227,255,.18)";ctx.beginPath();ctx.arc(x,170+i%4*90,3+i%3,0,Math.PI*2);ctx.fill()}
+  }else if(L.theme==="water"){
+    ridge("rgba(24,105,139,.34)",480,32,.14);
+    ctx.strokeStyle="rgba(205,253,255,.16)";ctx.lineWidth=4;
+    for(let i=0;i<9;i++){let x=i*170-camX*.12;ctx.beginPath();ctx.moveTo(x,470);ctx.quadraticCurveTo(x+120,510,x+210,470);ctx.stroke()}
+  }else{
+    ridge("#382e54",505,72,.13);
+    ctx.fillStyle="rgba(255,209,142,.3)";ctx.beginPath();ctx.arc(1030,132,65,0,Math.PI*2);ctx.fill();
+  }
+}
+function ridge(color,base,height,rate){
+  ctx.fillStyle=color;ctx.beginPath();ctx.moveTo(0,H);
+  for(let x=0;x<=W+24;x+=24){const n=(x+camX*rate)/175;ctx.lineTo(x,base+Math.sin(n)*height+Math.sin(n*2.3)*height*.25)}
+  ctx.lineTo(W,H);ctx.fill();
+}
+function cloud(x,y){ctx.beginPath();ctx.arc(x,y,35,0,Math.PI*2);ctx.arc(x+38,y-15,45,0,Math.PI*2);ctx.arc(x+80,y,34,0,Math.PI*2);ctx.fill()}
+function drawDecor(L){
+  decor.forEach(d=>{
+    if(d.type==="meadow"){ctx.fillStyle="#328f45";ctx.fillRect(d.x,555,8,35);ctx.fillStyle="#82ee67";ctx.beginPath();ctx.arc(d.x+4,550,18,0,Math.PI*2);ctx.fill()}
+    if(d.type==="cave"){ctx.fillStyle="#66d3ff";ctx.beginPath();ctx.moveTo(d.x,590);ctx.lineTo(d.x+10,555);ctx.lineTo(d.x+20,590);ctx.fill()}
+    if(d.type==="water"){ctx.strokeStyle="#76e2a6";ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(d.x,620);ctx.quadraticCurveTo(d.x+15,580,d.x+5,545);ctx.stroke()}
+    if(d.type==="citadel"){ctx.fillStyle="#a45968";ctx.fillRect(d.x,540,28,70);ctx.fillStyle="#f7d46a";ctx.fillRect(d.x+8,552,12,18)}
+  })
+}
+function drawPlatform(p,theme){
+  if(theme==="meadow"){ctx.fillStyle="#493a2e";ctx.fillRect(p.x,p.y,p.w,p.h);ctx.fillStyle="#65c951";ctx.fillRect(p.x,p.y,p.w,14)}
+  else if(theme==="cave"){ctx.fillStyle="#3d3a61";ctx.fillRect(p.x,p.y,p.w,p.h);ctx.fillStyle="#68659b";ctx.fillRect(p.x,p.y,p.w,10)}
+  else if(theme==="water"){ctx.fillStyle=p.y>600?"#1f7796":"#8e744f";ctx.fillRect(p.x,p.y,p.w,p.h);ctx.fillStyle=p.y>600?"#3ca7c9":"#d2bb7d";ctx.fillRect(p.x,p.y,p.w,10)}
+  else{ctx.fillStyle="#4a4054";ctx.fillRect(p.x,p.y,p.w,p.h);ctx.fillStyle="#8d6a74";ctx.fillRect(p.x,p.y,p.w,11)}
+  ctx.fillStyle="rgba(0,0,0,.12)";ctx.fillRect(p.x,p.y+17,p.w,Math.min(14,p.h-17));
+  ctx.fillStyle=theme==="meadow"?"#b8f989":theme==="water"?"#a2ecf0":theme==="cave"?"#a19bdb":"#d6a0a4";
+  for(let x=p.x+18;x<p.x+p.w-8;x+=61){ctx.fillRect(x,p.y+3,9,3)}
+}
+function drawCheckpoint(L){
+  if(!L.checkpoint)return;
+  const [x,y]=L.checkpoint;
+  ctx.fillStyle="#66462d";ctx.fillRect(x,y-72,7,72);
+  ctx.fillStyle=checkpointReached?"#ffe46c":"#dfe8ff";
+  ctx.beginPath();ctx.moveTo(x+7,y-70);ctx.lineTo(x+54,y-58);ctx.lineTo(x+7,y-44);ctx.closePath();ctx.fill();
+  ctx.fillStyle="rgba(255,255,255,.8)";ctx.font="bold 12px sans-serif";ctx.fillText("CHECK",x+10,y-52);
+}
+function drawHazard(h){
+  ctx.fillStyle="#cf4052";
+  for(let x=h.x;x<h.x+h.w;x+=22){ctx.beginPath();ctx.moveTo(x,h.y+h.h);ctx.lineTo(x+11,h.y);ctx.lineTo(x+22,h.y+h.h);ctx.fill()}
+}
+function drawPickup(p){
+  if(p.taken)return;const bob=Math.sin(p.t)*6;
+  if(p.type==="coin"){ctx.fillStyle="#a7ee55";ctx.beginPath();ctx.ellipse(p.x,p.y+bob,12,15,0,0,Math.PI*2);ctx.fill();ctx.strokeStyle="#e5ffaf";ctx.lineWidth=3;ctx.stroke()}
+  if(p.type==="heart"){ctx.font="30px serif";ctx.fillText("❤️",p.x-15,p.y+10+bob)}
+  if(p.type==="armor"){ctx.font="31px serif";ctx.fillText("🛡️",p.x-15,p.y+10+bob)}
+  if(p.type==="bottle"){ctx.font="32px serif";ctx.fillText("💧",p.x-15,p.y+10+bob)}
+  if(p.type==="secret"){
+    ctx.save();ctx.shadowColor="#ffe86d";ctx.shadowBlur=18;ctx.fillStyle="#ffd84f";
+    ctx.beginPath();ctx.ellipse(p.x,p.y+bob,9,16,-.45,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle="#fff2a8";ctx.lineWidth=2;ctx.stroke();ctx.restore();
+  }
+  if(p.type==="quiz"){ctx.fillStyle="#9f72ff";ctx.save();ctx.translate(p.x,p.y+bob);ctx.rotate(Math.PI/4);ctx.fillRect(-14,-14,28,28);ctx.restore();ctx.fillStyle="white";ctx.font="bold 18px sans-serif";ctx.fillText("?",p.x-5,p.y+6+bob)}
+}
+function drawEnemy(e){
+  if(e.dead)return;
+  ctx.save();
+  if(e.hit)ctx.globalAlpha=.5;
+  const cx=e.x+e.w/2, cy=e.y+e.h/2;
+  if(e.freeze>0){ctx.fillStyle="rgba(168,238,255,.35)";ctx.beginPath();ctx.ellipse(cx,cy,Math.max(e.w,e.h)*.75,Math.max(e.w,e.h)*.72,0,0,Math.PI*2);ctx.fill()}
+  ctx.fillStyle="rgba(0,0,0,.16)";ctx.beginPath();ctx.ellipse(cx,e.y+e.h+6,e.w*.34,7,0,0,Math.PI*2);ctx.fill();
+  if(e.type==="slime"){
+    const g=ctx.createLinearGradient(e.x,e.y,e.x,e.y+e.h);g.addColorStop(0,"#c48cff");g.addColorStop(1,"#7a43ba");
+    ctx.fillStyle=g;roundRect(e.x,e.y,e.w,e.h,16,true);ctx.fillStyle="rgba(255,255,255,.22)";ctx.beginPath();ctx.ellipse(e.x+14,e.y+10,8,5,-.3,0,Math.PI*2);ctx.fill();eye(e.x+14,e.y+14,3);eye(e.x+30,e.y+14,3);ctx.strokeStyle="#3f235e";ctx.lineWidth=2;ctx.beginPath();ctx.arc(e.x+22,e.y+24,7,.15,Math.PI-.15);ctx.stroke();
+  }else if(e.type==="bee"){
+    const g=ctx.createLinearGradient(e.x,e.y,e.x,e.y+e.h);g.addColorStop(0,"#ffe685");g.addColorStop(1,"#e3ad21");
+    ctx.fillStyle="rgba(213,245,255,.5)";ctx.beginPath();ctx.ellipse(e.x+10,e.y+10,10,6,-.8,0,Math.PI*2);ctx.ellipse(e.x+31,e.y+8,10,6,.8,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(cx,cy,e.w*.48,e.h*.45,0,0,Math.PI*2);ctx.fill();ctx.fillStyle="#3d3247";ctx.fillRect(e.x+12,e.y+6,6,e.h-8);ctx.fillRect(e.x+25,e.y+4,7,e.h-6);eye(e.x+32,e.y+12,3);
+  }else if(e.type==="bat"){
+    ctx.fillStyle="#5e4e93";ctx.beginPath();ctx.moveTo(e.x+22,e.y+16);ctx.lineTo(e.x+2,e.y+4);ctx.lineTo(e.x+8,e.y+28);ctx.lineTo(e.x+22,e.y+21);ctx.lineTo(e.x+36,e.y+28);ctx.lineTo(e.x+42,e.y+4);ctx.closePath();ctx.fill();ctx.fillStyle="#8a79cb";ctx.beginPath();ctx.ellipse(cx,e.y+16,10,7,0,0,Math.PI*2);ctx.fill();eye(e.x+18,e.y+13,2.5);eye(e.x+26,e.y+13,2.5);
+  }else if(e.type==="fish"){
+    const g=ctx.createLinearGradient(e.x,e.y,e.x+e.w,e.y);g.addColorStop(0,"#ff9f69");g.addColorStop(1,"#e25536");
+    ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(e.x+26,e.y+15,24,15,0,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.moveTo(e.x-2,e.y+15);ctx.lineTo(e.x-20,e.y+3);ctx.lineTo(e.x-20,e.y+27);ctx.closePath();ctx.fill();ctx.fillStyle="rgba(255,255,255,.3)";ctx.beginPath();ctx.ellipse(e.x+30,e.y+10,8,4,-.2,0,Math.PI*2);ctx.fill();eye(e.x+37,e.y+11,3);ctx.strokeStyle="#a83e28";ctx.lineWidth=2;ctx.beginPath();ctx.arc(e.x+34,e.y+18,7,.2,1.2);ctx.stroke();
+  }else if(e.type==="crab"){
+    const g=ctx.createLinearGradient(e.x,e.y,e.x,e.y+e.h);g.addColorStop(0,"#ff8a6f");g.addColorStop(1,"#c54a34");
+    ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(cx,e.y+18,18,12,0,0,Math.PI*2);ctx.fill();ctx.strokeStyle="#c54a34";ctx.lineWidth=3;[[-15,-5],[-12,5],[12,-5],[15,5]].forEach(([dx,dy])=>{ctx.beginPath();ctx.moveTo(cx+dx/2,e.y+22);ctx.lineTo(cx+dx,e.y+28+dy);ctx.stroke()});ctx.beginPath();ctx.moveTo(e.x+6,e.y+12);ctx.lineTo(e.x-4,e.y+4);ctx.moveTo(e.x+40,e.y+12);ctx.lineTo(e.x+50,e.y+4);ctx.stroke();eye(e.x+16,e.y+12,2.5);eye(e.x+29,e.y+12,2.5);
+  }else if(e.type==="boss"){
+    if(e.phase===3){ctx.shadowColor="#ff4f68";ctx.shadowBlur=24}else if(e.phase===2){ctx.shadowColor="#ffb35a";ctx.shadowBlur=15}
+    const g=ctx.createLinearGradient(e.x,e.y,e.x,e.y+e.h);g.addColorStop(0,e.phase===3?"#ff6f81":e.phase===2?"#f39a6f":"#eb7a84");g.addColorStop(1,e.phase===3?"#be2b46":e.phase===2?"#bb5333":"#993349");
+    ctx.fillStyle=g;roundRect(e.x,e.y,e.w,e.h,28,true);ctx.shadowBlur=0;ctx.fillStyle="#58bf58";ctx.beginPath();ctx.moveTo(e.x+19,e.y+9);ctx.lineTo(e.x+45,e.y-20);ctx.lineTo(e.x+70,e.y+9);ctx.fill();ctx.fillStyle="rgba(255,255,255,.18)";ctx.beginPath();ctx.ellipse(e.x+33,e.y+24,18,9,-.2,0,Math.PI*2);ctx.fill();eye(e.x+29,e.y+37,6);eye(e.x+66,e.y+37,6);ctx.strokeStyle="#51222e";ctx.lineWidth=4;ctx.beginPath();ctx.arc(e.x+48,e.y+58,18,.2,Math.PI-.2);ctx.stroke();ctx.fillStyle="#fff";ctx.font="bold 14px sans-serif";ctx.fillText(`CAPTAIN RIND • PHASE ${e.phase}`,e.x-22,e.y-33);ctx.fillStyle="#2e2433";ctx.fillRect(e.x-10,e.y-22,114,8);ctx.fillStyle="#ff6d74";ctx.fillRect(e.x-10,e.y-22,114*Math.max(0,e.hp/24),8)
+  }
+  ctx.restore()
+}
+function eye(x,y,r=4){ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(x,y,r+2,0,Math.PI*2);ctx.fill();ctx.fillStyle="#17172b";ctx.beginPath();ctx.arc(x+1,y,r,0,Math.PI*2);ctx.fill()}
+function drawShot(s){
+  if(s.enemy){ctx.fillStyle="#ff6a74";ctx.beginPath();ctx.arc(s.x,s.y,8,0,Math.PI*2);ctx.fill()}
+  else{ctx.fillStyle="#d9ff75";ctx.beginPath();ctx.ellipse(s.x,s.y,9,5,0,0,Math.PI*2);ctx.fill()}
+}
+function drawPlayer(){
+  if(player.inv>0&&Math.floor(player.inv/6)%2)return;
+  const x=player.x,y=player.y,char=currentChar();
+  ctx.save();
+  if(player.facing<0){ctx.translate(x+player.w,y);ctx.scale(-1,1);ctx.translate(-x,-y)}
+  ctx.fillStyle="rgba(0,0,0,.17)";ctx.beginPath();ctx.ellipse(x+22,y+58,15,6,0,0,Math.PI*2);ctx.fill();
+  if(player.groundPound){ctx.fillStyle="rgba(255,226,109,.26)";ctx.beginPath();ctx.ellipse(x+22,y+53,26,8,0,0,Math.PI*2);ctx.fill();}
+  ctx.fillStyle="#2d2f3a";ctx.beginPath();ctx.roundRect(x+7,y+46,11,8,4);ctx.roundRect(x+26,y+46,11,8,4);ctx.fill();
+  ctx.strokeStyle="#204732";ctx.lineWidth=4;ctx.lineCap="round";ctx.beginPath();ctx.moveTo(x+8,y+28);ctx.lineTo(x+2,y+35);ctx.moveTo(x+36,y+28);ctx.lineTo(x+42,y+35);ctx.stroke();
+  const g=ctx.createLinearGradient(x,y+4,x,y+48);g.addColorStop(0,char.color);g.addColorStop(1,char.accent);
+  ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(x+22,y+25,20,24,0,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle="rgba(18,53,34,.42)";ctx.lineWidth=2;for(let i=-1;i<=1;i++){ctx.beginPath();ctx.ellipse(x+22+i*5,y+25,6,21,0,0,Math.PI*2);ctx.stroke()}
+  ctx.fillStyle="rgba(255,255,255,.20)";ctx.beginPath();ctx.ellipse(x+14,y+15,7,12,-.45,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle="#2f8c44";ctx.fillRect(x+21,y+1,3,7);ctx.beginPath();ctx.ellipse(x+29,y+4,10,5,-.5,0,Math.PI*2);ctx.fill();
+  eye(x+17,y+19,3);eye(x+30,y+19,3);ctx.strokeStyle="#17362c";ctx.lineWidth=2.2;ctx.beginPath();ctx.arc(x+24,y+31,7,.22,Math.PI-.22);ctx.stroke();
+  ctx.fillStyle="#f7f7f7";ctx.beginPath();ctx.arc(x+14,y+19,1.2,0,Math.PI*2);ctx.arc(x+27,y+19,1.2,0,Math.PI*2);ctx.fill();
+  if(save.armor>0){ctx.strokeStyle="#d7e7f7";ctx.lineWidth=5;ctx.beginPath();ctx.arc(x+22,y+28,19,.12,Math.PI-.12);ctx.stroke();ctx.fillStyle="rgba(215,231,247,.24)";ctx.beginPath();ctx.arc(x+22,y+28,17,.2,Math.PI-.2);ctx.fill();}
+  if(save.character==="Nova Melon"){ctx.strokeStyle="#e6fbff";ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x+6,y+9);ctx.lineTo(x+15,y+15);ctx.lineTo(x+8,y+21);ctx.moveTo(x+34,y+10);ctx.lineTo(x+39,y+15);ctx.lineTo(x+35,y+20);ctx.stroke();}
+  else if(save.character==="Aqua Melon"){ctx.strokeStyle="#dff8ff";ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(x+24,y+11,6,.2,2.8);ctx.stroke();ctx.beginPath();ctx.moveTo(x+36,y+26);ctx.quadraticCurveTo(x+42,y+22,x+41,y+30);ctx.stroke();}
+  else if(save.character==="Royal Melon"){ctx.fillStyle="#c99a2d";ctx.beginPath();ctx.moveTo(x+14,y+5);ctx.lineTo(x+18,y-2);ctx.lineTo(x+22,y+4);ctx.lineTo(x+26,y-2);ctx.lineTo(x+30,y+5);ctx.closePath();ctx.fill();}
+  ctx.restore();
+}
+function drawExit(L){
+  const x=L.exit+55;
+  ctx.fillStyle="#5d4530";ctx.fillRect(x,480,18,130);ctx.fillRect(x+105,480,18,130);ctx.fillStyle="#f1c94f";ctx.fillRect(x,480,123,18);
+  ctx.fillStyle="#f7e9a4";ctx.font="bold 16px sans-serif";ctx.fillText(save.level===3?"BOSS ARENA":"NEXT LEVEL",x+8,470);
+}
+function roundRect(x,y,w,h,r,fill){ctx.beginPath();ctx.roundRect(x,y,w,h,r);if(fill)ctx.fill()}
+function drawLoop(t){
+  if(!last)last=t;
+  // Simulate at 60 Hz; cap catch-up so background tabs cannot fast-forward play.
+  accumulator=Math.min(5,accumulator+Math.min(100,t-last)/16.667);last=t;
+  while(accumulator>=1){update(1);accumulator-=1}
+  draw();requestAnimationFrame(drawLoop)
+}
+let accumulator=0;
+
+let audioCtx=null;
+function audioStart(){if(!audioCtx)try{audioCtx=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}}
+function tone(freq,dur=.08,type="sine",vol=.035){
+  if(!audioCtx)return;const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=type;o.frequency.value=freq;g.gain.value=vol;o.connect(g);g.connect(audioCtx.destination);o.start();g.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+dur);o.stop(audioCtx.currentTime+dur);
+}
+function sfx(name){
+  if(name==="coin"){tone(700,.07);setTimeout(()=>tone(960,.08),45)}
+  if(name==="jump")tone(330,.06,"square",.02);
+  if(name==="stomp"){tone(150,.05,"square",.04);setTimeout(()=>tone(260,.07,"triangle",.03),35)}
+  if(name==="pound")tone(105,.10,"sawtooth",.025);
+  if(name==="checkpoint"){[440,660,880].forEach((f,i)=>setTimeout(()=>tone(f,.08,"sine",.028),i*55))}
+  if(name==="shoot")tone(520,.05,"triangle",.025);
+  if(name==="freeze"){tone(960,.16,"sine",.03);setTimeout(()=>tone(1250,.12,"sine",.02),60)}
+  if(name==="hit")tone(120,.16,"sawtooth",.035);
+  if(name==="enemy")tone(220,.05,"square",.025);
+  if(name==="buy"){tone(520,.07);setTimeout(()=>tone(780,.07),70)}
+  if(name==="heart")tone(660,.08);
+  if(name==="achieve"||name==="level"||name==="quizgood"){[523,659,784].forEach((f,i)=>setTimeout(()=>tone(f,.13,"sine",.035),i*90))}
+  if(name==="no")tone(150,.18,"square",.025);
+}
+
+function keyDown(e){
+  if(["ArrowLeft","ArrowRight","ArrowUp","Space"].includes(e.code))e.preventDefault();
+  if(!keys[e.code]&&["Space","ArrowUp","KeyW"].includes(e.code))jumpBuffer=8;
+  keys[e.code]=true;
+  if(e.code==="KeyX")shoot();
+  if(e.code==="KeyF")freezePulse();
+  if(e.code==="KeyQ"&&inGame){toggleObjective();}
+  if((e.code==="ArrowDown"||e.code==="KeyS")&&inGame&&!paused&&!player.onGround&&!player.swim){player.groundPound=true;player.vy=Math.max(15,player.vy);sfx("pound")}
+  if(e.code==="KeyP"&&inGame&&!quizOpen&&!shopOpen){paused=!paused;$("pauseOverlay").style.display=paused?"flex":"none"}
+}
+function keyUp(e){keys[e.code]=false}
+addEventListener("keydown",keyDown);addEventListener("keyup",keyUp);
+addEventListener("blur",()=>{Object.keys(keys).forEach(k=>keys[k]=false);document.querySelectorAll(".touchBtn").forEach(b=>b.classList.remove("pressed"));jumpBuffer=0;if(inGame&&!paused&&!quizOpen&&!shopOpen){paused=true;$("pauseOverlay").style.display="flex"}});
+
+document.querySelectorAll(".touchBtn").forEach(b=>{
+  const code=b.dataset.key;
+  const down=e=>{e.preventDefault();b.setPointerCapture(e.pointerId);b.classList.add("pressed");if(code==="Space")jumpBuffer=8;keys[code]=true;if(code==="KeyX")shoot();if(code==="KeyF")freezePulse()};
+  const up=e=>{e.preventDefault();keys[code]=false;b.classList.remove("pressed")};
+  b.addEventListener("pointerdown",down);b.addEventListener("pointerup",up);b.addEventListener("pointercancel",up);b.addEventListener("pointerleave",up);
+});
+
+$("enterBtn").onclick=()=>{
+  audioStart();
+  const code=$("friendCode").value.trim().toUpperCase();
+  if(code!==FRIEND_CODE){$("gateError").style.display="block";sfx("no");return}
+  $("gateError").style.display="none";
+  save.nickname=$("nickname").value.trim()||"Player 1";persist();
+  $("gate").style.display="none";$("mainMenu").style.display="block";updateMenuSummary();
+};
+$("playBtn").onclick=startGame;
+$("menuShopBtn").onclick=()=>showShop(true);
+$("closeShop").onclick=()=>{closeShop();if(inGame&&save.level<LEVELS.length)buildLevel(save.level)};
+$("crewBtn").onclick=()=>{renderCrew();$("crewOverlay").style.display="flex"};
+$("villageBtn").onclick=()=>openVillage();
+$("charactersBtn").onclick=()=>openCharacters();
+$("closeCrew").onclick=()=>$("crewOverlay").style.display="none";
+$("closeVillage").onclick=()=>$("villageOverlay").style.display="none";
+$("closeCharacters").onclick=()=>$("characterOverlay").style.display="none";
+$("questBox").onclick=()=>toggleObjective();
+$("resumeBtn").onclick=()=>{paused=false;$("pauseOverlay").style.display="none"};
+$("resetBtn").onclick=()=>{
+  if(confirm("Reset all Mr. Melon progress on this device?")){save=defaultSave();persist();updateMenuSummary();toast("Save reset.","🍈")}
+};
+$("unlockNova").onclick=()=>{
+  if(!save.bottle||save.bottleTraded)return;
+  save.bottleTraded=true;save.character="Nova Melon";save.unlockedCharacters["Nova Melon"]=true;save.attackPower+=2;save.score+=400;persist();$("bottleExchange").style.display="none";toast("Nova Melon unlocked! Seed power increased.","⚡");achievement("nova","A New Hero","⚡");sfx("achieve");updateMenuSummary();
+};
+$("unlockSuper").onclick=()=>{
+  if(!save.bottle||save.bottleTraded)return;save.bottleTraded=true;save.superFreeze=true;save.freezeMax+=50;save.score+=400;persist();$("bottleExchange").style.display="none";toast("Super Freeze unlocked! Huge freeze radius.","🌨️");achievement("superfreeze","Absolute Zero","🌨️");sfx("achieve")
+};
+$("replayBtn").onclick=()=>{save.level=0;save.completed=false;save.score=0;persist();$("victoryOverlay").style.display="none";startGame()};
+$("victoryMenuBtn").onclick=backToMenu;
+
+updateMenuSummary();
+buildLevel(Math.min(save.level,3));
+requestAnimationFrame(drawLoop);
+})();
+</script>
+</body>
+</html>

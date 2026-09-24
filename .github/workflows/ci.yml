@@ -25,6 +25,7 @@ jobs:
         run: |
           node --check assets/app.js
           node --check assets/admin.js
+          node -e "const fs=require('fs');const html=fs.readFileSync('games/mr-melons-adventure/index.html','utf8');const scripts=[...html.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/g)];for(const [,code] of scripts)new(require('vm').Script)(code);if(!scripts.length)process.exit(1)"
 
       - name: Validate JSON files
         run: |

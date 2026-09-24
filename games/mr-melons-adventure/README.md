@@ -57,6 +57,7 @@ You can:
 
 Each browser/device keeps its own save and local crew leaderboard.
 
+
 ## Enhanced Edition additions
 - Jump on an enemy's head to defeat it instantly (Captain Rind takes stomp damage instead).
 - Stomp-combo scoring with escalating rewards.
@@ -67,6 +68,7 @@ Each browser/device keeps its own save and local crew leaderboard.
 - Three-phase Captain Rind boss battle with increasingly aggressive attacks.
 - Frozen enemies grant bonus points when defeated.
 - Updated touch controls and HUD.
+
 
 ## Version 2 upgrades
 - Mission panel no longer blocks gameplay. It auto-collapses and can be toggled with `Q`.
