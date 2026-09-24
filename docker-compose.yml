@@ -6,12 +6,9 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
 
-    # Localhost publishing is kept only for server-side diagnostics.
-    # v79_nginx_proxy reaches the application directly on proxy_network
-    # at http://gaming-studio-j:80.
-    ports:
-      - "${GAMES_BIND_ADDRESS:-127.0.0.1}:${GAMES_PORT:-8095}:80"
-
+    # No host port is published here.
+    # The existing v79_nginx_proxy reaches Gaming Studio J directly over
+    # proxy_network at http://gaming-studio-j:80.
     expose:
       - "80"
 
