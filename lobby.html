@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0d0f13">
+<title>Gaming Studio J — Multiplayer Lobby</title>
+<link rel="stylesheet" href="./assets/styles.css?v=3">
+<link rel="stylesheet" href="./assets/lobby.css?v=1">
+</head>
+<body>
+<div class="lobby-shell">
+  <header class="lobby-topbar">
+    <a class="lobby-brand" href="./"><img src="./assets/logo.svg" alt=""><span><b>Gaming Studio J</b><small>Multiplayer Lobby</small></span></a>
+    <div class="lobby-status"><span class="status-dot" id="connectionDot"></span><span id="connectionText">Connecting…</span></div>
+    <a class="btn secondary" href="./">← Studio</a>
+  </header>
+
+  <main class="lobby-grid">
+    <section class="lobby-panel profile-panel">
+      <div class="panel-head"><div><span class="eyebrow">YOUR PLAYER</span><h1>Make it yours</h1></div><span class="player-count" id="onlineCount">0 online</span></div>
+      <div class="avatar-preview" id="avatarPreview" aria-label="Player preview">
+        <div class="melon-body"><span class="melon-face">•ᴗ•</span><span class="melon-accessory" id="previewAccessory">🍃</span></div>
+      </div>
+      <form id="profileForm" class="profile-form">
+        <label>Nickname<input class="field" id="nicknameInput" maxlength="18" autocomplete="nickname"></label>
+        <div class="color-row">
+          <label>Body<input type="color" id="bodyColor" value="#61ca55"></label>
+          <label>Accent<input type="color" id="accentColor" value="#1e7a39"></label>
+        </div>
+        <label>Accessory
+          <select class="field" id="accessoryInput">
+            <option value="none">None</option>
+            <option value="leaf">Leaf</option>
+            <option value="crown">Crown</option>
+            <option value="headphones">Headphones</option>
+            <option value="glasses">Glasses</option>
+            <option value="star">Star</option>
+          </select>
+        </label>
+        <button class="btn primary" type="submit">Save player</button>
+      </form>
+
+      <div class="online-block">
+        <div class="panel-head compact"><h2>Players online</h2><span class="small">Live</span></div>
+        <div id="onlinePlayers" class="online-list"></div>
+      </div>
+    </section>
+
+    <section class="lobby-panel chat-panel">
+      <div class="panel-head"><div><span class="eyebrow">CHILL ZONE</span><h2>Lobby chat</h2></div><span class="small">Friendly chat • no message history stored on server</span></div>
+      <div id="chatLog" class="chat-log" aria-live="polite"></div>
+      <form id="chatForm" class="chat-form">
+        <input class="field" id="chatInput" maxlength="180" placeholder="Say hi to the crew…" autocomplete="off">
+        <button class="btn primary" type="submit">Send</button>
+      </form>
+      <p class="chat-note" id="chatNotice">Be kind. Messages are filtered and rate-limited.</p>
+    </section>
+
+    <section class="lobby-panel rooms-panel">
+      <div class="panel-head"><div><span class="eyebrow">PLAY TOGETHER</span><h2>Match rooms</h2></div><button class="btn primary" id="createRoomBtn" type="button">＋ Create room</button></div>
+      <div class="join-code">
+        <input class="field" id="roomCodeInput" maxlength="8" placeholder="Room code" autocomplete="off">
+        <button class="btn secondary" id="joinRoomBtn" type="button">Join</button>
+      </div>
+      <div id="currentRoom" class="current-room" hidden></div>
+      <div id="roomList" class="room-list"></div>
+    </section>
+
+    <section class="lobby-panel leaderboard-panel">
+      <div class="panel-head"><div><span class="eyebrow">GLOBAL CREW</span><h2>Top scores</h2></div><button class="text-btn" id="refreshScoresBtn" type="button">Refresh</button></div>
+      <div id="leaderboard" class="leaderboard-list"></div>
+    </section>
+  </main>
+
+  <div class="lobby-toast" id="lobbyToast" role="status" aria-live="polite"></div>
+</div>
+<script src="/socket.io/socket.io.js"></script>
+<script src="./assets/lobby.js?v=1"></script>
+</body>
+</html>
