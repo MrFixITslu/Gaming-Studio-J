@@ -28,3 +28,6 @@ coverage/
 # Local dev
 .python-version
 __pycache__/
+
+# Multiplayer analytics runtime data
+runtime/
