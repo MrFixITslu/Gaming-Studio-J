@@ -180,6 +180,17 @@ app.use((req, res, next) => {
 
 app.get("/healthz", (_req, res) => res.type("text/plain").send("ok\n"));
 
+function serveCleanPage(route, file) {
+  app.get([route, route + "/"], (req, res) => {
+    if (req.path.endsWith("/")) return res.redirect(308, route);
+    res.sendFile(path.join(ROOT, file));
+  });
+}
+
+serveCleanPage("/admin", "admin.html");
+serveCleanPage("/lobby", "lobby.html");
+serveCleanPage("/catalogue-admin", "catalogue-admin.html");
+
 function cookieValue(req, name) {
   const raw = String(req.headers.cookie || "");
   for (const part of raw.split(";")) {
