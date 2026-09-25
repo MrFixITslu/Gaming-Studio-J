@@ -6,11 +6,19 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
 
-    # No host port is published here.
-    # The existing v79_nginx_proxy reaches Gaming Studio J directly over
-    # proxy_network at http://gaming-studio-j:80.
+    environment:
+      NODE_ENV: production
+      PORT: "80"
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      ADMIN_SESSION_SECRET: ${ADMIN_SESSION_SECRET:-}
+
+    # Keep the existing internal route unchanged so v79_nginx_proxy
+    # continues to reach http://gaming-studio-j:80 over proxy_network.
     expose:
       - "80"
+
+    volumes:
+      - gsj_runtime:/app/runtime
 
     networks:
       - proxy_network
@@ -20,7 +28,11 @@ services:
       interval: 30s
       timeout: 3s
       retries: 3
-      start_period: 5s
+      start_period: 8s
+
+volumes:
+  gsj_runtime:
+    name: gaming_studio_j_runtime
 
 networks:
   proxy_network:
