@@ -27,9 +27,23 @@ function loadProfile(){
   const fallback=studioProfile();
   try{
     const p=JSON.parse(localStorage.getItem(PROFILE_KEY)||"null");
-    if(p)return normalizeProfile(p);
+    if(p){
+      const normalized=normalizeProfile(p);
+      if(fallback?.name)normalized.nickname=String(fallback.name).trim().slice(0,18)||normalized.nickname;
+      return normalized;
+    }
   }catch{}
   return normalizeProfile({nickname:fallback?.name||"Player 1",body:"#61CA55",accent:"#1E7A39",accessory:"leaf"});
+}
+function syncStudioUsername(name){
+  try{
+    const store=JSON.parse(localStorage.getItem("gsj_store_v2")||"null");
+    if(!store?.profiles?.length)return;
+    const active=store.profiles.find(p=>p.id===store.activeProfileId)||store.profiles[0];
+    if(!active)return;
+    active.name=String(name||active.name||"Player 1").trim().slice(0,18)||"Player 1";
+    localStorage.setItem("gsj_store_v2",JSON.stringify(store));
+  }catch{}
 }
 function normalizeProfile(p){
   return {
@@ -181,6 +195,7 @@ $("#profileForm").addEventListener("submit",e=>{
   e.preventDefault();
   profile=normalizeProfile({nickname:$("#nicknameInput").value,body:$("#bodyColor").value,accent:$("#accentColor").value,accessory:$("#accessoryInput").value});
   localStorage.setItem(PROFILE_KEY,JSON.stringify(profile));
+  syncStudioUsername(profile.nickname);
   socket.emit("profile:update",{nickname:profile.nickname,appearance:{body:profile.body,accent:profile.accent,accessory:profile.accessory}},res=>{
     if(res?.ok)toast("Player customisation saved.");else toast(res?.error||"Could not save player.");
   });
