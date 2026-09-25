@@ -259,7 +259,8 @@ app.post("/api/usage", (req, res) => {
   const event = cleanText(req.body?.event, 24);
   if (event !== "portal_view") return res.status(400).json({ error: "Unsupported usage event." });
   const nickname = cleanNickname(req.body?.nickname);
-  const row = getPlayer(clientId, nickname, {});
+  const existing = db.players[clientId];
+  const row = getPlayer(clientId, existing?.nickname || nickname, existing?.appearance || {});
   row.lastSeen = new Date().toISOString();
   db.totals.portalViews = (db.totals.portalViews || 0) + 1;
   const today = dayBucket();
