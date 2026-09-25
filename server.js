@@ -24,6 +24,7 @@ const emptyDb = () => ({
   createdAt: new Date().toISOString(),
   totals: {
     sessions: 0,
+    portalViews: 0,
     matches: 0,
     chatMessages: 0,
     scoreSubmissions: 0,
@@ -78,7 +79,7 @@ function dayKey(ts = Date.now()) {
 }
 
 function dayBucket(key = dayKey()) {
-  db.days[key] ||= { sessions: 0, matches: 0, chatMessages: 0, scoreSubmissions: 0, players: {} };
+  db.days[key] ||= { sessions: 0, portalViews: 0, matches: 0, chatMessages: 0, scoreSubmissions: 0, players: {} };
   return db.days[key];
 }
 
@@ -250,6 +251,23 @@ app.post("/api/admin/login", (req, res) => {
 app.post("/api/admin/logout", (_req, res) => {
   res.clearCookie("gsj_admin", { path: "/" });
   res.json({ ok: true });
+});
+
+app.post("/api/usage", (req, res) => {
+  const clientId = cleanClientId(req.body?.clientId);
+  if (!clientId) return res.status(400).json({ error: "Invalid client ID." });
+  const event = cleanText(req.body?.event, 24);
+  if (event !== "portal_view") return res.status(400).json({ error: "Unsupported usage event." });
+  const nickname = cleanNickname(req.body?.nickname);
+  const row = getPlayer(clientId, nickname, {});
+  row.lastSeen = new Date().toISOString();
+  db.totals.portalViews = (db.totals.portalViews || 0) + 1;
+  const today = dayBucket();
+  today.portalViews = (today.portalViews || 0) + 1;
+  today.players[clientId] = true;
+  trimOldDays();
+  persistSoon();
+  res.status(202).json({ ok: true });
 });
 
 app.get("/api/leaderboard", (_req, res) => {
@@ -604,6 +622,7 @@ function summaryPayload() {
     .map(([date, row]) => ({
       date,
       sessions: row.sessions || 0,
+      portalViews: row.portalViews || 0,
       matches: row.matches || 0,
       chatMessages: row.chatMessages || 0,
       scoreSubmissions: row.scoreSubmissions || 0,
