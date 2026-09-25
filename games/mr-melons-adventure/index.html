@@ -265,6 +265,7 @@ button:focus-visible,.studio-link:focus-visible{outline:3px solid #ffe584;outlin
   <div class="chip glass">🍈 <span id="coinText">0</span></div>
   <div class="chip glass">🛡️ <span id="armorText">0</span></div>
   <div class="chip glass">🌟 <span id="secretText">0/4</span></div>
+  <div class="chip glass" id="multiChip" style="display:none">👥 <span id="multiText">Multiplayer</span></div>
   <div class="grow"></div>
   <div class="chip glass">⭐ <span id="scoreText">0</span></div>
 </div>
@@ -320,7 +321,7 @@ button:focus-visible,.studio-link:focus-visible{outline:3px solid #ffe584;outlin
 <div id="pauseOverlay">
   <div class="quizBox glass" style="text-align:center">
     <h2>Adventure Paused</h2><p class="subtitle">The melons are safe for now.</p>
-    <div class="row" style="justify-content:center"><button class="btn" id="resumeBtn">Resume</button><button class="btn alt" id="fullscreenBtn">⛶ Fullscreen</button><a class="studio-link" href="../../index.html">← Gaming Studio J</a></div>
+    <div class="row" style="justify-content:center"><button class="btn" id="resumeBtn">Resume</button><button class="btn alt" id="fullscreenBtn">⛶ Fullscreen</button><a class="studio-link" href="../../lobby.html">👥 Lobby</a><a class="studio-link" href="../../index.html">← Gaming Studio J</a></div>
   </div>
 </div>
 
@@ -394,6 +395,11 @@ button:focus-visible,.studio-link:focus-visible{outline:3px solid #ffe584;outlin
           <button class="btn blue" id="crewBtn">View Crew Scores</button>
         </div>
         <div class="card">
+          <h3>👥 Multiplayer Lobby</h3>
+          <p class="small">Chill, chat, customise your melon and start a live room with up to four players.</p>
+          <a class="btn blue" href="../../lobby.html">Open Lobby</a>
+        </div>
+        <div class="card">
           <h3>🛒 Melon Mart</h3>
           <p class="small">Spend collected melons on armour, health and freeze upgrades.</p>
           <button class="btn gold" id="menuShopBtn">Open Shop</button>
@@ -413,13 +419,14 @@ button:focus-visible,.studio-link:focus-visible{outline:3px solid #ffe584;outlin
         <div class="grow"></div>
         <a class="studio-link" id="studioMenuLink" href="../../index.html">← Gaming Studio J</a><button class="btn alt" id="resetBtn">Reset Save</button>
       </div>
-      <p class="legal">No ads, no tracking, no accounts, and no external links. Progress stays in this browser.</p>
+      <p class="legal">No ads or third-party trackers. Game progress stays in this browser; anonymous usage and scores are recorded by Gaming Studio J.</p>
     </div>
   </div>
 </div>
 </div>
 </div>
 
+<script src="/socket.io/socket.io.js"></script>
 <script>
 (()=>{
 "use strict";
@@ -435,6 +442,46 @@ let jumpBuffer=0,coyote=0;
 const FRIEND_CODE="MELONCREW";
 const SAVE_KEY="mrMelonAdventure_v1";
 const CREW_KEY="mrMelonCrewScores_v1";
+const GAME_PARAMS=new URLSearchParams(location.search);
+const MULTI_ROOM=(GAME_PARAMS.get("room")||"").trim().toUpperCase().slice(0,8);
+const CLIENT_KEY="gsj_client_id_v1";
+const MULTI_PROFILE_KEY="gsj_multiplayer_profile_v1";
+function loadMultiplayerProfile(){
+  let studioName="";
+  try{
+    const store=JSON.parse(localStorage.getItem("gsj_store_v2")||"null");
+    const active=store?.profiles?.find(p=>p.id===store.activeProfileId)||store?.profiles?.[0];
+    studioName=active?.name||"";
+  }catch(e){}
+  try{
+    const p=JSON.parse(localStorage.getItem(MULTI_PROFILE_KEY)||"null");
+    if(p)return {
+      nickname:String(p.nickname||studioName||"Player 1").trim().slice(0,18)||"Player 1",
+      body:/^#[0-9a-f]{6}$/i.test(p.body)?p.body:"#61CA55",
+      accent:/^#[0-9a-f]{6}$/i.test(p.accent)?p.accent:"#1E7A39",
+      accessory:["none","leaf","crown","headphones","glasses","star"].includes(p.accessory)?p.accessory:"leaf"
+    };
+  }catch(e){}
+  return {nickname:studioName||"Player 1",body:"#61CA55",accent:"#1E7A39",accessory:"leaf"};
+}
+function multiplayerClientId(){
+  let id=localStorage.getItem(CLIENT_KEY);
+  if(!id){
+    id=(crypto.randomUUID?crypto.randomUUID():"client_"+Date.now()+"_"+Math.random().toString(36).slice(2)).replace(/[^A-Za-z0-9_-]/g,"");
+    localStorage.setItem(CLIENT_KEY,id);
+  }
+  return id;
+}
+const multiplayer={
+  roomCode:MULTI_ROOM,
+  socket:null,
+  socketId:"",
+  joinedRoom:false,
+  room:null,
+  remotes:new Map(),
+  lastEmit:0,
+  profile:loadMultiplayerProfile()
+};
 
 const defaultSave=()=>({
   nickname:"Player 1", level:0, checkpoint:0, coins:0, score:0, armor:0,
@@ -473,6 +520,146 @@ function renderCrew(){
   $("crewRows").innerHTML=rows.length?rows.map((r,i)=>`<tr><td>${i===0?"👑 ":""}${esc(r.name)}</td><td>${r.score}</td><td>${Math.min(r.level,LEVELS.length)}/${LEVELS.length}</td></tr>`).join(""):`<tr><td colspan="3" class="small">No crew scores yet. Start an adventure!</td></tr>`;
 }
 function esc(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
+
+function multiAccessoryIcon(name){
+  return {none:"",leaf:"🍃",crown:"👑",headphones:"🎧",glasses:"🕶️",star:"⭐"}[name]||"";
+}
+function updateMultiplayerChip(){
+  const chip=$("multiChip");
+  if(!chip)return;
+  if(multiplayer.joinedRoom&&multiplayer.room){
+    chip.style.display="flex";
+    const count=multiplayer.room.players?.length||1;
+    $("multiText").textContent=(multiplayer.room.code||multiplayer.roomCode)+" • "+count;
+  }else chip.style.display="none";
+}
+function initMultiplayer(){
+  if(!window.io)return;
+  multiplayer.socket=io({transports:["websocket","polling"]});
+  const socket=multiplayer.socket;
+  socket.on("connect",()=>{
+    socket.emit("identity:set",{
+      clientId:multiplayerClientId(),
+      nickname:multiplayer.profile.nickname||save.nickname,
+      appearance:{body:multiplayer.profile.body,accent:multiplayer.profile.accent,accessory:multiplayer.profile.accessory},
+      context:"game"
+    },res=>{
+      if(!res?.ok)return;
+      multiplayer.socketId=res.socketId||socket.id;
+      save.nickname=multiplayer.profile.nickname||save.nickname;
+      persist();
+      if(!multiplayer.roomCode){
+        submitOnlineScore(false);
+        return;
+      }
+      socket.emit("room:join",{code:multiplayer.roomCode},joined=>{
+        if(!joined?.ok){
+          toast(joined?.error||"Multiplayer room is unavailable.","⚠️");
+          multiplayer.joinedRoom=false;
+          updateMultiplayerChip();
+          return;
+        }
+        multiplayer.joinedRoom=true;
+        multiplayer.room=joined.room;
+        save.level=Math.max(0,Math.min(Number(joined.room?.level||0),LEVELS.length-1));
+        persist();
+        $("gate").style.display="none";
+        $("mainMenu").style.display="none";
+        if(!inGame)startGame();else buildLevel(save.level);
+        updateMultiplayerChip();
+        toast("Joined room "+multiplayer.roomCode+" with the Melon Crew!","👥");
+      });
+    });
+  });
+  socket.on("disconnect",()=>{
+    multiplayer.joinedRoom=false;
+    multiplayer.remotes.clear();
+    updateMultiplayerChip();
+  });
+  socket.on("room:update",room=>{
+    if(room?.code!==multiplayer.roomCode)return;
+    multiplayer.room=room;
+    multiplayer.joinedRoom=true;
+    updateMultiplayerChip();
+  });
+  socket.on("room:peer-left",payload=>{
+    if(payload?.socketId)multiplayer.remotes.delete(payload.socketId);
+  });
+  socket.on("game:peer-state",state=>{
+    if(!state?.socketId||state.socketId===multiplayer.socketId)return;
+    multiplayer.remotes.set(state.socketId,{...state,receivedAt:performance.now()});
+  });
+  socket.on("game:level",payload=>{
+    const next=Math.max(0,Math.min(Number(payload?.level||0),LEVELS.length-1));
+    if(!multiplayer.joinedRoom||next<=save.level)return;
+    save.level=next;
+    persist();
+    if(inGame){
+      buildLevel(save.level);
+      toast("The crew advanced to Level "+(save.level+1)+"!","🏁");
+    }
+  });
+}
+function emitMultiplayerState(){
+  const socket=multiplayer.socket;
+  if(!multiplayer.joinedRoom||!socket?.connected)return;
+  const now=performance.now();
+  if(now-multiplayer.lastEmit<55)return;
+  multiplayer.lastEmit=now;
+  socket.emit("game:state",{
+    level:save.level,
+    x:player.x,
+    y:player.y,
+    vx:player.vx,
+    vy:player.vy,
+    facing:player.facing,
+    score:save.score,
+    character:save.character
+  });
+}
+function submitOnlineScore(completed=false){
+  const socket=multiplayer.socket;
+  if(!socket?.connected)return;
+  socket.emit("score:submit",{
+    score:save.score,
+    level:Math.min(LEVELS.length,save.level+1),
+    completed
+  });
+}
+function drawRemotePlayers(){
+  const now=performance.now();
+  for(const [id,p] of multiplayer.remotes){
+    if(now-(p.receivedAt||0)>3000){
+      multiplayer.remotes.delete(id);
+      continue;
+    }
+    if(Number(p.level)!==save.level)continue;
+    const x=Number(p.x)||0;
+    const y=Number(p.y)||0;
+    const body=p.appearance?.body||"#61CA55";
+    const accent=p.appearance?.accent||"#1E7A39";
+    ctx.save();
+    ctx.globalAlpha=.86;
+    ctx.fillStyle="rgba(0,0,0,.18)";
+    ctx.beginPath();ctx.ellipse(x+22,y+58,15,6,0,0,Math.PI*2);ctx.fill();
+    const g=ctx.createLinearGradient(x,y+4,x,y+48);
+    g.addColorStop(0,body);g.addColorStop(1,accent);
+    ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(x+22,y+25,20,24,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle="#fff";
+    ctx.beginPath();ctx.arc(x+16,y+20,4,0,Math.PI*2);ctx.arc(x+29,y+20,4,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle="#17221a";
+    ctx.beginPath();ctx.arc(x+17,y+20,2.2,0,Math.PI*2);ctx.arc(x+30,y+20,2.2,0,Math.PI*2);ctx.fill();
+    const icon=multiAccessoryIcon(p.appearance?.accessory);
+    if(icon){ctx.font="20px serif";ctx.fillText(icon,x+11,y+3)}
+    ctx.font="900 12px sans-serif";
+    ctx.textAlign="center";
+    ctx.fillStyle="rgba(8,12,18,.75)";
+    ctx.fillRect(x-12,y-24,68,18);
+    ctx.fillStyle="#fff";
+    ctx.fillText(String(p.nickname||"Player").slice(0,14),x+22,y-11);
+    ctx.restore();
+  }
+}
 
 function renderVillage(){
   ensureUnlocks();
@@ -1023,13 +1210,14 @@ function update(dt){
 
   if(player.x>L.exit){
     if(save.level<LEVELS.length-1){
-      save.score+=300;save.level++;saveCrewScore();persist();sfx("level");toast("Level complete! +300 points","🏁");showShop();
+      save.score+=300;save.level++;saveCrewScore();persist();submitOnlineScore(false);sfx("level");toast("Level complete! +300 points","🏁");showShop();
     }
   }
   const lookAhead=Math.max(-90,Math.min(90,player.vx*18));
   const cameraTarget=Math.max(0,Math.min(L.world-W,player.x-W*.40+lookAhead));
   camX+=(cameraTarget-camX)*.075;
   $("miniDot").style.left=`${Math.min(94,Math.max(0,player.x/L.world*94))}%`;
+  emitMultiplayerState();
   updateHUD();
 }
 function updateEnemy(e,L){
@@ -1087,7 +1275,7 @@ function bossDefeated(){
   save.completed=true;
   save.level=LEVELS.length-1;
   save.unlockedCharacters["Royal Melon"]=true;
-  save.score+=2000;saveCrewScore();persist();
+  save.score+=2000;saveCrewScore();persist();submitOnlineScore(true);
   setTimeout(()=>{
     inGame=false;$("hud").style.display="none";$("questBox").style.display="none";$("minimap").style.display="none";
     $("victoryText").textContent=`${save.nickname} completed all ${LEVELS.length} levels with ${save.score} points and ${save.coins} melons. The whole Melon Kingdom is safe!`;
@@ -1109,6 +1297,7 @@ function draw(){
   pickups.forEach(drawPickup);
   enemies.forEach(drawEnemy);
   shots.forEach(drawShot);
+  drawRemotePlayers();
   drawPlayer();
   particles.forEach(p=>{ctx.globalAlpha=Math.max(0,p.life/35);ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1});
   drawExit(L);
@@ -1270,7 +1459,8 @@ function drawPlayer(){
   if(player.groundPound){ctx.fillStyle="rgba(255,226,109,.26)";ctx.beginPath();ctx.ellipse(x+22,y+53,26,8,0,0,Math.PI*2);ctx.fill();}
   ctx.fillStyle="#2d2f3a";ctx.beginPath();ctx.roundRect(x+7,y+46,11,8,4);ctx.roundRect(x+26,y+46,11,8,4);ctx.fill();
   ctx.strokeStyle="#204732";ctx.lineWidth=4;ctx.lineCap="round";ctx.beginPath();ctx.moveTo(x+8,y+28);ctx.lineTo(x+2,y+35);ctx.moveTo(x+36,y+28);ctx.lineTo(x+42,y+35);ctx.stroke();
-  const g=ctx.createLinearGradient(x,y+4,x,y+48);g.addColorStop(0,char.color);g.addColorStop(1,char.accent);
+  const custom=multiplayer.profile||{};
+  const g=ctx.createLinearGradient(x,y+4,x,y+48);g.addColorStop(0,custom.body||char.color);g.addColorStop(1,custom.accent||char.accent);
   ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(x+22,y+25,20,24,0,0,Math.PI*2);ctx.fill();
   ctx.strokeStyle="rgba(18,53,34,.42)";ctx.lineWidth=2;for(let i=-1;i<=1;i++){ctx.beginPath();ctx.ellipse(x+22+i*5,y+25,6,21,0,0,Math.PI*2);ctx.stroke()}
   ctx.fillStyle="rgba(255,255,255,.20)";ctx.beginPath();ctx.ellipse(x+14,y+15,7,12,-.45,0,Math.PI*2);ctx.fill();
@@ -1281,6 +1471,8 @@ function drawPlayer(){
   if(save.character==="Nova Melon"){ctx.strokeStyle="#e6fbff";ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x+6,y+9);ctx.lineTo(x+15,y+15);ctx.lineTo(x+8,y+21);ctx.moveTo(x+34,y+10);ctx.lineTo(x+39,y+15);ctx.lineTo(x+35,y+20);ctx.stroke();}
   else if(save.character==="Aqua Melon"){ctx.strokeStyle="#dff8ff";ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(x+24,y+11,6,.2,2.8);ctx.stroke();ctx.beginPath();ctx.moveTo(x+36,y+26);ctx.quadraticCurveTo(x+42,y+22,x+41,y+30);ctx.stroke();}
   else if(save.character==="Royal Melon"){ctx.fillStyle="#c99a2d";ctx.beginPath();ctx.moveTo(x+14,y+5);ctx.lineTo(x+18,y-2);ctx.lineTo(x+22,y+4);ctx.lineTo(x+26,y-2);ctx.lineTo(x+30,y+5);ctx.closePath();ctx.fill();}
+  const accessory=multiAccessoryIcon(multiplayer.profile?.accessory);
+  if(accessory){ctx.font="20px serif";ctx.fillText(accessory,x+11,y+4)}
   ctx.restore();
 }
 function drawExit(L){
@@ -1384,6 +1576,7 @@ $("victoryMenuBtn").onclick=backToMenu;
 
 updateMenuSummary();
 buildLevel(Math.min(save.level,3));
+initMultiplayer();
 requestAnimationFrame(drawLoop);
 })();
 </script>

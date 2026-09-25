@@ -1,43 +1,68 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Gaming Studio J — Catalogue Builder</title>
-<link rel="stylesheet" href="./assets/styles.css?v=2">
-<style>
-.admin-wrap{max-width:1100px;margin:auto;padding:28px 18px 80px}.admin-head{display:flex;justify-content:space-between;gap:15px;align-items:center;margin-bottom:24px}.admin-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.admin-card{padding:18px;border:1px solid var(--line);background:var(--surface);border-radius:18px}.admin-form{display:grid;grid-template-columns:1fr 1fr;gap:9px}.admin-form label{font-size:11px;color:var(--muted)}.admin-form label.full{grid-column:1/-1}.admin-form input,.admin-form select,.admin-form textarea{margin-top:4px}.admin-form textarea{min-height:90px;padding:10px}.catalog-row{display:flex;gap:10px;align-items:center;padding:10px;border-bottom:1px solid var(--line)}.catalog-row img{width:44px;height:44px;border-radius:11px}.catalog-row .grow{flex:1}.danger{border-color:#69313a!important;color:#ff9daa!important}.codebox{width:100%;min-height:420px;background:#0d1015;color:#d8e2ef;border:1px solid var(--line);border-radius:12px;padding:12px;font-family:ui-monospace,monospace;font-size:11px}.notice{padding:12px;border-radius:12px;background:#292318;color:#d8c89b;font-size:12px;line-height:1.5}@media(max-width:760px){.admin-grid,.admin-form{grid-template-columns:1fr}.admin-form label.full{grid-column:auto}}
-</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0d0f13">
+<title>Gaming Studio J — Admin</title>
+<link rel="stylesheet" href="./assets/styles.css?v=3">
+<link rel="stylesheet" href="./assets/admin-dashboard.css?v=1">
 </head>
 <body>
-<div class="admin-wrap">
-  <div class="admin-head"><div><span class="eyebrow">LOCAL ADMIN HELPER</span><h1>Catalogue Builder</h1><p style="color:var(--muted)">Prepare Gaming Studio J catalogue entries without hand-editing JSON.</p></div><a class="btn secondary" href="./">← Studio</a></div>
-  <div class="notice">This page does not modify the server directly and is not an authentication system. It prepares a new <b>catalog.json</b> file that you download and replace on your server.</div>
-  <div class="admin-grid" style="margin-top:14px">
-    <section class="admin-card">
-      <h2>Add title</h2>
-      <div class="admin-form">
-        <label>Title<input class="field" id="aTitle"></label>
-        <label>ID / slug<input class="field" id="aId" placeholder="my-game"></label>
-        <label>Type<select class="field" id="aType"><option value="game">Game</option><option value="app">App</option></select></label>
-        <label>Status<select class="field" id="aStatus"><option>playable</option><option>coming-soon</option></select></label>
-        <label>Age rating<select class="field" id="aAge"><option>Everyone</option><option>7+</option><option>Teen</option></select></label>
-        <label>Players<input class="field" id="aPlayers" value="1 player"></label>
-        <label class="full">URL<input class="field" id="aUrl" placeholder="./games/my-game/index.html"></label>
-        <label class="full">Thumbnail<input class="field" id="aThumb" placeholder="./assets/my-game-cover.webp"></label>
-        <label class="full">Icon<input class="field" id="aIcon" placeholder="./assets/my-game-icon.png"></label>
-        <label class="full">Tags, comma separated<input class="field" id="aTags" placeholder="Adventure, Puzzle"></label>
-        <label class="full">Description<textarea class="field" id="aDesc"></textarea></label>
-        <label><input type="checkbox" id="aFeatured"> Featured</label>
-        <label><input type="checkbox" id="aTouch" checked> Touch ready</label>
+<div class="admin-shell">
+  <header class="admin-topbar">
+    <a class="admin-brand" href="./"><img src="./assets/logo.svg" alt=""><span><b>Gaming Studio J</b><small>Admin</small></span></a>
+    <div class="admin-spacer"></div>
+    <a class="btn secondary" href="./catalogue-admin.html">Catalogue Builder</a>
+    <a class="btn secondary" href="./lobby.html">Lobby</a>
+    <button class="btn secondary" id="logoutBtn" type="button" hidden>Log out</button>
+  </header>
+
+  <main>
+    <section class="login-card" id="loginView">
+      <span class="eyebrow">SECURE ADMIN</span>
+      <h1>Usage & score dashboard</h1>
+      <p>Track live players, sessions, multiplayer matches, engagement and high scores.</p>
+      <form id="loginForm">
+        <label>Admin password<input class="field" id="adminPassword" type="password" autocomplete="current-password" required></label>
+        <button class="btn primary" type="submit">Sign in</button>
+      </form>
+      <div class="admin-alert" id="loginMessage" hidden></div>
+    </section>
+
+    <section id="dashboardView" hidden>
+      <div class="dashboard-head">
+        <div><span class="eyebrow">LIVE OPERATIONS</span><h1>Gaming Studio J dashboard</h1><p id="generatedAt">Loading…</p></div>
+        <button class="btn secondary" id="refreshBtn" type="button">Refresh</button>
       </div>
-      <button class="btn primary" id="addBtn" style="margin-top:14px">＋ Add to catalogue</button>
+
+      <div class="metric-grid" id="liveMetrics"></div>
+      <div class="metric-grid secondary" id="totalMetrics"></div>
+
+      <div class="dashboard-grid">
+        <section class="admin-card usage-card">
+          <div class="card-head"><div><h2>14-day usage</h2><p>Sessions and unique players per day</p></div></div>
+          <div class="usage-chart" id="usageChart"></div>
+        </section>
+
+        <section class="admin-card">
+          <div class="card-head"><div><h2>Top scores</h2><p>Server-recorded personal bests</p></div></div>
+          <div class="table-wrap">
+            <table class="admin-table">
+              <thead><tr><th>#</th><th>Player</th><th>Best score</th><th>Level</th><th>Matches</th><th>Play time</th></tr></thead>
+              <tbody id="leaderboardRows"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="admin-card activity-card">
+          <div class="card-head"><div><h2>Recent activity</h2><p>Operational events only — chat message text is not stored</p></div></div>
+          <div class="activity-list" id="activityList"></div>
+        </section>
+      </div>
     </section>
-    <section class="admin-card">
-      <div class="section-head"><div><h2>Current catalogue</h2><p id="catalogCount"></p></div><div class="spacer"></div><button class="btn primary" id="downloadBtn">Download JSON</button></div>
-      <div id="catalogList"></div>
-    </section>
-  </div>
-  <section class="admin-card" style="margin-top:14px"><h2>JSON preview</h2><textarea class="codebox" id="jsonPreview" spellcheck="false"></textarea></section>
+  </main>
 </div>
-<script src="./assets/admin.js?v=2"></script>
-</body></html>
+<script src="./assets/admin-dashboard.js?v=1"></script>
+</body>
+</html>

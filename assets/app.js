@@ -66,8 +66,29 @@ function derivedBadges(){
 function toast(html){
   const el=document.createElement("div");el.className="studio-toast";el.innerHTML=html;$("#toastArea").appendChild(el);setTimeout(()=>el.remove(),3300);
 }
+const ANALYTICS_CLIENT_KEY="gsj_client_id_v1";
+function analyticsClientId(){
+  let id=localStorage.getItem(ANALYTICS_CLIENT_KEY);
+  if(!id){
+    id=(crypto.randomUUID?crypto.randomUUID():"client_"+Date.now()+"_"+Math.random().toString(36).slice(2)).replace(/[^A-Za-z0-9_-]/g,"");
+    localStorage.setItem(ANALYTICS_CLIENT_KEY,id);
+  }
+  return id;
+}
+function trackPortalView(){
+  try{
+    fetch("./api/usage",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({clientId:analyticsClientId(),nickname:activeProfile().name,event:"portal_view"}),
+      keepalive:true
+    }).catch(()=>{});
+  }catch{}
+}
+
 async function init(){
   loadStore();
+  trackPortalView();
   try{const r=await fetch("./data/catalog.json",{cache:"no-store"});if(!r.ok)throw new Error();state.catalog=await r.json()}
   catch{state.catalog={studio:{name:"Gaming Studio J",tagline:"Play. Create. Explore."},items:[]};toast("Catalogue could not be loaded.")}
   syncGameEvents();syncExistingMrMelonProgress();bind();renderAll();
