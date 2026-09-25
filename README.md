@@ -144,3 +144,37 @@ Supported games write local achievement bridge events into:
 `gsj_game_events_v1`
 
 Mr. Melon's Adventure remains integrated with the active Studio profile.
+
+
+## Spelling Bee
+
+Spelling Bee is the second playable Gaming Studio J title. It is built around the children's real weekly spelling list of 10–12 words.
+
+Learning flow:
+
+1. Flight School: hear the word, build it, spell it from memory and place it correctly in sentence context.
+2. Story Hangar: read the weekly story with spelling words highlighted and available for read-aloud/definition review.
+3. Flight Mission: take off and steer through the correct letters in sequence.
+4. Fuel rule: correct letters build route/fuel progress; more than 20% wrong-letter selections causes a safe diversion to the Practice Airfield rather than a crash.
+5. Results: difficult words are identified for targeted practice before retrying.
+
+Weekly content is managed at:
+
+`/spelling-admin.html`
+
+The page uses the same authenticated admin session as `/admin.html`. Published missions appear immediately in Spelling Bee.
+
+### Learning-content generation
+
+The admin can generate definitions, example sentences, hints and syllable guidance for the weekly words. If a reachable Ollama endpoint is configured, Gaming Studio J uses it. If it is unavailable, the server generates safe fallback content so the weekly mission can still be created.
+
+Example:
+
+```env
+OLLAMA_URL=http://ollama:11434
+OLLAMA_MODEL=qwen2.5:3b
+```
+
+The `gaming-studio-j` container must be able to resolve/reach the configured Ollama host. If your existing Ollama container is on another Docker network, either attach both containers to a shared network or point `OLLAMA_URL` at a host/IP reachable from Gaming Studio J.
+
+Spelling mission definitions are persisted in the existing `gaming_studio_j_runtime` Docker volume as `spelling-levels.json`. Anonymous learning activity and aggregate difficult-word counts are stored with the existing server analytics data.
