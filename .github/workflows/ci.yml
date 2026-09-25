@@ -23,12 +23,17 @@ jobs:
 
       - name: Validate JavaScript syntax
         run: |
+          node --check server.js
           node --check assets/app.js
           node --check assets/admin.js
+          node --check assets/lobby.js
+          node --check assets/admin-dashboard.js
+          node --check sw.js
           node -e "const fs=require('fs');const html=fs.readFileSync('games/mr-melons-adventure/index.html','utf8');const scripts=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)];for(const [,code] of scripts)new(require('vm').Script)(code);if(!scripts.length)process.exit(1)"
 
       - name: Validate JSON files
         run: |
+          node -e "JSON.parse(require('fs').readFileSync('package.json','utf8'))"
           node -e "JSON.parse(require('fs').readFileSync('data/catalog.json','utf8'))"
           node -e "JSON.parse(require('fs').readFileSync('manifest.webmanifest','utf8'))"
           node -e "const m=JSON.parse(require('fs').readFileSync('games/mr-melons-adventure/manifest.webmanifest','utf8'));if(m.display!=='fullscreen'||m.orientation!=='landscape')process.exit(1)"
@@ -37,6 +42,12 @@ jobs:
         run: |
           test -f index.html
           test -f admin.html
+          test -f catalogue-admin.html
+          test -f lobby.html
+          test -f server.js
+          test -f package.json
+          test -f assets/lobby.js
+          test -f assets/admin-dashboard.js
           test -f Dockerfile
           test -f docker-compose.yml
           test -f nginx.conf
