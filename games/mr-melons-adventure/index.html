@@ -24,6 +24,10 @@ canvas{width:100%;height:100%;display:block;background:#7ad8ff;object-fit:contai
 .glass{background:rgba(15,21,42,.86);backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.12);box-shadow:0 16px 48px rgba(0,0,0,.28)}
 #hud{position:absolute;inset:14px 14px auto 14px;display:flex;gap:9px;align-items:center;z-index:8;pointer-events:none}
 .chip{display:flex;gap:7px;align-items:center;padding:8px 11px;border-radius:14px;font-weight:900;font-size:13px;white-space:nowrap}
+.hudBtn{pointer-events:auto;min-height:38px;border-radius:12px;border:1px solid rgba(255,255,255,.15);padding:0 11px;background:rgba(18,25,51,.86);color:#fff;font-weight:950;cursor:pointer;box-shadow:0 5px 16px rgba(0,0,0,.18)}
+.hudBtn:hover{background:rgba(39,50,88,.96)}
+.hudBtn.exit{background:rgba(126,38,49,.92);border-color:rgba(255,139,151,.38)}
+.hudBtn.exit:hover{background:rgba(161,48,61,.98)}
 .grow{flex:1}
 .bar{height:10px;width:150px;border-radius:99px;overflow:hidden;background:#39415f}
 .bar i{display:block;height:100%;background:linear-gradient(90deg,#52c454,#a5f36a);width:100%}
@@ -126,7 +130,9 @@ button:focus-visible,.studio-link:focus-visible{outline:3px solid #ffe584;outlin
   #hud .chip:nth-child(4),
   #hud .chip:nth-child(5){display:none}
   #hud .grow{min-width:4px}
-  #hud .chip:last-child{margin-left:auto}
+  #scoreChip{margin-left:auto}
+  #hud .hudBtn{min-height:30px;padding:0 7px;border-radius:9px;font-size:10px}
+  #soundBtn{width:34px;padding:0}
 
   #touch{
     display:flex;
@@ -267,7 +273,9 @@ button:focus-visible,.studio-link:focus-visible{outline:3px solid #ffe584;outlin
   <div class="chip glass">🌟 <span id="secretText">0/4</span></div>
   <div class="chip glass" id="multiChip" style="display:none">👥 <span id="multiText">Multiplayer</span></div>
   <div class="grow"></div>
-  <div class="chip glass">⭐ <span id="scoreText">0</span></div>
+  <div class="chip glass" id="scoreChip">⭐ <span id="scoreText">0</span></div>
+  <button class="hudBtn" id="soundBtn" type="button" aria-label="Mute game audio" title="Sound on">🔊</button>
+  <button class="hudBtn exit" id="exitGameBtn" type="button" aria-label="Exit game">🚪 Exit</button>
 </div>
 
 <div id="questBox" class="glass" style="display:none"></div>
@@ -456,7 +464,7 @@ function loadMultiplayerProfile(){
   try{
     const p=JSON.parse(localStorage.getItem(MULTI_PROFILE_KEY)||"null");
     if(p)return {
-      nickname:String(p.nickname||studioName||"Player 1").trim().slice(0,18)||"Player 1",
+      nickname:String(studioName||p.nickname||"Player 1").trim().slice(0,18)||"Player 1",
       body:/^#[0-9a-f]{6}$/i.test(p.body)?p.body:"#61CA55",
       accent:/^#[0-9a-f]{6}$/i.test(p.accent)?p.accent:"#1E7A39",
       accessory:["none","leaf","crown","headphones","glasses","star"].includes(p.accessory)?p.accessory:"leaf"
@@ -484,12 +492,15 @@ const multiplayer={
 };
 
 const defaultSave=()=>({
-  nickname:"Player 1", level:0, checkpoint:0, coins:0, score:0, armor:0,
+  nickname:multiplayer.profile.nickname||"Player 1", level:0, checkpoint:0, coins:0, score:0, armor:0,
   maxHp:5, freezeMax:100, freezePower:1, attackPower:1, bottle:false,
   bottleTraded:false, character:"Mr. Melon", superFreeze:false,
   achievements:{}, foundSecrets:{}, bestCombo:0, stomps:0, unlockedCharacters:{"Mr. Melon":true}, completed:false
 });
 let save=loadSave();
+const preferredNickname=String(multiplayer.profile.nickname||"").trim();
+if(preferredNickname&&preferredNickname!=="Player 1")save.nickname=preferredNickname;
+else if(!String(save.nickname||"").trim())save.nickname="Player 1";
 save.foundSecrets=save.foundSecrets||{};save.bestCombo=save.bestCombo||0;save.stomps=save.stomps||0;
 save.unlockedCharacters=save.unlockedCharacters||{"Mr. Melon":true};save.unlockedCharacters["Mr. Melon"]=true;
 
@@ -851,9 +862,11 @@ function startGame(){
   save.level=Math.max(0,Math.min(save.level,LEVELS.length-1));
   buildLevel(save.level);
   audioStart();
+  startMusic();
 }
 function backToMenu(){
   inGame=false; paused=false; quizOpen=false; shopOpen=false;
+  stopMusic();
   $("hud").style.display="none";$("questBox").style.display="none";$("minimap").style.display="none";
   $("quizOverlay").style.display="none";$("shopOverlay").style.display="none";$("pauseOverlay").style.display="none";$("victoryOverlay").style.display="none";
   $("screenCover").style.display="flex";$("gate").style.display="none";$("mainMenu").style.display="block";
@@ -1277,7 +1290,7 @@ function bossDefeated(){
   save.unlockedCharacters["Royal Melon"]=true;
   save.score+=2000;saveCrewScore();persist();submitOnlineScore(true);
   setTimeout(()=>{
-    inGame=false;$("hud").style.display="none";$("questBox").style.display="none";$("minimap").style.display="none";
+    inGame=false;stopMusic();$("hud").style.display="none";$("questBox").style.display="none";$("minimap").style.display="none";
     $("victoryText").textContent=`${save.nickname} completed all ${LEVELS.length} levels with ${save.score} points and ${save.coins} melons. The whole Melon Kingdom is safe!`;
     $("victoryOverlay").style.display="flex";
   },800);
@@ -1490,10 +1503,68 @@ function drawLoop(t){
 }
 let accumulator=0;
 
-let audioCtx=null;
-function audioStart(){if(!audioCtx)try{audioCtx=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}}
+const SOUND_KEY="mrMelonSound_v1";
+let audioCtx=null,musicTimer=null,musicStep=0;
+let audioEnabled=localStorage.getItem(SOUND_KEY)!=="off";
+function audioStart(){
+  if(!audioEnabled)return;
+  try{
+    if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+    if(audioCtx.state==="suspended")audioCtx.resume().catch(()=>{});
+  }catch(e){}
+}
 function tone(freq,dur=.08,type="sine",vol=.035){
-  if(!audioCtx)return;const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=type;o.frequency.value=freq;g.gain.value=vol;o.connect(g);g.connect(audioCtx.destination);o.start();g.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+dur);o.stop(audioCtx.currentTime+dur);
+  if(!audioEnabled||!audioCtx||audioCtx.state==="suspended")return;
+  const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+  o.type=type;o.frequency.value=freq;g.gain.value=vol;
+  o.connect(g);g.connect(audioCtx.destination);o.start();
+  g.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+dur);
+  o.stop(audioCtx.currentTime+dur);
+}
+function musicPattern(){
+  const theme=LEVELS[Math.min(save.level,LEVELS.length-1)]?.theme;
+  return {
+    meadow:[261.63,329.63,392,329.63,293.66,349.23,440,349.23],
+    cave:[196,233.08,293.66,233.08,174.61,220,261.63,220],
+    water:[220,293.66,329.63,293.66,246.94,329.63,369.99,329.63],
+    citadel:[164.81,220,261.63,220,174.61,233.08,277.18,233.08],
+    forest:[196,246.94,293.66,246.94,220,261.63,329.63,261.63],
+    frost:[293.66,369.99,440,369.99,329.63,415.3,493.88,415.3],
+    sky:[329.63,392,523.25,392,349.23,440,587.33,440],
+    reactor:[146.83,196,246.94,196,164.81,220,277.18,220]
+  }[theme]||[220,277.18,329.63,277.18];
+}
+function musicTick(){
+  if(!audioEnabled||!inGame||paused||quizOpen||shopOpen)return;
+  audioStart();
+  const notes=musicPattern(),note=notes[musicStep%notes.length];
+  tone(note,.34,"triangle",.010);
+  tone(note/2,.38,"sine",.0045);
+  musicStep++;
+}
+function startMusic(){
+  if(!audioEnabled)return;
+  audioStart();
+  if(musicTimer)return;
+  musicTick();
+  musicTimer=setInterval(musicTick,640);
+}
+function stopMusic(){
+  if(musicTimer){clearInterval(musicTimer);musicTimer=null}
+}
+function updateSoundButton(){
+  const b=$("soundBtn");
+  if(!b)return;
+  b.textContent=audioEnabled?"🔊":"🔇";
+  b.title=audioEnabled?"Sound on":"Sound off";
+  b.setAttribute("aria-label",audioEnabled?"Mute game audio":"Turn on game audio");
+}
+function toggleSound(){
+  audioEnabled=!audioEnabled;
+  localStorage.setItem(SOUND_KEY,audioEnabled?"on":"off");
+  updateSoundButton();
+  if(audioEnabled){audioStart();startMusic();sfx("buy")}
+  else stopMusic();
 }
 function sfx(name){
   if(name==="coin"){tone(700,.07);setTimeout(()=>tone(960,.08),45)}
@@ -1509,6 +1580,18 @@ function sfx(name){
   if(name==="heart")tone(660,.08);
   if(name==="achieve"||name==="level"||name==="quizgood"){[523,659,784].forEach((f,i)=>setTimeout(()=>tone(f,.13,"sine",.035),i*90))}
   if(name==="no")tone(150,.18,"square",.025);
+}
+
+function exitGame(){
+  persist();
+  submitOnlineScore(false);
+  stopMusic();
+  if(document.fullscreenElement&&document.exitFullscreen)document.exitFullscreen().catch(()=>{});
+  const destination=multiplayer.joinedRoom||multiplayer.roomCode?"../../lobby":"../../index.html";
+  if(multiplayer.joinedRoom&&multiplayer.socket?.connected){
+    multiplayer.socket.emit("room:leave",{},()=>{location.href=destination});
+    setTimeout(()=>{location.href=destination},450);
+  }else location.href=destination;
 }
 
 function keyDown(e){
@@ -1545,7 +1628,10 @@ $("enterBtn").onclick=()=>{
   const code=$("friendCode").value.trim().toUpperCase();
   if(code!==FRIEND_CODE){$("gateError").style.display="block";sfx("no");return}
   $("gateError").style.display="none";
-  save.nickname=$("nickname").value.trim()||"Player 1";persist();
+  save.nickname=$("nickname").value.trim()||multiplayer.profile.nickname||"Player 1";
+  multiplayer.profile.nickname=save.nickname;
+  localStorage.setItem(MULTI_PROFILE_KEY,JSON.stringify(multiplayer.profile));
+  persist();
   $("gate").style.display="none";$("mainMenu").style.display="block";updateMenuSummary();
 };
 $("playBtn").onclick=startGame;
@@ -1561,6 +1647,8 @@ $("questBox").onclick=()=>toggleObjective();
 $("resumeBtn").onclick=()=>{paused=false;$("pauseOverlay").style.display="none";requestImmersiveMode()};
 $("fullscreenBtn").onclick=()=>requestImmersiveMode();
 $("rotateStartBtn").onclick=()=>requestImmersiveMode();
+$("soundBtn").onclick=toggleSound;
+$("exitGameBtn").onclick=exitGame;
 $("resetBtn").onclick=()=>{
   if(confirm("Reset all Mr. Melon progress on this device?")){save=defaultSave();persist();updateMenuSummary();toast("Save reset.","🍈")}
 };
@@ -1574,9 +1662,12 @@ $("unlockSuper").onclick=()=>{
 $("replayBtn").onclick=()=>{save.level=0;save.completed=false;save.score=0;persist();$("victoryOverlay").style.display="none";startGame()};
 $("victoryMenuBtn").onclick=backToMenu;
 
+$("nickname").value=save.nickname||multiplayer.profile.nickname||"Player 1";
+updateSoundButton();
 updateMenuSummary();
 buildLevel(Math.min(save.level,3));
 initMultiplayer();
+addEventListener("pointerdown",()=>{if(inGame&&audioEnabled){audioStart();startMusic()}},{passive:true});
 requestAnimationFrame(drawLoop);
 })();
 </script>
