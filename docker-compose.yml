@@ -11,6 +11,8 @@ services:
       PORT: "80"
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
       ADMIN_SESSION_SECRET: ${ADMIN_SESSION_SECRET:-}
+      OLLAMA_URL: ${OLLAMA_URL:-}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5:3b}
 
     # Keep the existing internal route unchanged so v79_nginx_proxy
     # continues to reach http://gaming-studio-j:80 over proxy_network.
