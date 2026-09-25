@@ -354,6 +354,18 @@ app.use((req, res, next) => {
 
 app.get("/healthz", (_req, res) => res.type("text/plain").send("ok\n"));
 
+function serveCleanPage(route, file) {
+  app.get([route, route + "/"], (req, res) => {
+    if (req.path.endsWith("/")) return res.redirect(308, route);
+    res.sendFile(path.join(ROOT, file));
+  });
+}
+
+serveCleanPage("/admin", "admin.html");
+serveCleanPage("/lobby", "lobby.html");
+serveCleanPage("/catalogue-admin", "catalogue-admin.html");
+serveCleanPage("/spelling-admin", "spelling-admin.html");
+
 function cookieValue(req, name) {
   const raw = String(req.headers.cookie || "");
   for (const part of raw.split(";")) {
@@ -568,11 +580,12 @@ app.post("/api/admin/spelling/generate", requireAdmin, async (req, res) => {
 });
 
 app.post("/api/admin/spelling/levels", requireAdmin, async (req, res) => {
+  const suppliedContent = Array.isArray(req.body?.content) && req.body.content.length > 0;
   const level = normaliseSpellingLevel(req.body);
   if (level.published && (level.words.length < 10 || level.words.length > 12)) {
     return res.status(400).json({ error: "Published spelling missions must contain 10–12 words." });
   }
-  if (!level.content.length && level.words.length) {
+  if (!suppliedContent && level.words.length) {
     const generated = await generateSpellingContent(level.words, level.story);
     level.content = generated.content;
   }
@@ -587,9 +600,14 @@ app.put("/api/admin/spelling/levels/:id", requireAdmin, async (req, res) => {
   const id = cleanText(req.params.id, 80);
   const index = spelling.levels.findIndex(x => x.id === id);
   if (index < 0) return res.status(404).json({ error: "Spelling mission not found." });
+  const suppliedContent = Array.isArray(req.body?.content) && req.body.content.length > 0;
   const level = normaliseSpellingLevel(req.body, spelling.levels[index]);
   if (level.published && (level.words.length < 10 || level.words.length > 12)) {
     return res.status(400).json({ error: "Published spelling missions must contain 10–12 words." });
+  }
+  if (!suppliedContent && level.words.length) {
+    const generated = await generateSpellingContent(level.words, level.story);
+    level.content = generated.content;
   }
   spelling.levels[index] = level;
   await writeSpelling();
