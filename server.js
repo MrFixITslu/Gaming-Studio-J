@@ -11,6 +11,9 @@ const PORT = Number(process.env.PORT || 80);
 const ROOT = __dirname;
 const RUNTIME_DIR = path.join(ROOT, "runtime");
 const DATA_FILE = path.join(RUNTIME_DIR, "analytics.json");
+const SPELLING_FILE = path.join(RUNTIME_DIR, "spelling-levels.json");
+const OLLAMA_URL = String(process.env.OLLAMA_URL || "").trim();
+const OLLAMA_MODEL = String(process.env.OLLAMA_MODEL || "qwen2.5:3b").trim();
 const ADMIN_PASSWORD = String(process.env.ADMIN_PASSWORD || "");
 const ADMIN_SESSION_SECRET = String(process.env.ADMIN_SESSION_SECRET || "");
 const MAX_ROOM_PLAYERS = 4;
@@ -18,6 +21,33 @@ const MAX_CHAT_HISTORY = 50;
 const MAX_ACTIVITY = 250;
 
 fs.mkdirSync(RUNTIME_DIR, { recursive: true });
+
+const emptySpelling = () => ({ version: 1, levels: [] });
+
+function loadSpelling() {
+  try {
+    const parsed = JSON.parse(fs.readFileSync(SPELLING_FILE, "utf8"));
+    return {
+      version: 1,
+      levels: Array.isArray(parsed.levels) ? parsed.levels : []
+    };
+  } catch {
+    return emptySpelling();
+  }
+}
+
+let spelling = loadSpelling();
+let spellingWriteQueue = Promise.resolve();
+
+function writeSpelling() {
+  const snapshot = JSON.stringify(spelling, null, 2);
+  const tmp = SPELLING_FILE + ".tmp";
+  spellingWriteQueue = spellingWriteQueue.then(async () => {
+    await fs.promises.writeFile(tmp, snapshot, "utf8");
+    await fs.promises.rename(tmp, SPELLING_FILE);
+  }).catch(err => console.error("spelling write failed", err));
+  return spellingWriteQueue;
+}
 
 const emptyDb = () => ({
   version: 1,
@@ -116,6 +146,150 @@ function cleanClientId(value) {
   return /^[A-Za-z0-9_-]{12,80}$/.test(id) ? id : "";
 }
 
+function cleanLongText(value, max = 8000) {
+  return String(value || "")
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "")
+    .replace(/\r\n?/g, "\n")
+    .trim()
+    .slice(0, max);
+}
+
+function cleanSpellingWord(value) {
+  return String(value || "")
+    .trim()
+    .replace(/[^A-Za-z'-]/g, "")
+    .slice(0, 32);
+}
+
+function slugify(value) {
+  return cleanText(value, 80)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 54) || "mission";
+}
+
+function cleanSpellingWords(value) {
+  const list = Array.isArray(value) ? value : [];
+  const out = [];
+  for (const raw of list) {
+    const word = cleanSpellingWord(raw);
+    if (!word) continue;
+    if (!out.some(x => x.toLowerCase() === word.toLowerCase())) out.push(word);
+    if (out.length >= 12) break;
+  }
+  return out;
+}
+
+function storySentence(story, word) {
+  const source = cleanLongText(story, 8000);
+  if (source) {
+    const parts = source.split(/(?<=[.!?])\s+|\n+/).map(x => x.trim()).filter(Boolean);
+    const lower = word.toLowerCase();
+    const match = parts.find(x => x.toLowerCase().includes(lower));
+    if (match) return cleanText(match, 260);
+  }
+  return "The word " + word + " is one of this week's spelling words.";
+}
+
+function roughSyllables(word) {
+  const w = String(word || "").toLowerCase();
+  const groups = w.match(/[^aeiouy]*[aeiouy]+(?:[^aeiouy]|$)*/g);
+  if (!groups || groups.length < 2) return w.split("").join(" · ");
+  return groups.map(x => x.replace(/[^a-z'-]/g, "")).filter(Boolean).join(" · ");
+}
+
+function fallbackSpellingContent(words, story) {
+  return words.map(word => ({
+    word,
+    definition: "A word from this week's spelling list. Learn its meaning from the story and practise using it correctly.",
+    example: storySentence(story, word),
+    hint: "It starts with " + word.charAt(0).toUpperCase() + " and has " + word.length + " letters.",
+    syllables: roughSyllables(word)
+  }));
+}
+
+function cleanGeneratedContent(content, words, story) {
+  const rows = Array.isArray(content) ? content : [];
+  const fallback = fallbackSpellingContent(words, story);
+  return words.map((word, i) => {
+    const found = rows.find(x => cleanSpellingWord(x?.word).toLowerCase() === word.toLowerCase()) || {};
+    return {
+      word,
+      definition: cleanText(found.definition, 240) || fallback[i].definition,
+      example: cleanText(found.example || found.exampleSentence, 280) || fallback[i].example,
+      hint: cleanText(found.hint, 180) || fallback[i].hint,
+      syllables: cleanText(found.syllables, 100) || fallback[i].syllables
+    };
+  });
+}
+
+async function generateSpellingContent(words, story) {
+  const fallback = fallbackSpellingContent(words, story);
+  if (!OLLAMA_URL) return { content: fallback, mode: "fallback" };
+  const endpoint = OLLAMA_URL.endsWith("/api/generate")
+    ? OLLAMA_URL
+    : OLLAMA_URL.replace(/\/$/, "") + "/api/generate";
+  const prompt = [
+    "You create learning support for children practising weekly English spelling words.",
+    "Return valid JSON only as an array. Each object must contain: word, definition, example, hint, syllables.",
+    "Definitions must be child-friendly and accurate. Example sentences must use the word naturally.",
+    "Hints must help without spelling the whole word. Syllables should be readable chunks separated by ' · '.",
+    "Words: " + words.join(", "),
+    story ? "Weekly story context: " + story.slice(0, 5000) : ""
+  ].filter(Boolean).join("\n");
+  try {
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model: OLLAMA_MODEL, prompt, stream: false, format: "json" }),
+      signal: AbortSignal.timeout(12000)
+    });
+    if (!response.ok) throw new Error("Ollama returned " + response.status);
+    const payload = await response.json();
+    const raw = typeof payload.response === "string" ? payload.response : "";
+    const parsed = JSON.parse(raw);
+    const rows = Array.isArray(parsed) ? parsed : (Array.isArray(parsed.content) ? parsed.content : []);
+    if (!rows.length) throw new Error("No generated rows");
+    return { content: cleanGeneratedContent(rows, words, story), mode: "ollama" };
+  } catch (err) {
+    console.warn("spelling content generation fallback:", err.message);
+    return { content: fallback, mode: "fallback" };
+  }
+}
+
+function normaliseSpellingLevel(payload, existing = {}) {
+  const words = cleanSpellingWords(payload?.words);
+  const now = new Date().toISOString();
+  return {
+    id: existing.id || slugify(payload?.title) + "-" + Date.now().toString(36).slice(-5),
+    week: cleanText(payload?.week, 40),
+    title: cleanText(payload?.title, 80) || "Weekly Spelling Flight",
+    destination: cleanText(payload?.destination, 80) || "Adventure Island",
+    theme: cleanText(payload?.theme, 40) || "Caribbean Sky",
+    words,
+    story: cleanLongText(payload?.story, 8000),
+    content: cleanGeneratedContent(payload?.content, words, payload?.story),
+    published: Boolean(payload?.published),
+    createdAt: existing.createdAt || now,
+    updatedAt: now
+  };
+}
+
+function publicSpellingLevel(level) {
+  return {
+    id: level.id,
+    week: level.week,
+    title: level.title,
+    destination: level.destination,
+    theme: level.theme,
+    words: level.words,
+    story: level.story,
+    content: level.content,
+    updatedAt: level.updatedAt
+  };
+}
+
 function cleanHex(value, fallback) {
   const v = String(value || "");
   return /^#[0-9a-fA-F]{6}$/.test(v) ? v.toUpperCase() : fallback;
@@ -167,7 +341,7 @@ function getPlayer(clientId, nickname = "Player", appearance = {}) {
 const app = express();
 app.set("trust proxy", 1);
 app.disable("x-powered-by");
-app.use(express.json({ limit: "24kb" }));
+app.use(express.json({ limit: "64kb" }));
 
 app.use((req, res, next) => {
   res.setHeader("X-Content-Type-Options", "nosniff");
@@ -284,6 +458,187 @@ app.get("/api/leaderboard", (_req, res) => {
       completions: p.completions || 0
     }));
   res.json({ leaderboard: rows });
+});
+
+app.get("/api/spelling/levels", (_req, res) => {
+  const levels = spelling.levels
+    .filter(level => level.published)
+    .sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)))
+    .map(publicSpellingLevel);
+  res.json({ levels });
+});
+
+app.get("/api/spelling/levels/:id", (req, res) => {
+  const id = cleanText(req.params.id, 80);
+  const level = spelling.levels.find(x => x.id === id && x.published);
+  if (!level) return res.status(404).json({ error: "Spelling mission not found." });
+  res.json({ level: publicSpellingLevel(level) });
+});
+
+app.post("/api/spelling/progress", (req, res) => {
+  const clientId = cleanClientId(req.body?.clientId);
+  if (!clientId) return res.status(400).json({ error: "Invalid client ID." });
+  const levelId = cleanText(req.body?.levelId, 80);
+  const level = spelling.levels.find(x => x.id === levelId);
+  if (!level) return res.status(404).json({ error: "Spelling mission not found." });
+  const event = cleanText(req.body?.event, 32);
+  const allowed = new Set(["practice_open", "word_mastered", "story_read", "attempt", "complete", "divert"]);
+  if (!allowed.has(event)) return res.status(400).json({ error: "Unsupported spelling event." });
+
+  const row = getPlayer(clientId, cleanNickname(req.body?.nickname), db.players[clientId]?.appearance || {});
+  row.spelling ||= {};
+  const progress = row.spelling[levelId] ||= {
+    profileId: cleanText(req.body?.profileId, 80),
+    practiceOpens: 0,
+    masteredWords: {},
+    storyRead: false,
+    attempts: 0,
+    completions: 0,
+    diversions: 0,
+    bestAccuracy: 0,
+    difficultWords: {},
+    lastSeen: new Date().toISOString()
+  };
+  progress.lastSeen = new Date().toISOString();
+
+  db.spelling ||= { totals: {}, levels: {} };
+  const totals = db.spelling.totals;
+  const levelStats = db.spelling.levels[levelId] ||= {
+    practiceOpens: 0, wordsMastered: 0, storyReads: 0, attempts: 0, completions: 0, diversions: 0, difficultWords: {}
+  };
+
+  if (event === "practice_open") {
+    progress.practiceOpens += 1;
+    totals.practiceOpens = (totals.practiceOpens || 0) + 1;
+    levelStats.practiceOpens += 1;
+  } else if (event === "word_mastered") {
+    const word = cleanSpellingWord(req.body?.word).toLowerCase();
+    if (word && !progress.masteredWords[word]) {
+      progress.masteredWords[word] = new Date().toISOString();
+      totals.wordsMastered = (totals.wordsMastered || 0) + 1;
+      levelStats.wordsMastered += 1;
+    }
+  } else if (event === "story_read") {
+    if (!progress.storyRead) {
+      progress.storyRead = true;
+      totals.storyReads = (totals.storyReads || 0) + 1;
+      levelStats.storyReads += 1;
+    }
+  } else if (event === "attempt") {
+    progress.attempts += 1;
+    totals.attempts = (totals.attempts || 0) + 1;
+    levelStats.attempts += 1;
+  } else if (event === "complete" || event === "divert") {
+    const accuracy = Math.round(clampNumber(req.body?.accuracy, 0, 100, 0));
+    progress.bestAccuracy = Math.max(progress.bestAccuracy || 0, accuracy);
+    if (event === "complete") {
+      progress.completions += 1;
+      totals.completions = (totals.completions || 0) + 1;
+      levelStats.completions += 1;
+    } else {
+      progress.diversions += 1;
+      totals.diversions = (totals.diversions || 0) + 1;
+      levelStats.diversions += 1;
+    }
+    const difficult = Array.isArray(req.body?.difficultWords) ? req.body.difficultWords.slice(0, 12) : [];
+    for (const raw of difficult) {
+      const word = cleanSpellingWord(raw).toLowerCase();
+      if (!word) continue;
+      progress.difficultWords[word] = (progress.difficultWords[word] || 0) + 1;
+      levelStats.difficultWords[word] = (levelStats.difficultWords[word] || 0) + 1;
+    }
+  }
+
+  persistSoon();
+  res.status(202).json({ ok: true });
+});
+
+app.get("/api/admin/spelling/levels", requireAdmin, (_req, res) => {
+  res.json({
+    levels: spelling.levels.slice().sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)))
+  });
+});
+
+app.post("/api/admin/spelling/generate", requireAdmin, async (req, res) => {
+  const words = cleanSpellingWords(req.body?.words);
+  if (!words.length) return res.status(400).json({ error: "Add at least one spelling word first." });
+  const story = cleanLongText(req.body?.story, 8000);
+  const generated = await generateSpellingContent(words, story);
+  res.json(generated);
+});
+
+app.post("/api/admin/spelling/levels", requireAdmin, async (req, res) => {
+  const level = normaliseSpellingLevel(req.body);
+  if (level.published && (level.words.length < 10 || level.words.length > 12)) {
+    return res.status(400).json({ error: "Published spelling missions must contain 10–12 words." });
+  }
+  if (!level.content.length && level.words.length) {
+    const generated = await generateSpellingContent(level.words, level.story);
+    level.content = generated.content;
+  }
+  spelling.levels.push(level);
+  await writeSpelling();
+  activity("spelling_level_created", { levelId: level.id, title: level.title, published: level.published });
+  persistSoon();
+  res.status(201).json({ level });
+});
+
+app.put("/api/admin/spelling/levels/:id", requireAdmin, async (req, res) => {
+  const id = cleanText(req.params.id, 80);
+  const index = spelling.levels.findIndex(x => x.id === id);
+  if (index < 0) return res.status(404).json({ error: "Spelling mission not found." });
+  const level = normaliseSpellingLevel(req.body, spelling.levels[index]);
+  if (level.published && (level.words.length < 10 || level.words.length > 12)) {
+    return res.status(400).json({ error: "Published spelling missions must contain 10–12 words." });
+  }
+  spelling.levels[index] = level;
+  await writeSpelling();
+  activity("spelling_level_updated", { levelId: level.id, title: level.title, published: level.published });
+  persistSoon();
+  res.json({ level });
+});
+
+app.delete("/api/admin/spelling/levels/:id", requireAdmin, async (req, res) => {
+  const id = cleanText(req.params.id, 80);
+  const index = spelling.levels.findIndex(x => x.id === id);
+  if (index < 0) return res.status(404).json({ error: "Spelling mission not found." });
+  const [removed] = spelling.levels.splice(index, 1);
+  await writeSpelling();
+  activity("spelling_level_deleted", { levelId: removed.id, title: removed.title });
+  persistSoon();
+  res.json({ ok: true });
+});
+
+app.get("/api/admin/spelling/summary", requireAdmin, (_req, res) => {
+  const totals = db.spelling?.totals || {};
+  const levels = spelling.levels.map(level => {
+    const stats = db.spelling?.levels?.[level.id] || {};
+    const difficultWords = Object.entries(stats.difficultWords || {})
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([word, count]) => ({ word, count }));
+    return {
+      id: level.id,
+      title: level.title,
+      published: level.published,
+      attempts: stats.attempts || 0,
+      completions: stats.completions || 0,
+      diversions: stats.diversions || 0,
+      wordsMastered: stats.wordsMastered || 0,
+      difficultWords
+    };
+  });
+  res.json({
+    totals: {
+      practiceOpens: totals.practiceOpens || 0,
+      wordsMastered: totals.wordsMastered || 0,
+      storyReads: totals.storyReads || 0,
+      attempts: totals.attempts || 0,
+      completions: totals.completions || 0,
+      diversions: totals.diversions || 0
+    },
+    levels
+  });
 });
 
 const server = http.createServer(app);
