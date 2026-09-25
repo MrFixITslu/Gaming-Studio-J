@@ -472,6 +472,16 @@ function loadMultiplayerProfile(){
   }catch(e){}
   return {nickname:studioName||"Player 1",body:"#61CA55",accent:"#1E7A39",accessory:"leaf"};
 }
+function syncStudioUsername(name){
+  try{
+    const store=JSON.parse(localStorage.getItem("gsj_store_v2")||"null");
+    if(!store?.profiles?.length)return;
+    const active=store.profiles.find(p=>p.id===store.activeProfileId)||store.profiles[0];
+    if(!active)return;
+    active.name=String(name||active.name||"Player 1").trim().slice(0,18)||"Player 1";
+    localStorage.setItem("gsj_store_v2",JSON.stringify(store));
+  }catch(e){}
+}
 function multiplayerClientId(){
   let id=localStorage.getItem(CLIENT_KEY);
   if(!id){
@@ -1631,6 +1641,7 @@ $("enterBtn").onclick=()=>{
   save.nickname=$("nickname").value.trim()||multiplayer.profile.nickname||"Player 1";
   multiplayer.profile.nickname=save.nickname;
   localStorage.setItem(MULTI_PROFILE_KEY,JSON.stringify(multiplayer.profile));
+  syncStudioUsername(save.nickname);
   persist();
   $("gate").style.display="none";$("mainMenu").style.display="block";updateMenuSummary();
 };
