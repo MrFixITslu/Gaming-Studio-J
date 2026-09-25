@@ -589,6 +589,16 @@ function initMultiplayer(){
     if(!state?.socketId||state.socketId===multiplayer.socketId)return;
     multiplayer.remotes.set(state.socketId,{...state,receivedAt:performance.now()});
   });
+  socket.on("game:level",payload=>{
+    const next=Math.max(0,Math.min(Number(payload?.level||0),LEVELS.length-1));
+    if(!multiplayer.joinedRoom||next<=save.level)return;
+    save.level=next;
+    persist();
+    if(inGame){
+      buildLevel(save.level);
+      toast("The crew advanced to Level "+(save.level+1)+"!","🏁");
+    }
+  });
 }
 function emitMultiplayerState(){
   const socket=multiplayer.socket;
