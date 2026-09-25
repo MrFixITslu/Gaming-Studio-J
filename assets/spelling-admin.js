@@ -56,7 +56,9 @@ function renderLevels(){
   $("levelCount").textContent=state.levels.length+" mission"+(state.levels.length===1?"":"s");
   if(!state.levels.length){$("levelList").innerHTML='<div class="empty-mini">No spelling missions yet.</div>';return}
   $("levelList").innerHTML=state.levels.map(function(x){
-    return '<div class="level-row"><div class="level-row-top"><div class="grow"><b><span class="'+(x.published?"live-dot":"draft-dot")+'"></span>'+esc(x.title)+'</b><small>'+esc(x.week||"Weekly mission")+' • '+(x.words||[]).length+' words • '+esc(x.destination||"No destination")+'</small></div></div><div class="level-actions"><button class="btn secondary" data-edit="'+esc(x.id)+'">Edit</button><button class="btn secondary danger" data-delete="'+esc(x.id)+'">Delete</button></div></div>';
+    var st=((state.summary&&state.summary.levels)||[]).find(function(row){return row.id===x.id})||{};
+    var hard=(st.difficultWords||[]).map(function(w){return w.word+" ("+w.count+")"}).join(" • ");
+    return '<div class="level-row"><div class="level-row-top"><div class="grow"><b><span class="'+(x.published?"live-dot":"draft-dot")+'"></span>'+esc(x.title)+'</b><small>'+esc(x.week||"Weekly mission")+' • '+(x.words||[]).length+' words • '+esc(x.destination||"No destination")+'</small><small>Flights: '+(st.attempts||0)+' • Completed: '+(st.completions||0)+' • Diversions: '+(st.diversions||0)+'</small>'+(hard?'<small>Needs practice: '+esc(hard)+'</small>':'')+'</div></div><div class="level-actions"><button class="btn secondary" data-edit="'+esc(x.id)+'">Edit</button><button class="btn secondary danger" data-delete="'+esc(x.id)+'">Delete</button></div></div>';
   }).join("");
   Array.prototype.slice.call(document.querySelectorAll("[data-edit]")).forEach(function(b){b.onclick=function(){editLevel(b.dataset.edit)}});
   Array.prototype.slice.call(document.querySelectorAll("[data-delete]")).forEach(function(b){b.onclick=function(){removeLevel(b.dataset.delete)}});
