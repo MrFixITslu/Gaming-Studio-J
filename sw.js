@@ -1,5 +1,5 @@
-const CACHE="gaming-studio-j-v3";
-const CORE=["./","./index.html","./lobby.html","./assets/styles.css?v=3","./assets/app.js?v=3","./assets/lobby.css?v=1","./assets/lobby.js?v=1","./assets/logo.svg","./assets/mr-melon-cover.svg","./assets/mr-melon-icon.svg","./assets/icon-192.png","./assets/icon-512.png","./data/catalog.json"];
+const CACHE="gaming-studio-j-v4";
+const CORE=["./","./index.html","./lobby.html","./assets/styles.css?v=3","./assets/app.js?v=3","./assets/lobby.css?v=1","./assets/lobby.js?v=1","./assets/logo.svg","./assets/mr-melon-cover.svg","./assets/mr-melon-icon.svg","./assets/spelling-bee-cover.svg","./assets/spelling-bee-icon.svg","./games/spelling-bee/index.html","./games/spelling-bee/spelling-bee.css?v=1","./games/spelling-bee/spelling-bee.js?v=1","./assets/icon-192.png","./assets/icon-512.png","./data/catalog.json"];
 self.addEventListener("install",e=>{self.skipWaiting();e.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE)))});
 self.addEventListener("activate",e=>{e.waitUntil(Promise.all([caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))),self.clients.claim()]))});
 self.addEventListener("fetch",e=>{

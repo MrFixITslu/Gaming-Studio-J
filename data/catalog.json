@@ -38,7 +38,41 @@
       "screenshots": [
         "./assets/mr-melon-cover.svg"
       ]
+    },
+    {
+      "id": "spelling-bee",
+      "title": "Spelling Bee",
+      "type": "game",
+      "status": "playable",
+      "featured": true,
+      "description": "Master 10–12 weekly spelling words in Flight School, read them in a story, then pilot a 3D flight through the correct letters before your fuel runs out.",
+      "shortDescription": "Learn weekly spelling words, use them in sentences and fly through the correct letters in a 3D spelling adventure.",
+      "url": "./games/spelling-bee/index.html",
+      "thumbnail": "./assets/spelling-bee-cover.svg",
+      "icon": "./assets/spelling-bee-icon.svg",
+      "tags": [
+        "Education",
+        "Spelling",
+        "Reading",
+        "3D",
+        "Adventure"
+      ],
+      "players": "1 player",
+      "input": [
+        "Touch",
+        "Keyboard"
+      ],
+      "age": "Everyone",
+      "badge": "New",
+      "accent": "#63E3FF",
+      "created": "2026-09-25",
+      "updated": "2026-09-25",
+      "touchReady": true,
+      "creator": "Gaming Studio J",
+      "screenshots": [
+        "./assets/spelling-bee-cover.svg"
+      ]
     }
   ],
-  "version": 3
+  "version": 4
 }
