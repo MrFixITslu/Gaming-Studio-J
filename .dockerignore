@@ -1,10 +1,11 @@
-*.zip
 .git
-.gitignore
-node_modules
 .github
 .env
 .env.*
+!.env.example
+node_modules
+runtime
 *.log
-deploy
-scripts
+coverage
+dist
+build
