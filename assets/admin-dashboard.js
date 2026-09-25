@@ -40,6 +40,7 @@ function renderSummary(s){
   ].join("");
   $("#totalMetrics").innerHTML=[
     metric("Unique players",fmtInt(tot.uniquePlayers)),
+    metric("Studio views",fmtInt(tot.portalViews)),
     metric("Sessions",fmtInt(tot.sessions)),
     metric("Matches",fmtInt(tot.matches)),
     metric("Chat messages",fmtInt(tot.chatMessages)),
