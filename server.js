@@ -359,6 +359,7 @@ function joinRoom(socket, codeRaw) {
   if (ident.roomCode && ident.roomCode !== code) leaveRoom(socket);
   room.players.add(socket.id);
   room.emptySince = 0;
+  if (!room.hostSocketId || !room.players.has(room.hostSocketId)) room.hostSocketId = socket.id;
   ident.roomCode = code;
   socket.join("match:" + code);
   io.to("match:" + code).emit("room:update", roomView(room));
@@ -538,6 +539,10 @@ io.on("connection", socket => {
       score: Math.floor(clampNumber(payload?.score, 0, 10_000_000, 0)),
       ts: now
     };
+    if (state.level > room.level) {
+      room.level = state.level;
+      io.to("match:" + room.code).emit("game:level", { level: room.level });
+    }
     socket.to("match:" + room.code).emit("game:peer-state", state);
   });
 
