@@ -11,8 +11,8 @@
       "type": "game",
       "status": "playable",
       "featured": true,
-      "description": "Jump, stomp enemies, freeze troublemakers, solve maths challenges and explore the Melon Kingdom.",
-      "shortDescription": "A colourful action-platform adventure with powers, secrets and maths challenges.",
+      "description": "Jump, stomp enemies, freeze troublemakers, solve maths challenges and explore the Melon Kingdom solo or with friends.",
+      "shortDescription": "A colourful 1–4 player action-platform adventure with live multiplayer, powers, secrets and maths challenges.",
       "url": "./games/mr-melons-adventure/index.html",
       "thumbnail": "./assets/mr-melon-cover.svg",
       "icon": "./assets/mr-melon-icon.svg",
@@ -20,9 +20,10 @@
         "Adventure",
         "Platformer",
         "Action",
-        "Puzzle"
+        "Puzzle",
+        "Multiplayer"
       ],
-      "players": "1 player",
+      "players": "1–4 players",
       "input": [
         "Touch",
         "Keyboard"
@@ -31,7 +32,7 @@
       "badge": "Featured",
       "accent": "#8CF45B",
       "created": "2026-09-23",
-      "updated": "2026-09-23",
+      "updated": "2026-09-25",
       "touchReady": true,
       "creator": "Gaming Studio J",
       "screenshots": [
@@ -39,5 +40,5 @@
       ]
     }
   ],
-  "version": 2
+  "version": 3
 }
