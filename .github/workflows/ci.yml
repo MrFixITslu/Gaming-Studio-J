@@ -28,6 +28,8 @@ jobs:
           node --check assets/admin.js
           node --check assets/lobby.js
           node --check assets/admin-dashboard.js
+          node --check assets/spelling-admin.js
+          node --check games/spelling-bee/spelling-bee.js
           node --check sw.js
           node -e "const fs=require('fs');const html=fs.readFileSync('games/mr-melons-adventure/index.html','utf8');const scripts=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)];for(const [,code] of scripts)new(require('vm').Script)(code);if(!scripts.length)process.exit(1)"
 
@@ -43,16 +45,23 @@ jobs:
           test -f index.html
           test -f admin.html
           test -f catalogue-admin.html
+          test -f spelling-admin.html
           test -f lobby.html
           test -f server.js
           test -f package.json
           test -f assets/lobby.js
           test -f assets/admin-dashboard.js
+          test -f assets/spelling-admin.js
+          test -f assets/spelling-bee-icon.svg
+          test -f assets/spelling-bee-cover.svg
           test -f Dockerfile
           test -f docker-compose.yml
           test -f nginx.conf
           test -f games/mr-melons-adventure/index.html
           test -f games/mr-melons-adventure/manifest.webmanifest
+          test -f games/spelling-bee/index.html
+          test -f games/spelling-bee/spelling-bee.css
+          test -f games/spelling-bee/spelling-bee.js
 
   docker-build:
     runs-on: ubuntu-latest
