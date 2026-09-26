@@ -6,14 +6,15 @@
 <meta name="theme-color" content="#0d0f13">
 <title>Gaming Studio J — Admin</title>
 <link rel="stylesheet" href="./assets/styles.css?v=3">
-<link rel="stylesheet" href="./assets/admin-dashboard.css?v=1">
+<link rel="stylesheet" href="./assets/admin-dashboard.css?v=2">
 </head>
 <body>
 <div class="admin-shell">
   <header class="admin-topbar">
     <a class="admin-brand" href="./"><img src="./assets/logo.svg" alt=""><span><b>Gaming Studio J</b><small>Admin</small></span></a>
     <div class="admin-spacer"></div>
-    <a class="btn secondary" href="./spelling-admin.html">Spelling Bee</a>\n    <a class="btn secondary" href="./catalogue-admin.html">Catalogue Builder</a>
+    <a class="btn secondary" href="./spelling-admin.html">Spelling Bee</a>
+    <a class="btn secondary" href="./catalogue-admin.html">Catalogue Builder</a>
     <a class="btn secondary" href="./lobby.html">Lobby</a>
     <button class="btn secondary" id="logoutBtn" type="button" hidden>Log out</button>
   </header>
@@ -46,13 +47,28 @@
         </section>
 
         <section class="admin-card">
-          <div class="card-head"><div><h2>Top scores</h2><p>Server-recorded personal bests</p></div></div>
+          <div class="card-head"><div><h2>Top scores</h2><p>Shared Studio profiles and personal bests</p></div></div>
           <div class="table-wrap">
             <table class="admin-table">
-              <thead><tr><th>#</th><th>Player</th><th>Best score</th><th>Level</th><th>Matches</th><th>Play time</th></tr></thead>
+              <thead><tr><th>#</th><th>Profile</th><th>Best score</th><th>Level</th><th>Matches</th><th>Play time</th></tr></thead>
               <tbody id="leaderboardRows"></tbody>
             </table>
           </div>
+        </section>
+
+        <section class="admin-card title-usage-card">
+          <div class="card-head"><div><h2>App & game usage</h2><p>All tracked titles use the same Gaming Studio J profile identity</p></div></div>
+          <div class="table-wrap">
+            <table class="admin-table usage-table">
+              <thead><tr><th>Title</th><th>Type</th><th>Opens</th><th>Sessions</th><th>Profiles</th><th>Time</th><th>Completed</th><th>Best score</th></tr></thead>
+              <tbody id="titleUsageRows"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="admin-card spelling-overview-card">
+          <div class="card-head"><div><h2>Spelling Bee learning</h2><p>Practice, mastery and flight outcomes across published missions</p></div></div>
+          <div class="spelling-overview" id="spellingOverview"></div>
         </section>
 
         <section class="admin-card activity-card">
@@ -63,6 +79,6 @@
     </section>
   </main>
 </div>
-<script src="./assets/admin-dashboard.js?v=1"></script>
+<script src="./assets/admin-dashboard.js?v=2"></script>
 </body>
 </html>

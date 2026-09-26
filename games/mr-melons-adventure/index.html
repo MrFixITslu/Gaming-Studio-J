@@ -455,22 +455,24 @@ const MULTI_ROOM=(GAME_PARAMS.get("room")||"").trim().toUpperCase().slice(0,8);
 const CLIENT_KEY="gsj_client_id_v1";
 const MULTI_PROFILE_KEY="gsj_multiplayer_profile_v1";
 function loadMultiplayerProfile(){
-  let studioName="";
+  let studioName="",studioId="default";
   try{
     const store=JSON.parse(localStorage.getItem("gsj_store_v2")||"null");
     const active=store?.profiles?.find(p=>p.id===store.activeProfileId)||store?.profiles?.[0];
     studioName=active?.name||"";
+    studioId=active?.id||"default";
   }catch(e){}
   try{
     const p=JSON.parse(localStorage.getItem(MULTI_PROFILE_KEY)||"null");
     if(p)return {
+      profileId:studioId,
       nickname:String(studioName||p.nickname||"Player 1").trim().slice(0,18)||"Player 1",
       body:/^#[0-9a-f]{6}$/i.test(p.body)?p.body:"#61CA55",
       accent:/^#[0-9a-f]{6}$/i.test(p.accent)?p.accent:"#1E7A39",
       accessory:["none","leaf","crown","headphones","glasses","star"].includes(p.accessory)?p.accessory:"leaf"
     };
   }catch(e){}
-  return {nickname:studioName||"Player 1",body:"#61CA55",accent:"#1E7A39",accessory:"leaf"};
+  return {profileId:studioId,nickname:studioName||"Player 1",body:"#61CA55",accent:"#1E7A39",accessory:"leaf"};
 }
 function syncStudioUsername(name){
   try{
@@ -489,6 +491,21 @@ function multiplayerClientId(){
     localStorage.setItem(CLIENT_KEY,id);
   }
   return id;
+}
+const TITLE_ID="mr-melons-adventure",TITLE_NAME="Mr. Melon's Adventure";
+let titleSessionStarted=Date.now(),titleSessionEnded=false;
+function reportTitleUsage(event,extra={}){
+  const payload=Object.assign({
+    clientId:multiplayerClientId(),
+    profileId:multiplayer.profile.profileId||"default",
+    nickname:multiplayer.profile.nickname||save?.nickname||"Player",
+    titleId:TITLE_ID,title:TITLE_NAME,kind:"game",event
+  },extra);
+  fetch("../../api/usage",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload),keepalive:true}).catch(()=>{});
+}
+function endTitleSession(){
+  if(titleSessionEnded)return;titleSessionEnded=true;
+  reportTitleUsage("session_end",{seconds:Math.max(0,Math.round((Date.now()-titleSessionStarted)/1000))});
 }
 const multiplayer={
   roomCode:MULTI_ROOM,
@@ -561,6 +578,7 @@ function initMultiplayer(){
   socket.on("connect",()=>{
     socket.emit("identity:set",{
       clientId:multiplayerClientId(),
+      profileId:multiplayer.profile.profileId||"default",
       nickname:multiplayer.profile.nickname||save.nickname,
       appearance:{body:multiplayer.profile.body,accent:multiplayer.profile.accent,accessory:multiplayer.profile.accessory},
       context:"game"
@@ -1299,6 +1317,8 @@ function bossDefeated(){
   save.level=LEVELS.length-1;
   save.unlockedCharacters["Royal Melon"]=true;
   save.score+=2000;saveCrewScore();persist();submitOnlineScore(true);
+  reportTitleUsage("complete",{score:save.score});
+  reportTitleUsage("score",{score:save.score});
   setTimeout(()=>{
     inGame=false;stopMusic();$("hud").style.display="none";$("questBox").style.display="none";$("minimap").style.display="none";
     $("victoryText").textContent=`${save.nickname} completed all ${LEVELS.length} levels with ${save.score} points and ${save.coins} melons. The whole Melon Kingdom is safe!`;
@@ -1595,6 +1615,7 @@ function sfx(name){
 function exitGame(){
   persist();
   submitOnlineScore(false);
+  endTitleSession();
   stopMusic();
   if(document.fullscreenElement&&document.exitFullscreen)document.exitFullscreen().catch(()=>{});
   const destination=multiplayer.joinedRoom||multiplayer.roomCode?"../../lobby":"../../index.html";
@@ -1678,6 +1699,8 @@ updateSoundButton();
 updateMenuSummary();
 buildLevel(Math.min(save.level,3));
 initMultiplayer();
+reportTitleUsage("session_start");
+addEventListener("pagehide",endTitleSession,{once:true});
 addEventListener("pointerdown",()=>{if(inGame&&audioEnabled){audioStart();startMusic()}},{passive:true});
 requestAnimationFrame(drawLoop);
 })();

@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 240" role="img" aria-label="Spelling Bee airplane">
+<defs>
+  <linearGradient id="fuselage" x1="0" x2="1"><stop stop-color="#f7fbff"/><stop offset=".48" stop-color="#fff"/><stop offset="1" stop-color="#c9d7df"/></linearGradient>
+  <linearGradient id="red" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ff594d"/><stop offset=".55" stop-color="#df292c"/><stop offset="1" stop-color="#a91524"/></linearGradient>
+  <linearGradient id="gold" x1="0" x2="1"><stop stop-color="#ffe77a"/><stop offset=".5" stop-color="#ffc928"/><stop offset="1" stop-color="#f39b12"/></linearGradient>
+  <filter id="shadow" x="-30%" y="-30%" width="160%" height="180%"><feDropShadow dx="0" dy="10" stdDeviation="9" flood-color="#17344a" flood-opacity=".45"/></filter>
+</defs>
+<g filter="url(#shadow)">
+  <ellipse cx="150" cy="210" rx="92" ry="16" fill="#15354c" opacity=".2"/>
+  <path d="M140 20c-11 24-15 52-15 91l-9 75c-2 21 13 35 34 35s36-14 34-35l-9-75c0-39-4-67-15-91-6-12-14-12-20 0z" fill="url(#fuselage)" stroke="#8aa8b9" stroke-width="3"/>
+  <path d="M137 28c7-16 19-16 26 0l7 31h-40z" fill="url(#red)"/>
+  <path d="M131 72h38l5 17h-48z" fill="#173a57"/>
+  <path d="M134 74h12v13h-16zM154 74h12l4 13h-16z" fill="#79d7f7"/>
+  <path d="M125 103 31 152c-9 5-7 20 3 22l85 7 7-20-61-8 66-23z" fill="url(#fuselage)" stroke="#8aa8b9" stroke-width="3"/>
+  <path d="M175 103 269 152c9 5 7 20-3 22l-85 7-7-20 61-8-66-23z" fill="url(#fuselage)" stroke="#8aa8b9" stroke-width="3"/>
+  <path d="M41 151 117 113l-3 20-54 22 59 7-5 17-80-7c-8-1-10-13-3-18z" fill="url(#red)"/>
+  <path d="m259 151-76-38 3 20 54 22-59 7 5 17 80-7c8-1 10-13 3-18z" fill="url(#red)"/>
+  <path d="M102 184 56 208c-8 4-5 14 4 14h57l4-17-32 3 35-14z" fill="url(#fuselage)" stroke="#8aa8b9" stroke-width="3"/>
+  <path d="m198 184 46 24c8 4 5 14-4 14h-57l-4-17 32 3-35-14z" fill="url(#fuselage)" stroke="#8aa8b9" stroke-width="3"/>
+  <path d="M143 170h14l7 45h-28z" fill="url(#red)"/>
+  <path d="M142 105h16v95h-16z" fill="url(#gold)" opacity=".95"/>
+  <path d="M58 153h45l-15 9-35-3zM242 153h-45l15 9 35-3z" fill="url(#gold)"/>
+  <g fill="#fff" stroke="#f7bb17" stroke-width="3">
+    <path d="m76 143 5 10 12 2-9 8 2 12-10-6-11 6 3-12-9-8 12-2z"/>
+    <path d="m224 143 5 10 12 2-9 8 2 12-10-6-11 6 3-12-9-8 12-2z"/>
+  </g>
+  <ellipse cx="150" cy="28" rx="18" ry="11" fill="#5d1c1f" stroke="#791a20" stroke-width="3"/>
+  <circle cx="150" cy="28" r="6" fill="#ffcf2d"/>
+  <path d="M149 5h3v46h-3zM127 27h46v3h-46z" fill="#263d4a" opacity=".7"/>
+</g>
+</svg>

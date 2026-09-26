@@ -75,16 +75,18 @@ function analyticsClientId(){
   }
   return id;
 }
-function trackPortalView(){
+function trackUsage(event,extra={}){
   try{
+    const p=activeProfile();
     fetch("./api/usage",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({clientId:analyticsClientId(),nickname:activeProfile().name,event:"portal_view"}),
+      body:JSON.stringify({clientId:analyticsClientId(),profileId:p.id,nickname:p.name,event,...extra}),
       keepalive:true
     }).catch(()=>{});
   }catch{}
 }
+function trackPortalView(){trackUsage("portal_view")}
 
 async function init(){
   loadStore();
@@ -175,6 +177,7 @@ function titleById(id){return (state.catalog.items||[]).find(x=>x.id===id)}
 function launch(id){
   const x=titleById(id);if(!x||x.status!=="playable")return;
   const p=activeProfile(),first=!p.launches[id];p.launches[id]=(p.launches[id]||0)+1;p.lastPlayed[id]=now();p.recent=[id,...p.recent.filter(v=>v!==id)].slice(0,8);
+  trackUsage("app_open",{titleId:x.id,title:x.title,kind:x.type||"game"});
   localStorage.setItem(ACTIVE_PROFILE_KEY,p.id);
   if(first)awardAchievement(`studio:first_play:${id}`,`First play: ${x.title}`,"Launch a Gaming Studio J title for the first time.","▶️",30);
   else addXP(5,`launch:${id}:${new Date().toISOString().slice(0,10)}`);

@@ -62,6 +62,8 @@ const emptyDb = () => ({
     totalSessionSeconds: 0
   },
   players: {},
+  profiles: {},
+  titles: {},
   days: {},
   activity: []
 });
@@ -74,6 +76,8 @@ function loadDb() {
       ...parsed,
       totals: { ...emptyDb().totals, ...(parsed.totals || {}) },
       players: parsed.players || {},
+      profiles: parsed.profiles || {},
+      titles: parsed.titles || {},
       days: parsed.days || {},
       activity: Array.isArray(parsed.activity) ? parsed.activity.slice(-MAX_ACTIVITY) : []
     };
@@ -109,7 +113,7 @@ function dayKey(ts = Date.now()) {
 }
 
 function dayBucket(key = dayKey()) {
-  db.days[key] ||= { sessions: 0, portalViews: 0, matches: 0, chatMessages: 0, scoreSubmissions: 0, players: {} };
+  db.days[key] ||= { sessions: 0, portalViews: 0, appOpens: 0, titleSessions: 0, matches: 0, chatMessages: 0, scoreSubmissions: 0, players: {}, profiles: {} };
   return db.days[key];
 }
 
@@ -144,6 +148,16 @@ function cleanNickname(value) {
 function cleanClientId(value) {
   const id = String(value || "");
   return /^[A-Za-z0-9_-]{12,80}$/.test(id) ? id : "";
+}
+
+function cleanProfileId(value) {
+  const id = String(value || "").trim();
+  return /^[A-Za-z0-9_.:-]{1,100}$/.test(id) ? id : "default";
+}
+
+function cleanTitleId(value) {
+  const id = String(value || "").trim().toLowerCase();
+  return /^[a-z0-9][a-z0-9_.:-]{0,79}$/.test(id) ? id : "";
 }
 
 function cleanLongText(value, max = 8000) {
@@ -499,6 +513,57 @@ function getPlayer(clientId, nickname = "Player", appearance = {}) {
   return row;
 }
 
+function profileKey(clientId, profileId) {
+  return clientId + ":" + cleanProfileId(profileId);
+}
+
+function getProfile(clientId, profileId, nickname = "Player", appearance = {}) {
+  const id = cleanProfileId(profileId);
+  const key = profileKey(clientId, id);
+  const now = new Date().toISOString();
+  const row = db.profiles[key] ||= {
+    key,
+    clientId,
+    profileId: id,
+    nickname: cleanNickname(nickname),
+    appearance: cleanAppearance(appearance),
+    firstSeen: now,
+    lastSeen: now,
+    sessions: 0,
+    totalSeconds: 0,
+    launches: 0,
+    matches: 0,
+    bestScore: 0,
+    maxLevel: 1,
+    completions: 0,
+    titles: {}
+  };
+  row.nickname = cleanNickname(nickname || row.nickname);
+  row.appearance = cleanAppearance(appearance || row.appearance);
+  row.lastSeen = now;
+  return row;
+}
+
+function getTitleStats(titleId, title, kind) {
+  const id = cleanTitleId(titleId);
+  if (!id) return null;
+  const row = db.titles[id] ||= {
+    id,
+    title: cleanText(title, 80) || id,
+    kind: cleanText(kind, 20) || "game",
+    opens: 0,
+    sessions: 0,
+    totalSeconds: 0,
+    completions: 0,
+    scores: 0,
+    bestScore: 0,
+    profiles: {}
+  };
+  if (title) row.title = cleanText(title, 80);
+  if (kind) row.kind = cleanText(kind, 20);
+  return row;
+}
+
 const app = express();
 app.set("trust proxy", 1);
 app.disable("x-powered-by");
@@ -604,26 +669,68 @@ app.post("/api/usage", (req, res) => {
   const clientId = cleanClientId(req.body?.clientId);
   if (!clientId) return res.status(400).json({ error: "Invalid client ID." });
   const event = cleanText(req.body?.event, 24);
-  if (event !== "portal_view") return res.status(400).json({ error: "Unsupported usage event." });
+  const allowed = new Set(["portal_view", "app_open", "session_start", "session_end", "complete", "score"]);
+  if (!allowed.has(event)) return res.status(400).json({ error: "Unsupported usage event." });
+
   const nickname = cleanNickname(req.body?.nickname);
+  const profileId = cleanProfileId(req.body?.profileId);
+  const titleId = cleanTitleId(req.body?.titleId);
+  const titleName = cleanText(req.body?.title, 80);
+  const kind = cleanText(req.body?.kind, 20);
+  const seconds = Math.round(clampNumber(req.body?.seconds, 0, 86400, 0));
+  const score = Math.round(clampNumber(req.body?.score, 0, 10000000, 0));
+
   const existing = db.players[clientId];
-  const row = getPlayer(clientId, existing?.nickname || nickname, existing?.appearance || {});
-  row.lastSeen = new Date().toISOString();
-  db.totals.portalViews = (db.totals.portalViews || 0) + 1;
+  const player = getPlayer(clientId, existing?.nickname || nickname, existing?.appearance || {});
+  const profile = getProfile(clientId, profileId, nickname, player.appearance || {});
   const today = dayBucket();
-  today.portalViews = (today.portalViews || 0) + 1;
   today.players[clientId] = true;
+  today.profiles[profile.key] = true;
+
+  if (event === "portal_view") {
+    db.totals.portalViews = (db.totals.portalViews || 0) + 1;
+    today.portalViews = (today.portalViews || 0) + 1;
+  } else {
+    if (!titleId) return res.status(400).json({ error: "A title ID is required for this usage event." });
+    const title = getTitleStats(titleId, titleName, kind);
+    const perProfile = profile.titles[titleId] ||= { opens: 0, sessions: 0, totalSeconds: 0, completions: 0, bestScore: 0, lastSeen: new Date().toISOString() };
+    perProfile.lastSeen = new Date().toISOString();
+    title.profiles[profile.key] = true;
+
+    if (event === "app_open") {
+      title.opens += 1; profile.launches += 1; perProfile.opens += 1;
+      today.appOpens = (today.appOpens || 0) + 1;
+      activity("title_open", { nickname: profile.nickname, profileId, titleId, title: title.title });
+    } else if (event === "session_start") {
+      title.sessions += 1; profile.sessions += 1; perProfile.sessions += 1;
+      today.titleSessions = (today.titleSessions || 0) + 1;
+    } else if (event === "session_end") {
+      title.totalSeconds += seconds; profile.totalSeconds += seconds; perProfile.totalSeconds += seconds;
+    } else if (event === "complete") {
+      title.completions += 1; profile.completions += 1; perProfile.completions += 1;
+      activity("title_complete", { nickname: profile.nickname, profileId, titleId, title: title.title });
+    } else if (event === "score") {
+      title.scores += 1; title.bestScore = Math.max(title.bestScore || 0, score);
+      profile.bestScore = Math.max(profile.bestScore || 0, score);
+      perProfile.bestScore = Math.max(perProfile.bestScore || 0, score);
+    }
+  }
+
+  profile.lastSeen = new Date().toISOString();
+  player.lastSeen = profile.lastSeen;
   trimOldDays();
   persistSoon();
   res.status(202).json({ ok: true });
 });
 
 app.get("/api/leaderboard", (_req, res) => {
-  const rows = Object.values(db.players)
+  const source = Object.values(db.profiles || {}).length ? Object.values(db.profiles) : Object.values(db.players);
+  const rows = source
     .filter(p => Number(p.bestScore) > 0)
     .sort((a, b) => b.bestScore - a.bestScore || b.maxLevel - a.maxLevel)
     .slice(0, 50)
     .map(p => ({
+      profileId: p.profileId || "legacy",
       nickname: p.nickname,
       appearance: p.appearance,
       bestScore: p.bestScore,
@@ -658,10 +765,13 @@ app.post("/api/spelling/progress", (req, res) => {
   const allowed = new Set(["practice_open", "word_mastered", "story_read", "attempt", "complete", "divert"]);
   if (!allowed.has(event)) return res.status(400).json({ error: "Unsupported spelling event." });
 
-  const row = getPlayer(clientId, cleanNickname(req.body?.nickname), db.players[clientId]?.appearance || {});
-  row.spelling ||= {};
-  const progress = row.spelling[levelId] ||= {
-    profileId: cleanText(req.body?.profileId, 80),
+  const nickname = cleanNickname(req.body?.nickname);
+  const profileId = cleanProfileId(req.body?.profileId);
+  const row = getPlayer(clientId, nickname, db.players[clientId]?.appearance || {});
+  const profile = getProfile(clientId, profileId, nickname, row.appearance || {});
+  profile.spelling ||= {};
+  const progress = profile.spelling[levelId] ||= {
+    profileId,
     practiceOpens: 0,
     masteredWords: {},
     storyRead: false,
@@ -929,18 +1039,22 @@ function registerSession(socket, payload = {}) {
 
   const nickname = cleanNickname(payload.nickname);
   const appearance = cleanAppearance(payload.appearance);
+  const profileId = cleanProfileId(payload.profileId);
   const context = payload.context === "game" ? "game" : "lobby";
   const row = getPlayer(clientId, nickname, appearance);
+  const profile = getProfile(clientId, profileId, nickname, appearance);
   row.sessions += 1;
 
   db.totals.sessions += 1;
   const today = dayBucket();
   today.sessions += 1;
   today.players[clientId] = true;
+  today.profiles[profile.key] = true;
   trimOldDays();
 
   const ident = {
     clientId,
+    profileId,
     nickname,
     appearance,
     context,
@@ -952,6 +1066,7 @@ function registerSession(socket, payload = {}) {
   identities.set(socket.id, ident);
   socket.data.registered = true;
   socket.data.clientId = clientId;
+  socket.data.profileId = profileId;
 
   db.totals.peakConcurrent = Math.max(db.totals.peakConcurrent || 0, identities.size);
   activity("session_start", { nickname, context });
@@ -966,13 +1081,18 @@ io.on("connection", socket => {
     if (!ident) ident = registerSession(socket, payload);
     if (!ident) return ack({ ok: false, error: "Invalid player ID." });
 
+    ident.profileId = cleanProfileId(payload?.profileId || ident.profileId);
     ident.nickname = cleanNickname(payload?.nickname || ident.nickname);
     ident.appearance = cleanAppearance(payload?.appearance || ident.appearance);
     ident.context = payload?.context === "game" ? "game" : "lobby";
     const row = getPlayer(ident.clientId, ident.nickname, ident.appearance);
+    const profile = getProfile(ident.clientId, ident.profileId, ident.nickname, ident.appearance);
     row.nickname = ident.nickname;
     row.appearance = ident.appearance;
     row.lastSeen = new Date().toISOString();
+    profile.nickname = ident.nickname;
+    profile.appearance = ident.appearance;
+    profile.lastSeen = row.lastSeen;
 
     ack({ ok: true, socketId: socket.id, chat: chatHistory, players: presenceList(), rooms: listRooms() });
     persistSoon();
@@ -985,9 +1105,13 @@ io.on("connection", socket => {
     ident.nickname = cleanNickname(payload?.nickname || ident.nickname);
     ident.appearance = cleanAppearance(payload?.appearance || ident.appearance);
     const row = getPlayer(ident.clientId, ident.nickname, ident.appearance);
+    const profile = getProfile(ident.clientId, ident.profileId, ident.nickname, ident.appearance);
     row.nickname = ident.nickname;
     row.appearance = ident.appearance;
     row.lastSeen = new Date().toISOString();
+    profile.nickname = ident.nickname;
+    profile.appearance = ident.appearance;
+    profile.lastSeen = row.lastSeen;
     persistSoon();
     emitLobbyState();
     ack({ ok: true, nickname: ident.nickname, appearance: ident.appearance });
@@ -1060,7 +1184,10 @@ io.on("connection", socket => {
     dayBucket().matches += 1;
     for (const sid of room.players) {
       const p = identities.get(sid);
-      if (p) getPlayer(p.clientId, p.nickname, p.appearance).matches += 1;
+      if (p) {
+        getPlayer(p.clientId, p.nickname, p.appearance).matches += 1;
+        getProfile(p.clientId, p.profileId, p.nickname, p.appearance).matches += 1;
+      }
     }
     activity("match_started", { nickname: ident.nickname, roomCode: room.code, players: room.players.size });
     persistSoon();
@@ -1109,11 +1236,20 @@ io.on("connection", socket => {
     const level = Math.floor(clampNumber(payload?.level, 1, 8, 1));
     const completed = Boolean(payload?.completed);
     const row = getPlayer(ident.clientId, ident.nickname, ident.appearance);
-    const improved = score > (row.bestScore || 0);
+    const profile = getProfile(ident.clientId, ident.profileId, ident.nickname, ident.appearance);
+    const title = getTitleStats("mr-melons-adventure", "Mr. Melon's Adventure", "game");
+    const improved = score > (profile.bestScore || row.bestScore || 0);
     row.bestScore = Math.max(row.bestScore || 0, score);
     row.maxLevel = Math.max(row.maxLevel || 1, level);
+    profile.bestScore = Math.max(profile.bestScore || 0, score);
+    profile.maxLevel = Math.max(profile.maxLevel || 1, level);
+    title.scores += 1;
+    title.bestScore = Math.max(title.bestScore || 0, score);
+    title.profiles[profile.key] = true;
     if (completed && !socket.data.completedRecorded) {
       row.completions = (row.completions || 0) + 1;
+      profile.completions = (profile.completions || 0) + 1;
+      title.completions = (title.completions || 0) + 1;
       socket.data.completedRecorded = true;
     }
 
@@ -1121,7 +1257,7 @@ io.on("connection", socket => {
     dayBucket().scoreSubmissions += 1;
     if (improved) activity("high_score", { nickname: ident.nickname, score, level });
     persistSoon();
-    ack({ ok: true, bestScore: row.bestScore, maxLevel: row.maxLevel });
+    ack({ ok: true, bestScore: profile.bestScore, maxLevel: profile.maxLevel });
   });
 
   socket.on("disconnect", () => {
@@ -1160,11 +1296,28 @@ function summaryPayload() {
       date,
       sessions: row.sessions || 0,
       portalViews: row.portalViews || 0,
+      appOpens: row.appOpens || 0,
+      titleSessions: row.titleSessions || 0,
       matches: row.matches || 0,
       chatMessages: row.chatMessages || 0,
       scoreSubmissions: row.scoreSubmissions || 0,
-      uniquePlayers: Object.keys(row.players || {}).length
+      uniquePlayers: Object.keys(row.players || {}).length,
+      uniqueProfiles: Object.keys(row.profiles || {}).length
     }));
+
+  const titleUsage = Object.values(db.titles || {})
+    .map(t => ({
+      id: t.id,
+      title: t.title,
+      kind: t.kind,
+      opens: t.opens || 0,
+      sessions: t.sessions || 0,
+      completions: t.completions || 0,
+      totalSeconds: t.totalSeconds || 0,
+      uniqueProfiles: Object.keys(t.profiles || {}).length,
+      bestScore: t.bestScore || 0
+    }))
+    .sort((a, b) => b.sessions - a.sessions || b.opens - a.opens);
 
   return {
     generatedAt: new Date().toISOString(),
@@ -1178,18 +1331,24 @@ function summaryPayload() {
     totals: {
       ...db.totals,
       uniquePlayers: players.length,
+      uniqueProfiles: Object.keys(db.profiles || {}).length,
+      titleOpens: Object.values(db.titles || {}).reduce((n, t) => n + (t.opens || 0), 0),
+      titleSessions: Object.values(db.titles || {}).reduce((n, t) => n + (t.sessions || 0), 0),
       averageSessionSeconds: db.totals.sessions ? Math.round(db.totals.totalSessionSeconds / db.totals.sessions) : 0
     },
+    titles: titleUsage,
     days
   };
 }
 
 app.get("/api/admin/summary", requireAdmin, (_req, res) => res.json(summaryPayload()));
 app.get("/api/admin/leaderboard", requireAdmin, (_req, res) => {
-  const leaderboard = Object.values(db.players)
+  const source = Object.values(db.profiles || {}).length ? Object.values(db.profiles) : Object.values(db.players);
+  const leaderboard = source
     .sort((a, b) => (b.bestScore || 0) - (a.bestScore || 0) || (b.maxLevel || 0) - (a.maxLevel || 0))
     .slice(0, 100)
     .map(p => ({
+      profileId: p.profileId || "legacy",
       nickname: p.nickname,
       appearance: p.appearance,
       bestScore: p.bestScore || 0,

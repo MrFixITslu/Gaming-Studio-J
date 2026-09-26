@@ -7,7 +7,7 @@
 <meta name="description" content="Spelling Bee — learn weekly spelling words, read them in stories, then fly a 3D spelling mission.">
 <title>Spelling Bee — Gaming Studio J</title>
 <link rel="icon" href="../../assets/spelling-bee-icon.svg">
-<link rel="stylesheet" href="./spelling-bee.css?v=2">
+<link rel="stylesheet" href="./spelling-bee.css?v=3">
 </head>
 <body>
 <div class="app-shell">
@@ -100,18 +100,36 @@
 
     <section class="screen flight-screen" id="flightScreen">
       <div class="flight-hud">
-        <div class="hud-card fuel-card"><span>FUEL</span><div class="fuel-track"><i id="fuelFill"></i></div><b id="fuelText">60%</b></div>
-        <div class="hud-card word-hud"><small id="flightWordCount">WORD 1 / 10</small><b id="flightPattern">_ _ _ _</b><button id="flightSpeak" type="button">🔊 Hear</button></div>
-        <div class="hud-card"><span>ACCURACY</span><b id="accuracyText">100%</b><small id="mistakeText">0 mistakes</small></div>
+        <div class="flight-brand" aria-label="Spelling Bee">
+          <strong>Spelling</strong><b>Bee</b><small>FLY • SPELL • LEARN</small>
+        </div>
+        <div class="hud-card word-hud">
+          <button id="flightSpeak" type="button" aria-label="Hear current word">🔊</button>
+          <div><small id="flightWordCount">WORD 1 / 10</small><span>CURRENT WORD</span><b id="flightPattern">_ _ _ _</b></div>
+        </div>
+        <div class="hud-card flight-metrics">
+          <div class="metric fuel-card"><span>⛽ FUEL</span><div class="fuel-track"><i id="fuelFill"></i></div><b id="fuelText">60%</b></div>
+          <div class="metric accuracy-card"><span>⭐ ACCURACY</span><b id="accuracyText">100%</b><small id="mistakeText">0 mistakes</small></div>
+        </div>
+        <div class="hud-card route-hud">
+          <span>ROUTE PROGRESS</span>
+          <button class="audio-toggle" id="flightSoundBtn" type="button" aria-label="Mute aircraft sounds" title="Aircraft sounds on">🔊</button>
+          <div class="route-labels"><small id="originLabel">HOME</small><small id="destinationLabel">DESTINATION</small></div>
+          <div class="route-track"><i id="routeFill"></i><span class="route-plane" id="routePlane">✈</span></div>
+          <b id="routePercent">0%</b>
+        </div>
       </div>
 
       <div class="flight-world" id="flightWorld">
         <div class="sky-glow"></div><div class="sun"></div>
+        <div class="world-backdrop" aria-hidden="true"></div>
         <div class="horizon-haze"></div>
         <div class="cloud-layer back" id="cloudLayerBack"></div>
         <div class="cloud-layer" id="cloudLayer"></div>
         <div class="mountains far"></div><div class="mountains near"></div>
         <div class="terrain-stream"><i></i><i></i><i></i><i></i></div>
+        <div class="vegetation-stream" id="vegetationStream" aria-hidden="true"></div>
+        <div class="speed-lines" aria-hidden="true"></div>
         <div class="destination-scene" id="destinationScene" aria-hidden="true">
           <div class="terminal"><span></span><span></span><span></span><span></span></div>
           <div class="tower"></div>
@@ -119,11 +137,17 @@
         </div>
         <div class="runway" id="runway"><i></i><i></i><i></i><i></i><i></i><i></i><b></b></div>
         <div class="scene3d" id="scene3d"></div>
-        <div class="player-plane" id="playerPlane"><span>✈</span><i></i><em></em></div>
+        <div class="player-plane" id="playerPlane">
+          <img src="./spelling-plane.svg" alt="Your spelling aircraft">
+          <span class="propeller-disc" aria-hidden="true"></span>
+          <i class="engine-glow" aria-hidden="true"></i>
+          <em class="contrails" aria-hidden="true"></em>
+          <b class="plane-hit-point" id="planeHitPoint" aria-hidden="true"></b>
+        </div>
+        <div class="touchdown-smoke" id="touchdownSmoke" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
         <div class="flight-message" id="flightMessage"></div>
       </div>
 
-      <div class="route-bar"><span id="originLabel">HOME</span><div class="route-track"><i id="routeFill"></i><span class="route-plane" id="routePlane">✈</span></div><span id="destinationLabel">DESTINATION</span></div>
       <div class="mobile-controls" aria-label="Flight controls"><button data-steer="-1" type="button">◀</button><button data-steer="1" type="button">▶</button></div>
     </section>
 
@@ -146,6 +170,6 @@
   </main>
 </div>
 <div class="toast-area" id="toastArea" aria-live="polite"></div>
-<script src="./spelling-bee.js?v=2"></script>
+<script src="./spelling-bee.js?v=3"></script>
 </body>
 </html>
