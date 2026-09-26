@@ -40,9 +40,36 @@ function masteredCount(level){
   if(!level)return 0;var saved=levelSave(level.id);
   return level.words.filter(function(w){var x=saved.words[normalWord(w)]||{};return x.build&&x.spell&&x.sentence}).length;
 }
+function storyExampleFor(word){
+  var story=String(state.level&&state.level.story||"");
+  if(!story)return "";
+  var re=new RegExp("(^|[^A-Za-z])"+escapeRegExp(word)+"([^A-Za-z]|$)","i");
+  var parts=story.split(/(?<=[.!?])\s+|\n+/).map(function(x){return x.trim()}).filter(Boolean);
+  return parts.find(function(x){return re.test(x)})||"";
+}
+function localExampleFor(word){
+  var storyExample=storyExampleFor(word);
+  if(storyExample)return storyExample;
+  var index=Math.max(0,(state.level&&state.level.words||[]).indexOf(word));
+  var templates=[
+    function(w){return "Maya used "+w+" naturally while telling her family about her day.";},
+    function(w){return "Jordan chose "+w+" because it clearly expressed what he wanted to say.";},
+    function(w){return "Kai read a sentence with "+w+" and understood how it was being used.";},
+    function(w){return "Amara added "+w+" to her paragraph where it matched the meaning perfectly.";},
+    function(w){return "Leo heard "+w+" in a story and used it correctly in his own sentence.";},
+    function(w){return "Nia included "+w+" when she described what happened during the adventure.";},
+    function(w){return "Eli used "+w+" in his journal so the sentence said exactly what he meant.";},
+    function(w){return "Sofia found a natural place for "+w+" while writing her short story.";},
+    function(w){return "Malik used "+w+" correctly when he explained his idea to the group.";},
+    function(w){return "Zoe included "+w+" in a sentence that made the meaning clear.";},
+    function(w){return "Noah used "+w+" while describing the scene in his reading activity.";},
+    function(w){return "Ava placed "+w+" in her sentence because it suited the situation best.";}
+  ];
+  return templates[index%templates.length](word);
+}
 function supportFor(word){
   var c=(state.level.content||[]).find(function(x){return normalWord(x.word)===normalWord(word)})||{};
-  return {word:word,definition:c.definition||"A spelling word for this week's learning mission.",example:c.example||("Use "+word+" in a sentence to show what it means."),hint:c.hint||("It starts with "+String(word).charAt(0).toUpperCase()+" and has "+lettersOf(word).length+" letters."),syllables:c.syllables||String(word).split("").join(" · ")};
+  return {word:word,definition:c.definition||"A spelling word for this week's learning mission.",example:c.example||localExampleFor(word),hint:c.hint||("It starts with "+String(word).charAt(0).toUpperCase()+" and has "+lettersOf(word).length+" letters."),syllables:c.syllables||String(word).split("").join(" · ")};
 }
 function speak(text){
   if(!("speechSynthesis" in window)){toast("Speech is not available in this browser.");return}
