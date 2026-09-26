@@ -53,17 +53,18 @@ function renderSummary(s){
 function renderUsage(days){
   const box=$("#usageChart");box.textContent="";
   if(!days.length){box.innerHTML='<div class="empty-admin">No usage data yet.</div>';return}
-  const max=Math.max(1,...days.flatMap(d=>[d.sessions||0,d.uniquePlayers||0]));
+  const max=Math.max(1,...days.flatMap(d=>[d.titleSessions||d.sessions||0,d.uniqueProfiles||d.uniquePlayers||0]));
   for(const d of days){
     const wrap=document.createElement("div");wrap.className="day-bar";
-    const area=document.createElement("div");area.className="bar-area";area.title=d.date+" • "+d.sessions+" sessions • "+d.uniquePlayers+" unique players";
-    const s=document.createElement("div");s.className="bar-session";s.style.height=Math.max(2,(d.sessions/max)*100)+"%";
-    const u=document.createElement("div");u.className="bar-unique";u.style.height=Math.max(2,(d.uniquePlayers/max)*100)+"%";
+    const sessions=d.titleSessions||d.sessions||0,profiles=d.uniqueProfiles||d.uniquePlayers||0;
+    const area=document.createElement("div");area.className="bar-area";area.title=d.date+" • "+sessions+" title sessions • "+profiles+" shared profiles";
+    const s=document.createElement("div");s.className="bar-session";s.style.height=Math.max(2,(sessions/max)*100)+"%";
+    const u=document.createElement("div");u.className="bar-unique";u.style.height=Math.max(2,(profiles/max)*100)+"%";
     area.append(s,u);
     const label=document.createElement("div");label.className="day-label";label.textContent=d.date.slice(5);
     wrap.append(area,label);box.append(wrap);
   }
-  const legend=document.createElement("div");legend.className="chart-legend";legend.innerHTML='<span><i class="legend-dot sessions"></i>Sessions</span><span><i class="legend-dot unique"></i>Unique players</span>';
+  const legend=document.createElement("div");legend.className="chart-legend";legend.innerHTML='<span><i class="legend-dot sessions"></i>Title sessions</span><span><i class="legend-dot unique"></i>Shared profiles</span>';
   box.append(legend);
 }
 function renderTitleUsage(rows){
