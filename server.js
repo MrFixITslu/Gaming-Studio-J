@@ -1301,7 +1301,8 @@ function summaryPayload() {
       matches: row.matches || 0,
       chatMessages: row.chatMessages || 0,
       scoreSubmissions: row.scoreSubmissions || 0,
-      uniquePlayers: Object.keys(row.players || {}).length
+      uniquePlayers: Object.keys(row.players || {}).length,
+      uniqueProfiles: Object.keys(row.profiles || {}).length
     }));
 
   const titleUsage = Object.values(db.titles || {})
