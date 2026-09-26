@@ -145,9 +145,29 @@ function setPlaneLane(lane){
 }
 function steer(delta){if(state.flight&&state.flight.active)setPlaneLane(state.flight.lane+delta)}
 function message(text,duration){$("flightMessage").textContent=text;$("flightMessage").classList.add("show");clearTimeout(state.flight&&state.flight.messageTimer);if(state.flight)state.flight.messageTimer=setTimeout(function(){$("flightMessage").classList.remove("show")},duration||1300)}
+function seedCloudLayer(layerId,count,back){
+  var layer=$(layerId);if(!layer)return;layer.innerHTML="";
+  for(var i=0;i<count;i++){
+    var c=document.createElement("div");c.className="flight-cloud";
+    var scale=back?.75:1;
+    c.style.width=((35+Math.random()*60)*scale)+"px";
+    c.style.height=((18+Math.random()*28)*scale)+"px";
+    c.style.left=(-8+Math.random()*108)+"%";
+    c.style.top=((back?8:14)+Math.random()*(back?38:48))+"%";
+    c.style.opacity=(back?.18:.28)+Math.random()*(back?.28:.5);
+    c.style.animationDuration=((back?24:14)+Math.random()*(back?20:18))+"s";
+    c.style.animationDelay=(-Math.random()*14)+"s";
+    layer.appendChild(c);
+  }
+}
 function seedClouds(){
-  var layer=$("cloudLayer");layer.innerHTML="";
-  for(var i=0;i<12;i++){var c=document.createElement("div");c.className="flight-cloud";c.style.width=(35+Math.random()*55)+"px";c.style.height=(18+Math.random()*25)+"px";c.style.left=(Math.random()*100)+"%";c.style.top=(12+Math.random()*45)+"%";c.style.opacity=(.25+Math.random()*.55);c.style.animationDuration=(12+Math.random()*18)+"s";layer.appendChild(c)}
+  seedCloudLayer("cloudLayerBack",9,true);
+  seedCloudLayer("cloudLayer",14,false);
+}
+function setFlightPhase(phase){
+  var world=$("flightWorld");if(!world)return;
+  world.classList.remove("takeoff","cruise","landing");
+  if(phase)world.classList.add(phase);
 }
 function flightFuel(){
   var f=state.flight;if(!f)return 0;if(f.mistakes>f.allowance)return 0;var gain=f.correct*(40/Math.max(1,f.totalLetters)),loss=f.mistakes*(60/Math.max(1,f.allowance));return Math.round(clamp(60+gain-loss,5,100));
@@ -179,17 +199,65 @@ function flightLoop(ts){
   state.raf=requestAnimationFrame(flightLoop);
 }
 function startFlight(){
-  if(!state.level||masteredCount(state.level)!==state.level.words.length)return;var total=state.level.words.reduce(function(n,w){return n+lettersOf(w).length},0),p=studioProfile(),ls=levelSave(state.level.id);ls.attempts=(ls.attempts||0)+1;saveAll();
-  state.flight={active:false,transitioning:false,lane:0,gates:[],wordIndex:0,word:state.level.words[0],wordLetters:lettersOf(state.level.words[0]),letterIndex:0,totalLetters:total,allowance:Math.floor(total*.2),correct:0,mistakes:0,streak:0,bestStreak:0,difficult:{},last:0};
-  $("originLabel").textContent="TAKEOFF";$("destinationLabel").textContent=(state.level.destination||"DESTINATION").toUpperCase();$("runway").style.opacity="1";seedClouds();setPlaneLane(0);updateFlightHud();showScreen("flightScreen");postProgress("attempt",{totalLetters:total});message("Tower: "+p.name+", cleared for takeoff!",1800);speak("Cleared for takeoff. First word: "+state.flight.word);
+  if(!state.level||masteredCount(state.level)!==state.level.words.length)return;
+  var total=state.level.words.reduce(function(n,w){return n+lettersOf(w).length},0),p=studioProfile(),ls=levelSave(state.level.id);
+  ls.attempts=(ls.attempts||0)+1;saveAll();
+  state.flight={active:false,transitioning:false,ending:false,landing:false,lane:0,gates:[],wordIndex:0,word:state.level.words[0],wordLetters:lettersOf(state.level.words[0]),letterIndex:0,totalLetters:total,allowance:Math.floor(total*.2),correct:0,mistakes:0,streak:0,bestStreak:0,difficult:{},last:0};
+  $("originLabel").textContent="TAKEOFF";
+  $("destinationLabel").textContent=(state.level.destination||"DESTINATION").toUpperCase();
+  $("welcomeSign").textContent=(state.level.destination||"WELCOME").toUpperCase();
+  $("runway").style.opacity="";
+  $("playerPlane").classList.remove("landing","bank-left","bank-right");
+  seedClouds();setPlaneLane(0);setFlightPhase("takeoff");updateFlightHud();showScreen("flightScreen");
+  postProgress("attempt",{totalLetters:total});
+  message("Tower: "+p.name+", cleared for takeoff!",1800);
+  speak("Cleared for takeoff. First word: "+state.flight.word);
   if(!state.raf)state.raf=requestAnimationFrame(flightLoop);
-  setTimeout(function(){if(!state.flight)return;$("runway").style.opacity=".18";state.flight.active=true;message("Spell "+state.flight.word,1200);spawnGates()},2800);
+  setTimeout(function(){
+    if(!state.flight||state.flight.ending)return;
+    setFlightPhase("cruise");
+    state.flight.active=true;
+    message("Cruise altitude reached. Spell "+state.flight.word,1300);
+    spawnGates();
+  },2800);
 }
 function endFlight(success){
-  var f=state.flight;if(!f)return;f.active=false;clearGates();var decisions=f.correct+f.mistakes,accuracy=decisions?Math.round(f.correct/decisions*100):0,fuel=flightFuel(),completedWords=success?state.level.words.length:f.wordIndex,ls=levelSave(state.level.id);ls.bestAccuracy=Math.max(Number(ls.bestAccuracy)||0,accuracy);if(success)ls.completions=(ls.completions||0)+1;saveAll();
-  $("resultsIcon").textContent=success?"🛬":"🛟";$("resultsEyebrow").textContent=success?"MISSION COMPLETE":"SAFE DIVERSION";$("resultsTitle").textContent=success?"Welcome to "+(state.level.destination||"your destination")+"!":"Practice Airfield";$("resultsMessage").textContent=success?"You kept the aircraft fuelled by spelling the weekly words in the correct sequence.":"More than 20% of the mission letters were missed, so the tower brought you safely to the Practice Airfield. Review the difficult words and try again.";$("resultAccuracy").textContent=accuracy+"%";$("resultWords").textContent=completedWords+"/"+state.level.words.length;$("resultFuel").textContent=fuel+"%";$("resultStreak").textContent=f.bestStreak;
-  var difficult=Object.keys(f.difficult).sort(function(a,b){return f.difficult[b]-f.difficult[a]});$("reviewBox").innerHTML=difficult.length?"<b>Words to practise</b><p>"+difficult.map(escapeHtml).join(" • ")+"</p>":"<b>Excellent control!</b><p>No words caused a wrong-letter fuel loss.</p>";showScreen("resultsScreen");postProgress(success?"complete":"divert",{accuracy:accuracy,mistakes:f.mistakes,totalLetters:f.totalLetters,difficultWords:difficult.slice(0,12)});
-  if(success)addAchievement("first-flight","First Landing","Complete a Spelling Bee weekly flight mission.","🛬",45);if(success&&accuracy===100)addAchievement("perfect-flight","Perfect Flight","Complete a Spelling Bee flight with 100% spelling accuracy.","⭐",70);
+  var f=state.flight;if(!f||f.ending)return;
+  f.ending=true;f.active=false;f.transitioning=true;clearGates();
+  var decisions=f.correct+f.mistakes,accuracy=decisions?Math.round(f.correct/decisions*100):0,fuel=flightFuel(),completedWords=success?state.level.words.length:f.wordIndex,ls=levelSave(state.level.id);
+  ls.bestAccuracy=Math.max(Number(ls.bestAccuracy)||0,accuracy);if(success)ls.completions=(ls.completions||0)+1;saveAll();
+  var difficult=Object.keys(f.difficult).sort(function(a,b){return f.difficult[b]-f.difficult[a]});
+  beginLanding(success,function(){
+    $("resultsIcon").textContent=success?"🛬":"🛟";
+    $("resultsEyebrow").textContent=success?"MISSION COMPLETE":"SAFE DIVERSION";
+    $("resultsTitle").textContent=success?"Welcome to "+(state.level.destination||"your destination")+"!":"Practice Airfield";
+    $("resultsMessage").textContent=success?"You landed safely after keeping the aircraft fuelled by spelling the weekly words in the correct sequence.":"More than 20% of the mission letters were missed, so the tower diverted you to the Practice Airfield. Review the difficult words and try again.";
+    $("resultAccuracy").textContent=accuracy+"%";$("resultWords").textContent=completedWords+"/"+state.level.words.length;$("resultFuel").textContent=fuel+"%";$("resultStreak").textContent=f.bestStreak;
+    $("reviewBox").innerHTML=difficult.length?"<b>Words to practise</b><p>"+difficult.map(escapeHtml).join(" • ")+"</p>":"<b>Excellent control!</b><p>No words caused a wrong-letter fuel loss.</p>";
+    showScreen("resultsScreen");
+    postProgress(success?"complete":"divert",{accuracy:accuracy,mistakes:f.mistakes,totalLetters:f.totalLetters,difficultWords:difficult.slice(0,12)});
+    if(success)addAchievement("first-flight","First Landing","Complete a Spelling Bee weekly flight mission.","🛬",45);
+    if(success&&accuracy===100)addAchievement("perfect-flight","Perfect Flight","Complete a Spelling Bee flight with 100% spelling accuracy.","⭐",70);
+  });
+}
+function beginLanding(success,done){
+  var f=state.flight;if(!f)return done&&done();
+  f.landing=true;f.active=false;clearGates();setPlaneLane(0);
+  $("playerPlane").classList.remove("bank-left","bank-right");
+  $("playerPlane").classList.add("landing");
+  $("originLabel").textContent=success?"APPROACH":"DIVERSION";
+  var destination=success?(state.level.destination||"DESTINATION"):"PRACTICE AIRFIELD";
+  $("destinationLabel").textContent=destination.toUpperCase();
+  $("welcomeSign").textContent=destination.toUpperCase();
+  setFlightPhase("landing");
+  message(success?"Approach clear — landing gear down.":"Low fuel — landing at the Practice Airfield.",1900);
+  speak(success?"Approach clear. Prepare for landing.":"We are diverting safely to the Practice Airfield.");
+  setTimeout(function(){
+    if(!state.flight)return;
+    message("Touchdown! Great flying.",900);
+    speak("Touchdown.");
+    setTimeout(function(){if(done)done()},950);
+  },3300);
 }
 function backToPractice(){state.flight=null;renderWordList();renderPracticeWord();showScreen("practiceScreen")}
 function initBindings(){
