@@ -724,11 +724,13 @@ app.post("/api/usage", (req, res) => {
 });
 
 app.get("/api/leaderboard", (_req, res) => {
-  const rows = Object.values(db.players)
+  const source = Object.values(db.profiles || {}).length ? Object.values(db.profiles) : Object.values(db.players);
+  const rows = source
     .filter(p => Number(p.bestScore) > 0)
     .sort((a, b) => b.bestScore - a.bestScore || b.maxLevel - a.maxLevel)
     .slice(0, 50)
     .map(p => ({
+      profileId: p.profileId || "legacy",
       nickname: p.nickname,
       appearance: p.appearance,
       bestScore: p.bestScore,
