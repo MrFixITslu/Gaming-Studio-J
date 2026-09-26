@@ -27,7 +27,7 @@ async function generate(){
   $("generateBtn").disabled=true;$("generateBtn").textContent="Generating…";msg("formMessage","");
   try{
     var data=await request("./api/admin/spelling/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({words:list,story:$("story").value})});
-    state.content=data.content||[];$("generatorMode").textContent=data.mode==="ollama"?"AI generated":"Local fallback generated";renderContent();msg("formMessage","Learning content generated. Review or edit it before publishing.",false);
+    state.content=data.content||[];$("generatorMode").textContent=data.mode==="ollama"?"Ollama generated • meaning-based sentences":"Local fallback • configure Ollama for meaning-based sentences";renderContent();msg("formMessage","Learning content generated. Review or edit it before publishing.",false);
   }catch(e){msg("formMessage",e.message,true)}
   finally{$("generateBtn").disabled=false;$("generateBtn").textContent="✨ Generate learning content"}
 }

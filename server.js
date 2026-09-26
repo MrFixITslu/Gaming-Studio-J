@@ -185,11 +185,71 @@ function storySentence(story, word) {
   const source = cleanLongText(story, 8000);
   if (source) {
     const parts = source.split(/(?<=[.!?])\s+|\n+/).map(x => x.trim()).filter(Boolean);
-    const lower = word.toLowerCase();
-    const match = parts.find(x => x.toLowerCase().includes(lower));
+    const re = new RegExp("(^|[^A-Za-z])" + escapeRegex(word) + "([^A-Za-z]|$)", "i");
+    const match = parts.find(x => re.test(x));
     if (match) return cleanText(match, 260);
   }
-  return "The word " + word + " is one of this week's spelling words.";
+  return "";
+}
+
+function escapeRegex(value) {
+  return String(value || "").replace(/[.*+?^$()|[\]\\{}]/g, "\\$&");
+}
+
+function sentenceUsesWord(sentence, word) {
+  const value = cleanText(sentence, 280);
+  if (!value) return false;
+  const re = new RegExp("(^|[^A-Za-z])" + escapeRegex(word) + "([^A-Za-z]|$)", "i");
+  return re.test(value);
+}
+
+function weakLearningSentence(sentence, word) {
+  const s = cleanText(sentence, 280).toLowerCase();
+  const w = String(word || "").toLowerCase();
+  if (!s) return true;
+  if (!sentenceUsesWord(s, word)) return true;
+  if (s.includes("spelling word") || s.includes("spelling list")) return true;
+  if (s.includes("spell the word") || s.includes("spelled the word")) return true;
+  if (s.startsWith("the word " + w + " ")) return true;
+  if (s.includes("practice the word") || s.includes("practise the word")) return true;
+  if (s.includes(" in a sentence") && (s.includes("use ") || s.includes("used ") || s.includes("using "))) return true;
+  if (s.includes("what it means") && s.includes(w)) return true;
+  return false;
+}
+
+function sentenceSignature(sentence) {
+  return cleanText(sentence, 280)
+    .toLowerCase()
+    .replace(/[^a-z\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function fallbackExampleSentence(word, index, story, used) {
+  const fromStory = storySentence(story, word);
+  const storyKey = sentenceSignature(fromStory);
+  if (fromStory && !weakLearningSentence(fromStory, word) && !used.has(storyKey)) {
+    used.add(storyKey);
+    return fromStory;
+  }
+
+  const templates = [
+    w => "Maya wrote “" + w + "” in her notebook and checked the spelling carefully.",
+    w => "Jordan read “" + w + "” aloud before copying it neatly onto his page.",
+    w => "Kai highlighted “" + w + "” when he found it during his reading activity.",
+    w => "Amara practised “" + w + "” once more before moving to the next activity.",
+    w => "Leo circled “" + w + "” after finding it in the weekly reading passage.",
+    w => "Nia listened carefully to “" + w + "” before writing it from memory.",
+    w => "Eli checked every letter in “" + w + "” before showing his work.",
+    w => "Sofia found “" + w + "” in the passage and read the whole line aloud.",
+    w => "Malik copied “" + w + "” carefully, paying attention to each letter.",
+    w => "Zoe listened for “" + w + "” while the weekly words were read aloud.",
+    w => "Noah wrote “" + w + "” on his practice card and reviewed it later.",
+    w => "Ava recognised “" + w + "” when it appeared in the reading exercise."
+  ];
+  const sentence = templates[index % templates.length](word);
+  used.add(sentenceSignature(sentence));
+  return sentence;
 }
 
 function roughSyllables(word) {
@@ -200,10 +260,11 @@ function roughSyllables(word) {
 }
 
 function fallbackSpellingContent(words, story) {
-  return words.map(word => ({
+  const used = new Set();
+  return words.map((word, index) => ({
     word,
     definition: "A word from this week's spelling list. Learn its meaning from the story and practise using it correctly.",
-    example: storySentence(story, word),
+    example: fallbackExampleSentence(word, index, story, used),
     hint: "It starts with " + word.charAt(0).toUpperCase() + " and has " + word.length + " letters.",
     syllables: roughSyllables(word)
   }));
@@ -212,50 +273,150 @@ function fallbackSpellingContent(words, story) {
 function cleanGeneratedContent(content, words, story) {
   const rows = Array.isArray(content) ? content : [];
   const fallback = fallbackSpellingContent(words, story);
+  const usedExamples = new Set();
+
   return words.map((word, i) => {
     const found = rows.find(x => cleanSpellingWord(x?.word).toLowerCase() === word.toLowerCase()) || {};
+    let example = cleanText(found.example || found.exampleSentence, 280);
+    const sig = sentenceSignature(example);
+
+    if (
+      weakLearningSentence(example, word) ||
+      !sig ||
+      usedExamples.has(sig)
+    ) {
+      example = fallback[i].example;
+    }
+
+    let finalSig = sentenceSignature(example);
+    if (usedExamples.has(finalSig)) {
+      example = fallbackExampleSentence(word, i + 5, story, usedExamples);
+      finalSig = sentenceSignature(example);
+    }
+    usedExamples.add(finalSig);
+
     return {
       word,
       definition: cleanText(found.definition, 240) || fallback[i].definition,
-      example: cleanText(found.example || found.exampleSentence, 280) || fallback[i].example,
+      example,
       hint: cleanText(found.hint, 180) || fallback[i].hint,
       syllables: cleanText(found.syllables, 100) || fallback[i].syllables
     };
   });
 }
 
+function parseOllamaRows(payload) {
+  const raw = typeof payload?.response === "string" ? payload.response : "";
+  const parsed = JSON.parse(raw);
+  return Array.isArray(parsed) ? parsed : (Array.isArray(parsed.content) ? parsed.content : []);
+}
+
+async function requestOllamaJson(endpoint, prompt, timeoutMs = 30000) {
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ model: OLLAMA_MODEL, prompt, stream: false, format: "json" }),
+    signal: AbortSignal.timeout(timeoutMs)
+  });
+  if (!response.ok) throw new Error("Ollama returned " + response.status);
+  return parseOllamaRows(await response.json());
+}
+
+function generatedRowsNeedingRepair(rows, words) {
+  const used = new Set();
+  const invalid = [];
+  for (const word of words) {
+    const row = rows.find(x => cleanSpellingWord(x?.word).toLowerCase() === word.toLowerCase()) || {};
+    const example = cleanText(row.example || row.exampleSentence, 280);
+    const sig = sentenceSignature(example);
+    if (weakLearningSentence(example, word) || !sig || used.has(sig)) invalid.push(word);
+    else used.add(sig);
+  }
+  return invalid;
+}
+
 async function generateSpellingContent(words, story) {
   const fallback = fallbackSpellingContent(words, story);
   if (!OLLAMA_URL) return { content: fallback, mode: "fallback" };
+
   const endpoint = OLLAMA_URL.endsWith("/api/generate")
     ? OLLAMA_URL
     : OLLAMA_URL.replace(/\/$/, "") + "/api/generate";
+
   const prompt = [
-    "You create learning support for children practising weekly English spelling words.",
-    "Return valid JSON only as an array. Each object must contain: word, definition, example, hint, syllables.",
-    "Definitions must be child-friendly and accurate. Example sentences must use the word naturally.",
-    "Hints must help without spelling the whole word. Syllables should be readable chunks separated by ' · '.",
-    "Words: " + words.join(", "),
-    story ? "Weekly story context: " + story.slice(0, 5000) : ""
-  ].filter(Boolean).join("\n");
+    "You are an expert primary-school English teacher creating learning support for children practising weekly spelling words.",
+    "Return VALID JSON ONLY as an array with exactly one object per supplied word, in the same order.",
+    "Every object must contain exactly these useful fields: word, definition, example, hint, syllables.",
+    "Requirements for example sentences:",
+    "- Write a DIFFERENT, natural sentence for every word.",
+    "- The sentence must use that exact spelling word naturally and demonstrate its real meaning.",
+    "- Use the target word exactly once in the example.",
+    "- Use varied subjects, settings and sentence structures; do not reuse a sentence frame.",
+    "- Do NOT write meta sentences about spelling, words, vocabulary lists, homework, or 'the word X'.",
+    "- Keep each example child-friendly, grammatically correct, believable and about 7 to 18 words.",
+    "Definitions must be accurate, simple and specific enough for a child to understand the word's meaning.",
+    "Hints should help recall the spelling pattern without giving the whole spelling away.",
+    "Syllables should be readable chunks separated by ' · '.",
+    story ? "The weekly story below can inspire context, but do not copy the same story sentence for several words:\n" + story.slice(0, 5000) : "Invent age-appropriate everyday contexts that clearly show each word's meaning.",
+    "Words: " + words.join(", ")
+  ].join("\n");
+
   try {
-    const response = await fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ model: OLLAMA_MODEL, prompt, stream: false, format: "json" }),
-      signal: AbortSignal.timeout(12000)
-    });
-    if (!response.ok) throw new Error("Ollama returned " + response.status);
-    const payload = await response.json();
-    const raw = typeof payload.response === "string" ? payload.response : "";
-    const parsed = JSON.parse(raw);
-    const rows = Array.isArray(parsed) ? parsed : (Array.isArray(parsed.content) ? parsed.content : []);
+    let rows = await requestOllamaJson(endpoint, prompt, 30000);
     if (!rows.length) throw new Error("No generated rows");
+
+    const repairWords = generatedRowsNeedingRepair(rows, words);
+    if (repairWords.length) {
+      const repairPrompt = [
+        "Return VALID JSON ONLY as an array.",
+        "Rewrite ONLY the example sentences for these English spelling words: " + repairWords.join(", "),
+        "Each object must contain word and example.",
+        "For every word, create one unique, natural, child-friendly sentence that demonstrates the actual meaning of that word.",
+        "The exact target word must appear once.",
+        "Do not mention spelling, vocabulary, lists, the phrase 'the word', or classroom word practice.",
+        "Do not reuse sentence structures or scenarios across the words.",
+        story ? "You may use this story only for general context:\n" + story.slice(0, 3500) : ""
+      ].filter(Boolean).join("\n");
+
+      try {
+        const repairs = await requestOllamaJson(endpoint, repairPrompt, 22000);
+        rows = rows.map(row => {
+          const word = cleanSpellingWord(row?.word);
+          const replacement = repairs.find(x => cleanSpellingWord(x?.word).toLowerCase() === word.toLowerCase());
+          return replacement?.example ? { ...row, example: replacement.example } : row;
+        });
+      } catch (repairErr) {
+        console.warn("spelling sentence repair fallback:", repairErr.message);
+      }
+    }
+
     return { content: cleanGeneratedContent(rows, words, story), mode: "ollama" };
   } catch (err) {
     console.warn("spelling content generation fallback:", err.message);
     return { content: fallback, mode: "fallback" };
   }
+}
+
+
+async function repairStoredSpellingContent() {
+  if (!OLLAMA_URL || !spelling.levels.length) return;
+  let changed = false;
+  for (const level of spelling.levels) {
+    if (!Array.isArray(level.words) || !level.words.length) continue;
+    const weak = generatedRowsNeedingRepair(level.content || [], level.words);
+    if (!weak.length) continue;
+    try {
+      const generated = await generateSpellingContent(level.words, level.story);
+      if (generated.mode === "ollama") {
+        level.content = generated.content;
+        changed = true;
+        console.log("repaired spelling learning content:", level.title, weak.join(", "));
+      }
+    } catch (err) {
+      console.warn("stored spelling content repair failed:", level.title, err.message);
+    }
+  }
+  if (changed) await writeSpelling();
 }
 
 function normaliseSpellingLevel(payload, existing = {}) {
@@ -585,7 +746,8 @@ app.post("/api/admin/spelling/levels", requireAdmin, async (req, res) => {
   if (level.published && (level.words.length < 10 || level.words.length > 12)) {
     return res.status(400).json({ error: "Published spelling missions must contain 10–12 words." });
   }
-  if (!suppliedContent && level.words.length) {
+  const needsGeneration = !suppliedContent || generatedRowsNeedingRepair(req.body?.content || [], level.words).length > 0;
+  if (needsGeneration && level.words.length) {
     const generated = await generateSpellingContent(level.words, level.story);
     level.content = generated.content;
   }
@@ -605,7 +767,8 @@ app.put("/api/admin/spelling/levels/:id", requireAdmin, async (req, res) => {
   if (level.published && (level.words.length < 10 || level.words.length > 12)) {
     return res.status(400).json({ error: "Published spelling missions must contain 10–12 words." });
   }
-  if (!suppliedContent && level.words.length) {
+  const needsGeneration = !suppliedContent || generatedRowsNeedingRepair(req.body?.content || [], level.words).length > 0;
+  if (needsGeneration && level.words.length) {
     const generated = await generateSpellingContent(level.words, level.story);
     level.content = generated.content;
   }
@@ -1072,6 +1235,7 @@ app.use((_req, res) => res.status(404).send("Not found"));
 server.listen(PORT, "0.0.0.0", () => {
   console.log("Gaming Studio J multiplayer server listening on :" + PORT);
   if (!adminReady()) console.warn("Admin dashboard login is disabled until ADMIN_PASSWORD and ADMIN_SESSION_SECRET are configured.");
+  void repairStoredSpellingContent();
 });
 
 async function shutdown(signal) {
