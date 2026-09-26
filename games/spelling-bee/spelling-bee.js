@@ -300,17 +300,32 @@ function seedClouds(){
   seedCloudLayer("cloudLayerBack",9,true);
   seedCloudLayer("cloudLayer",14,false);
 }
+function seedCruiseIslands(){
+  var layer=$("cruiseIslands");if(!layer)return;layer.innerHTML="";
+  for(var i=0;i<6;i++){
+    var island=document.createElement("i");island.className="cruise-island";
+    var left=5+Math.random()*90,side=left<50?-1:1;
+    island.style.setProperty("--x",left+"%");
+    island.style.setProperty("--y",(6+Math.random()*52)+"%");
+    island.style.setProperty("--w",(80+Math.random()*120)+"px");
+    island.style.setProperty("--s",(.55+Math.random()*.55).toFixed(2));
+    island.style.setProperty("--o",(.28+Math.random()*.34).toFixed(2));
+    island.style.setProperty("--dur",(12+Math.random()*8)+"s");
+    island.style.setProperty("--delay",(-Math.random()*12)+"s");
+    island.style.setProperty("--drift",(side*(20+Math.random()*55))+"px");
+    layer.appendChild(island);
+  }
+}
 function seedVegetation(){
   var layer=$("vegetationStream");if(!layer)return;layer.innerHTML="";
-  for(var i=0;i<18;i++){
+  for(var i=0;i<10;i++){
     var v=document.createElement("i");v.className="veg";
-    var left=2+Math.random()*96,side=left<50?-1:1;
+    var left=3+Math.random()*94,side=left<50?-1:1;
     v.style.setProperty("--x",left+"%");
-    v.style.setProperty("--size",(24+Math.random()*32)+"px");
-    v.style.setProperty("--dur",(2.8+Math.random()*3.2)+"s");
-    v.style.setProperty("--delay",(-Math.random()*5)+"s");
-    v.style.setProperty("--drift",(side*(35+Math.random()*95))+"px");
-    v.style.setProperty("--lean",(-9+Math.random()*18)+"deg");
+    v.style.setProperty("--size",(18+Math.random()*22)+"px");
+    v.style.setProperty("--dur",(1.8+Math.random()*1.6)+"s");
+    v.style.setProperty("--delay",(-Math.random()*3)+"s");
+    v.style.setProperty("--drift",(side*(18+Math.random()*48))+"px");
     layer.appendChild(v);
   }
 }
@@ -341,7 +356,7 @@ function gateTouchesPlane(gate){
   var gr=gate.el.getBoundingClientRect(),pr=$("planeHitPoint").getBoundingClientRect();
   if(!gr.width||!gr.height)return false;
   var px=pr.left+pr.width/2,py=pr.top+pr.height/2,gx=gr.left+gr.width/2,gy=gr.top+gr.height/2;
-  var rx=gr.width*.31,ry=gr.height*.31;
+  var rx=gr.width*.255,ry=gr.height*.255;
   return Math.pow((px-gx)/Math.max(1,rx),2)+Math.pow((py-gy)/Math.max(1,ry),2)<=1;
 }
 function removeOtherGates(keep){
@@ -380,12 +395,13 @@ function flightLoop(ts){
       if(g.resolved)return;
       g.z+=520*dt;
       var t=clamp((g.z+1500)/1480,0,1.12),ease=t*t*(3-2*t);
-      var lanePx=(world?world.clientWidth:1000)*(.13+.025*ease)*g.lane;
-      var approachY=(world?world.clientHeight:700)*.235*ease+Math.sin((g.z+g.lane*110)/280)*7;
+      var ww=world?world.clientWidth:1000,wh=world?world.clientHeight:700;
+      var lanePx=ww*(.045+.115*ease)*g.lane;
+      var approachY=wh*(.015+.245*ease)+Math.sin((g.z+g.lane*110)/310)*4;
       g.el.style.transform="translate3d("+lanePx+"px,"+approachY+"px,"+g.z+"px)";
-      g.el.style.opacity=t>1.02?Math.max(0,1-(t-1.02)*8):1;
-      if(t>.68&&t<1.035&&gateTouchesPlane(g)&&!hitGate)hitGate=g;
-      if(t<1.055)allPassed=false;
+      g.el.style.opacity=t>1.015?Math.max(0,1-(t-1.015)*11):1;
+      if(t>.855&&t<1.025&&gateTouchesPlane(g)&&!hitGate)hitGate=g;
+      if(t<1.045)allPassed=false;
     });
     if(hitGate)evaluateGate(hitGate,false);
     else if(allPassed)evaluateGate(null,true);
@@ -403,7 +419,7 @@ function startFlight(){
   $("runway").style.opacity="";
   $("playerPlane").classList.remove("landing","bank-left","bank-right");
   $("touchdownSmoke").classList.remove("active");
-  seedClouds();seedVegetation();setPlaneLane(0);setFlightPhase("takeoff");updateFlightHud();showScreen("flightScreen");
+  seedClouds();seedCruiseIslands();seedVegetation();setPlaneLane(0);setFlightPhase("takeoff");updateFlightHud();showScreen("flightScreen");
   startPlaneAudio("takeoff");
   postProgress("attempt",{totalLetters:total});
   message("Tower: "+p.name+", cleared for takeoff!",1800);
@@ -416,7 +432,7 @@ function startFlight(){
     state.flight.active=true;
     message("Cruise altitude reached. Spell "+state.flight.word,1300);
     spawnGates();
-  },2800);
+  },3100);
 }
 function endFlight(success){
   var f=state.flight;if(!f||f.ending)return;
@@ -457,10 +473,10 @@ function beginLanding(success,done){
     if(!state.flight)return;
     $("touchdownSmoke").classList.remove("active");void $("touchdownSmoke").offsetWidth;$("touchdownSmoke").classList.add("active");
     flightSfx("touchdown");
-    message("Touchdown! Great flying.",1000);
-    speak("Touchdown.");
-    setTimeout(function(){if(done)done()},1100);
-  },3650);
+    message("Touchdown — rolling to the terminal.",1250);
+    speak("Touchdown. Welcome to "+destination+".");
+    setTimeout(function(){if(done)done()},1450);
+  },4100);
 }
 function backToPractice(){stopPlaneAudio();state.flight=null;renderWordList();renderPracticeWord();showScreen("practiceScreen")}
 function initBindings(){

@@ -1,31 +1,103 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 240" role="img" aria-label="Spelling Bee airplane">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 300" role="img" aria-label="Spelling Bee propeller airplane">
 <defs>
-  <linearGradient id="fuselage" x1="0" x2="1"><stop stop-color="#f7fbff"/><stop offset=".48" stop-color="#fff"/><stop offset="1" stop-color="#c9d7df"/></linearGradient>
-  <linearGradient id="red" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ff594d"/><stop offset=".55" stop-color="#df292c"/><stop offset="1" stop-color="#a91524"/></linearGradient>
-  <linearGradient id="gold" x1="0" x2="1"><stop stop-color="#ffe77a"/><stop offset=".5" stop-color="#ffc928"/><stop offset="1" stop-color="#f39b12"/></linearGradient>
-  <filter id="shadow" x="-30%" y="-30%" width="160%" height="180%"><feDropShadow dx="0" dy="10" stdDeviation="9" flood-color="#17344a" flood-opacity=".45"/></filter>
+  <linearGradient id="body" x1="0" y1="0" x2=".85" y2="1">
+    <stop stop-color="#ffffff"/>
+    <stop offset=".38" stop-color="#f7fbfd"/>
+    <stop offset=".68" stop-color="#dbe8ee"/>
+    <stop offset="1" stop-color="#9db5c1"/>
+  </linearGradient>
+  <linearGradient id="bodyShade" x1="0" y1="0" x2="1" y2="0">
+    <stop stop-color="#819ca9"/>
+    <stop offset=".28" stop-color="#e8f2f6"/>
+    <stop offset=".62" stop-color="#ffffff"/>
+    <stop offset="1" stop-color="#79929e"/>
+  </linearGradient>
+  <linearGradient id="red" x1="0" y1="0" x2="1" y2="1">
+    <stop stop-color="#ff6457"/>
+    <stop offset=".48" stop-color="#e83634"/>
+    <stop offset="1" stop-color="#9c1825"/>
+  </linearGradient>
+  <linearGradient id="redDark" x1="0" y1="0" x2="0" y2="1">
+    <stop stop-color="#bd202d"/>
+    <stop offset="1" stop-color="#75121c"/>
+  </linearGradient>
+  <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+    <stop stop-color="#ffe77e"/>
+    <stop offset=".52" stop-color="#ffc92f"/>
+    <stop offset="1" stop-color="#ec9412"/>
+  </linearGradient>
+  <linearGradient id="glass" x1="0" y1="0" x2=".7" y2="1">
+    <stop stop-color="#c8f4ff"/>
+    <stop offset=".48" stop-color="#56bde7"/>
+    <stop offset="1" stop-color="#174c72"/>
+  </linearGradient>
+  <radialGradient id="nose" cx=".45" cy=".35">
+    <stop stop-color="#f9ffff"/>
+    <stop offset=".55" stop-color="#dce9ee"/>
+    <stop offset="1" stop-color="#94aab4"/>
+  </radialGradient>
+  <filter id="shadow" x="-30%" y="-30%" width="160%" height="180%">
+    <feDropShadow dx="0" dy="16" stdDeviation="12" flood-color="#0b2a3e" flood-opacity=".5"/>
+  </filter>
 </defs>
+
 <g filter="url(#shadow)">
-  <ellipse cx="150" cy="210" rx="92" ry="16" fill="#15354c" opacity=".2"/>
-  <path d="M140 20c-11 24-15 52-15 91l-9 75c-2 21 13 35 34 35s36-14 34-35l-9-75c0-39-4-67-15-91-6-12-14-12-20 0z" fill="url(#fuselage)" stroke="#8aa8b9" stroke-width="3"/>
-  <path d="M137 28c7-16 19-16 26 0l7 31h-40z" fill="url(#red)"/>
-  <path d="M131 72h38l5 17h-48z" fill="#173a57"/>
-  <path d="M134 74h12v13h-16zM154 74h12l4 13h-16z" fill="#79d7f7"/>
-  <path d="M125 103 31 152c-9 5-7 20 3 22l85 7 7-20-61-8 66-23z" fill="url(#fuselage)" stroke="#8aa8b9" stroke-width="3"/>
-  <path d="M175 103 269 152c9 5 7 20-3 22l-85 7-7-20 61-8-66-23z" fill="url(#fuselage)" stroke="#8aa8b9" stroke-width="3"/>
-  <path d="M41 151 117 113l-3 20-54 22 59 7-5 17-80-7c-8-1-10-13-3-18z" fill="url(#red)"/>
-  <path d="m259 151-76-38 3 20 54 22-59 7 5 17 80-7c8-1 10-13 3-18z" fill="url(#red)"/>
-  <path d="M102 184 56 208c-8 4-5 14 4 14h57l4-17-32 3 35-14z" fill="url(#fuselage)" stroke="#8aa8b9" stroke-width="3"/>
-  <path d="m198 184 46 24c8 4 5 14-4 14h-57l-4-17 32 3-35-14z" fill="url(#fuselage)" stroke="#8aa8b9" stroke-width="3"/>
-  <path d="M143 170h14l7 45h-28z" fill="url(#red)"/>
-  <path d="M142 105h16v95h-16z" fill="url(#gold)" opacity=".95"/>
-  <path d="M58 153h45l-15 9-35-3zM242 153h-45l15 9 35-3z" fill="url(#gold)"/>
-  <g fill="#fff" stroke="#f7bb17" stroke-width="3">
-    <path d="m76 143 5 10 12 2-9 8 2 12-10-6-11 6 3-12-9-8 12-2z"/>
-    <path d="m224 143 5 10 12 2-9 8 2 12-10-6-11 6 3-12-9-8 12-2z"/>
+  <ellipse cx="210" cy="270" rx="145" ry="18" fill="#0a2b40" opacity=".18"/>
+
+  <!-- main wings, seen from slightly above and behind -->
+  <path d="M190 143 35 184c-17 5-16 22 2 27l145 12 16-30-101-6 104-18z"
+        fill="url(#body)" stroke="#728d99" stroke-width="4"/>
+  <path d="m230 143 155 41c17 5 16 22-2 27l-145 12-16-30 101-6-104-18z"
+        fill="url(#body)" stroke="#728d99" stroke-width="4"/>
+  <path d="M47 185 182 151l4 22-104 17 99 7-6 21-137-12c-13-2-14-14-2-18z"
+        fill="url(#red)"/>
+  <path d="m373 185-135-34-4 22 104 17-99 7 6 21 137-12c13-2 14-14 2-18z"
+        fill="url(#red)"/>
+  <path d="M75 187 176 162l-5 13-77 18 75 6-4 12-101-9z"
+        fill="url(#gold)" opacity=".94"/>
+  <path d="m345 187-101-25 5 13 77 18-75 6 4 12 101-9z"
+        fill="url(#gold)" opacity=".94"/>
+
+  <!-- rear fuselage -->
+  <path d="M179 64c8-30 26-48 31-48s23 18 31 48l19 131c4 28-17 57-50 57s-54-29-50-57z"
+        fill="url(#bodyShade)" stroke="#6e8996" stroke-width="4"/>
+  <path d="M191 72c5-23 13-37 19-37s14 14 19 37l11 76h-60z" fill="url(#body)"/>
+  <path d="M185 97h50l7 42h-64z" fill="url(#glass)" stroke="#3b6f8b" stroke-width="3"/>
+  <path d="M190 102h16v31h-21zM214 102h16l5 31h-21z" fill="#bdefff" opacity=".72"/>
+  <path d="M203 54h14l10 118-17 17-17-17z" fill="url(#gold)" opacity=".9"/>
+
+  <!-- nose / engine cowling -->
+  <ellipse cx="210" cy="58" rx="31" ry="26" fill="url(#nose)" stroke="#718b97" stroke-width="4"/>
+  <ellipse cx="210" cy="54" rx="19" ry="15" fill="url(#redDark)" stroke="#72131c" stroke-width="3"/>
+  <circle cx="210" cy="54" r="7" fill="#ffcd2c"/>
+
+  <!-- propeller hub shadow -->
+  <ellipse cx="210" cy="53" rx="46" ry="10" fill="#8fa3aa" opacity=".12"/>
+
+  <!-- tailplane -->
+  <path d="M182 211 112 244c-10 5-8 16 4 17l68 2 10-20-43 3 40-18z"
+        fill="url(#body)" stroke="#708b97" stroke-width="3"/>
+  <path d="m238 211 70 33c10 5 8 16-4 17l-68 2-10-20 43 3-40-18z"
+        fill="url(#body)" stroke="#708b97" stroke-width="3"/>
+  <path d="M126 244 184 219l-5 15-34 13 36 1-5 12-61-2c-7-1-9-9-3-12z"
+        fill="url(#red)"/>
+  <path d="m294 244-58-25 5 15 34 13-36 1 5 12 61-2c7-1 9-9 3-12z"
+        fill="url(#red)"/>
+
+  <!-- vertical tail -->
+  <path d="M198 201c1-18 4-43 12-68 8 25 11 50 12 68l-4 55h-16z"
+        fill="url(#red)" stroke="#791923" stroke-width="3"/>
+  <path d="M205 199h10l2 35h-14z" fill="url(#gold)" opacity=".95"/>
+
+  <!-- wing insignia -->
+  <g fill="#fff8e8" stroke="#e3a419" stroke-width="3">
+    <path d="m104 182 7 13 15 2-11 10 3 15-14-8-14 8 4-15-12-10 15-2z"/>
+    <path d="m316 182 7 13 15 2-11 10 3 15-14-8-14 8 4-15-12-10 15-2z"/>
   </g>
-  <ellipse cx="150" cy="28" rx="18" ry="11" fill="#5d1c1f" stroke="#791a20" stroke-width="3"/>
-  <circle cx="150" cy="28" r="6" fill="#ffcf2d"/>
-  <path d="M149 5h3v46h-3zM127 27h46v3h-46z" fill="#263d4a" opacity=".7"/>
+
+  <!-- fuselage stripe and rivet details -->
+  <path d="M184 151c11 5 41 5 52 0l3 16c-16 8-42 8-58 0z" fill="url(#red)" opacity=".95"/>
+  <path d="M190 176c11 5 29 5 40 0" fill="none" stroke="#8ea5b0" stroke-width="2" opacity=".75"/>
+  <circle cx="191" cy="188" r="2" fill="#7f98a3"/><circle cx="229" cy="188" r="2" fill="#7f98a3"/>
 </g>
 </svg>

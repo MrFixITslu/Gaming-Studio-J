@@ -1,31 +1,66 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice">
 <defs>
-  <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#54c9ff"/><stop offset=".55" stop-color="#aeeaff"/><stop offset="1" stop-color="#e8fbff"/></linearGradient>
-  <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#2cbddd"/><stop offset="1" stop-color="#0b7eac"/></linearGradient>
-  <linearGradient id="island" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#79bf62"/><stop offset="1" stop-color="#2e6944"/></linearGradient>
-  <linearGradient id="rock" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#6f897d"/><stop offset="1" stop-color="#33594f"/></linearGradient>
+  <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+    <stop stop-color="#3ab9f5"/>
+    <stop offset=".48" stop-color="#9ce4ff"/>
+    <stop offset=".67" stop-color="#dff8ff"/>
+    <stop offset="1" stop-color="#f7fdff"/>
+  </linearGradient>
+  <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1">
+    <stop stop-color="#45c9df"/>
+    <stop offset=".52" stop-color="#1ca7c5"/>
+    <stop offset="1" stop-color="#0c7198"/>
+  </linearGradient>
+  <linearGradient id="islandFar" x1="0" y1="0" x2="0" y2="1">
+    <stop stop-color="#7dbd78"/>
+    <stop offset="1" stop-color="#3d7460"/>
+  </linearGradient>
+  <linearGradient id="islandMid" x1="0" y1="0" x2="0" y2="1">
+    <stop stop-color="#80c96d"/>
+    <stop offset=".62" stop-color="#3f8b58"/>
+    <stop offset="1" stop-color="#2b6149"/>
+  </linearGradient>
+  <linearGradient id="rock" x1="0" y1="0" x2="0" y2="1">
+    <stop stop-color="#75928a"/>
+    <stop offset="1" stop-color="#39584f"/>
+  </linearGradient>
+  <filter id="blurFar"><feGaussianBlur stdDeviation="2.6"/></filter>
+  <filter id="soft"><feGaussianBlur stdDeviation="1.1"/></filter>
 </defs>
+
 <rect width="1600" height="900" fill="url(#sky)"/>
-<path d="M0 590C260 520 420 565 620 540s410-75 980 0v360H0z" fill="url(#sea)"/>
-<g opacity=".94">
-  <path d="M800 515c70-90 145-166 235-248 73 66 100 137 147 209 95 18 167 48 226 111-120 84-285 93-439 63-121-23-206-60-275-103z" fill="url(#rock)"/>
-  <path d="M885 507c42-70 85-123 145-176 45 44 60 93 89 147 74 12 128 31 180 73-89 51-214 62-333 40z" fill="url(#island)"/>
-  <path d="M965 339c36 35 50 74 64 111l-18 113-28-8 10-115-39-54z" fill="#edfaff" opacity=".9"/>
+<path d="M0 564C220 542 427 549 645 536c299-18 601-2 955 22v342H0z" fill="url(#sea)"/>
+
+<!-- far horizon islands -->
+<g opacity=".34" filter="url(#blurFar)">
+  <path d="M35 560c77-61 143-88 226-88 72 0 126 27 189 83-138 25-277 30-415 5z" fill="url(#islandFar)"/>
+  <path d="M1070 552c92-82 167-114 262-111 87 3 152 37 233 106-164 35-331 37-495 5z" fill="url(#islandFar)"/>
 </g>
-<g>
-  <path d="M0 695c119-73 246-91 375-63 81 17 139 45 209 84-160 84-364 110-584 105z" fill="url(#island)"/>
-  <path d="M1210 690c102-74 245-88 390-52v182c-157 14-286-18-390-66z" fill="url(#island)"/>
+
+<!-- central distant volcanic island -->
+<g opacity=".66" filter="url(#soft)">
+  <path d="M645 558c57-113 126-194 205-257 69 65 113 139 147 236 71 4 141 21 211 55-192 45-383 41-563-34z" fill="url(#rock)"/>
+  <path d="M705 548c38-75 87-137 146-185 48 50 78 105 105 178 58 4 110 14 161 32-134 31-273 26-412-25z" fill="url(#islandMid)"/>
+  <path d="M830 377c28 33 39 69 46 107l-15 95-21-2 8-90-31-67z" fill="#eefcff" opacity=".73"/>
 </g>
-<g fill="#164e37">
-  <circle cx="95" cy="684" r="17"/><circle cx="140" cy="662" r="20"/><circle cx="184" cy="691" r="18"/><circle cx="262" cy="665" r="23"/><circle cx="331" cy="699" r="17"/>
-  <circle cx="1290" cy="668" r="20"/><circle cx="1344" cy="700" r="19"/><circle cx="1400" cy="664" r="23"/><circle cx="1491" cy="701" r="18"/>
+
+<!-- low distant island shelves, intentionally well below flight path -->
+<g opacity=".76">
+  <path d="M0 720c90-45 185-66 293-63 86 2 156 21 231 56-140 56-328 78-524 69z" fill="url(#islandMid)"/>
+  <path d="M1115 711c88-52 189-71 290-60 77 8 137 28 195 61v83c-168 18-330-10-485-84z" fill="url(#islandMid)"/>
 </g>
-<g fill="#d9eef3" stroke="#6f8791" stroke-width="2">
-  <rect x="1280" y="594" width="93" height="44" rx="4"/><rect x="1378" y="603" width="80" height="35" rx="4"/>
-</g>
-<g fill="#ef6c45"><path d="m1271 594 55-33 55 33z"/><path d="m1369 603 49-28 49 28z"/></g>
-<g fill="#ffffff" opacity=".7">
-  <ellipse cx="260" cy="205" rx="115" ry="30"/><ellipse cx="205" cy="210" rx="50" ry="40"/><ellipse cx="318" cy="199" rx="62" ry="48"/>
-  <ellipse cx="1200" cy="185" rx="125" ry="32"/><ellipse cx="1145" cy="184" rx="50" ry="43"/><ellipse cx="1260" cy="181" rx="63" ry="50"/>
+
+<!-- surf rims -->
+<path d="M0 708c167-54 358-50 525 4" fill="none" stroke="#dcfbff" stroke-width="8" opacity=".5"/>
+<path d="M1118 700c153-49 332-42 482 10" fill="none" stroke="#dcfbff" stroke-width="7" opacity=".45"/>
+
+<!-- high, distant cloud masses -->
+<g fill="#ffffff" opacity=".58">
+  <ellipse cx="265" cy="202" rx="112" ry="27"/>
+  <ellipse cx="215" cy="200" rx="47" ry="37"/>
+  <ellipse cx="320" cy="194" rx="58" ry="43"/>
+  <ellipse cx="1230" cy="172" rx="132" ry="30"/>
+  <ellipse cx="1175" cy="170" rx="52" ry="41"/>
+  <ellipse cx="1289" cy="165" rx="66" ry="49"/>
 </g>
 </svg>
