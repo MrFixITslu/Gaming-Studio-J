@@ -212,6 +212,8 @@ function weakLearningSentence(sentence, word) {
   if (s.includes("spell the word") || s.includes("spelled the word")) return true;
   if (s.startsWith("the word " + w + " ")) return true;
   if (s.includes("practice the word") || s.includes("practise the word")) return true;
+  if (s.includes(" in a sentence") && (s.includes("use ") || s.includes("used ") || s.includes("using "))) return true;
+  if (s.includes("what it means") && s.includes(w)) return true;
   return false;
 }
 
@@ -393,6 +395,28 @@ async function generateSpellingContent(words, story) {
     console.warn("spelling content generation fallback:", err.message);
     return { content: fallback, mode: "fallback" };
   }
+}
+
+
+async function repairStoredSpellingContent() {
+  if (!OLLAMA_URL || !spelling.levels.length) return;
+  let changed = false;
+  for (const level of spelling.levels) {
+    if (!Array.isArray(level.words) || !level.words.length) continue;
+    const weak = generatedRowsNeedingRepair(level.content || [], level.words);
+    if (!weak.length) continue;
+    try {
+      const generated = await generateSpellingContent(level.words, level.story);
+      if (generated.mode === "ollama") {
+        level.content = generated.content;
+        changed = true;
+        console.log("repaired spelling learning content:", level.title, weak.join(", "));
+      }
+    } catch (err) {
+      console.warn("stored spelling content repair failed:", level.title, err.message);
+    }
+  }
+  if (changed) await writeSpelling();
 }
 
 function normaliseSpellingLevel(payload, existing = {}) {
@@ -722,7 +746,8 @@ app.post("/api/admin/spelling/levels", requireAdmin, async (req, res) => {
   if (level.published && (level.words.length < 10 || level.words.length > 12)) {
     return res.status(400).json({ error: "Published spelling missions must contain 10–12 words." });
   }
-  if (!suppliedContent && level.words.length) {
+  const needsGeneration = !suppliedContent || generatedRowsNeedingRepair(level.content, level.words).length > 0;
+  if (needsGeneration && level.words.length) {
     const generated = await generateSpellingContent(level.words, level.story);
     level.content = generated.content;
   }
@@ -742,7 +767,8 @@ app.put("/api/admin/spelling/levels/:id", requireAdmin, async (req, res) => {
   if (level.published && (level.words.length < 10 || level.words.length > 12)) {
     return res.status(400).json({ error: "Published spelling missions must contain 10–12 words." });
   }
-  if (!suppliedContent && level.words.length) {
+  const needsGeneration = !suppliedContent || generatedRowsNeedingRepair(level.content, level.words).length > 0;
+  if (needsGeneration && level.words.length) {
     const generated = await generateSpellingContent(level.words, level.story);
     level.content = generated.content;
   }
@@ -1209,6 +1235,7 @@ app.use((_req, res) => res.status(404).send("Not found"));
 server.listen(PORT, "0.0.0.0", () => {
   console.log("Gaming Studio J multiplayer server listening on :" + PORT);
   if (!adminReady()) console.warn("Admin dashboard login is disabled until ADMIN_PASSWORD and ADMIN_SESSION_SECRET are configured.");
+  void repairStoredSpellingContent();
 });
 
 async function shutdown(signal) {
