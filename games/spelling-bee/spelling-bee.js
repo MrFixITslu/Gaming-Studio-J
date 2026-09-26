@@ -201,6 +201,20 @@ function seedClouds(){
   seedCloudLayer("cloudLayerBack",9,true);
   seedCloudLayer("cloudLayer",14,false);
 }
+function seedVegetation(){
+  var layer=$("vegetationStream");if(!layer)return;layer.innerHTML="";
+  for(var i=0;i<18;i++){
+    var v=document.createElement("i");v.className="veg";
+    var left=2+Math.random()*96,side=left<50?-1:1;
+    v.style.setProperty("--x",left+"%");
+    v.style.setProperty("--size",(24+Math.random()*32)+"px");
+    v.style.setProperty("--dur",(2.8+Math.random()*3.2)+"s");
+    v.style.setProperty("--delay",(-Math.random()*5)+"s");
+    v.style.setProperty("--drift",(side*(35+Math.random()*95))+"px");
+    v.style.setProperty("--lean",(-9+Math.random()*18)+"deg");
+    layer.appendChild(v);
+  }
+}
 function setFlightPhase(phase){
   var world=$("flightWorld");if(!world)return;
   world.classList.remove("takeoff","cruise","landing");
@@ -212,18 +226,47 @@ function flightFuel(){
 function updateFlightHud(){
   var f=state.flight;if(!f)return;var fuel=flightFuel(),decisions=f.correct+f.mistakes,accuracy=decisions?Math.round(f.correct/decisions*100):100;
   $("fuelFill").style.width=fuel+"%";$("fuelText").textContent=fuel+"%";$("accuracyText").textContent=accuracy+"%";$("mistakeText").textContent=f.mistakes+" / "+f.allowance+" fuel mistakes";$("flightWordCount").textContent="WORD "+(f.wordIndex+1)+" / "+state.level.words.length;$("flightPattern").textContent=f.wordLetters.map(function(ch,i){return i<f.letterIndex?ch:"_"}).join(" ");
-  var pct=Math.round(f.correct/Math.max(1,f.totalLetters)*100);$("routeFill").style.width=pct+"%";$("routePlane").style.left=pct+"%";
+  var pct=Math.round(f.correct/Math.max(1,f.totalLetters)*100);$("routeFill").style.width=pct+"%";$("routePlane").style.left=pct+"%";if($("routePercent"))$("routePercent").textContent=pct+"%";
 }
 function clearGates(){if(!state.flight)return;state.flight.gates.forEach(function(g){if(g.el&&g.el.parentNode)g.el.remove()});state.flight.gates=[]}
 function spawnGates(){
   var f=state.flight;if(!f||!f.active||f.transitioning)return;clearGates();var correct=f.wordLetters[f.letterIndex];if(!correct){finishWord();return}
   var chars=shuffle([correct].concat(distractors(correct))),lanes=[-1,0,1];
-  f.gates=lanes.map(function(lane,i){var el=document.createElement("div");el.className="letter-gate";el.textContent=chars[i];$("scene3d").appendChild(el);return {el:el,lane:lane,letter:chars[i],z:-1450}});
+  f.gates=lanes.map(function(lane,i){
+    var el=document.createElement("div");el.className="letter-gate";el.textContent=chars[i];$("scene3d").appendChild(el);
+    return {el:el,lane:lane,letter:chars[i],z:-1500,resolved:false};
+  });
 }
-function evaluateGate(){
-  var f=state.flight;if(!f||!f.gates.length)return;var gate=f.gates.find(function(g){return g.lane===f.lane})||f.gates[1],correct=f.wordLetters[f.letterIndex];clearGates();
-  if(gate.letter===correct){f.correct++;f.streak++;f.bestStreak=Math.max(f.bestStreak,f.streak);f.letterIndex++;message("✓ "+gate.letter+" — fuel boost!",650);updateFlightHud();if(f.letterIndex>=f.wordLetters.length)setTimeout(finishWord,450);else setTimeout(spawnGates,420)}
-  else{f.mistakes++;f.streak=0;f.difficult[f.word]=(f.difficult[f.word]||0)+1;updateFlightHud();if(f.mistakes>f.allowance){message("Fuel is empty — diverting safely.",1700);setTimeout(function(){endFlight(false)},1700)}else{message("That isn't the next letter. Find "+correct+".",950);speak("Try again. Find "+correct);setTimeout(spawnGates,850)}}
+function gateTouchesPlane(gate){
+  if(!gate||!gate.el||!$("planeHitPoint"))return false;
+  var gr=gate.el.getBoundingClientRect(),pr=$("planeHitPoint").getBoundingClientRect();
+  if(!gr.width||!gr.height)return false;
+  var px=pr.left+pr.width/2,py=pr.top+pr.height/2,gx=gr.left+gr.width/2,gy=gr.top+gr.height/2;
+  var rx=gr.width*.31,ry=gr.height*.31;
+  return Math.pow((px-gx)/Math.max(1,rx),2)+Math.pow((py-gy)/Math.max(1,ry),2)<=1;
+}
+function removeOtherGates(keep){
+  var f=state.flight;if(!f)return;
+  f.gates.forEach(function(g){if(g!==keep&&g.el&&g.el.parentNode)g.el.remove()});
+  f.gates=keep?[keep]:[];
+}
+function evaluateGate(gate,missed){
+  var f=state.flight;if(!f||f.transitioning||f.ending)return;
+  var correct=f.wordLetters[f.letterIndex];
+  if(gate&&gate.resolved)return;
+  if(gate)gate.resolved=true;
+  removeOtherGates(gate||null);
+  if(gate&&gate.el){gate.el.classList.add("hit");setTimeout(function(){if(gate.el&&gate.el.parentNode)gate.el.remove()},330)}
+  if(!missed&&gate&&gate.letter===correct){
+    f.correct++;f.streak++;f.bestStreak=Math.max(f.bestStreak,f.streak);f.letterIndex++;
+    message("✓ "+gate.letter+" — direct hit!",650);updateFlightHud();
+    if(f.letterIndex>=f.wordLetters.length)setTimeout(finishWord,480);else setTimeout(spawnGates,470);
+  }else{
+    f.mistakes++;f.streak=0;f.difficult[f.word]=(f.difficult[f.word]||0)+1;updateFlightHud();
+    var msg=missed?"Missed the rings — line up with "+correct+".":"Wrong ring. Find "+correct+".";
+    if(f.mistakes>f.allowance){message("Fuel is empty — diverting safely.",1700);setTimeout(function(){endFlight(false)},1700)}
+    else{message(msg,950);speak("Try again. Find "+correct);setTimeout(spawnGates,900)}
+  }
 }
 function finishWord(){
   var f=state.flight;if(!f||f.transitioning)return;f.transitioning=true;clearGates();var sup=supportFor(f.word);message("★ "+f.word.toUpperCase()+" — "+sup.example,1450);f.wordIndex++;
@@ -232,7 +275,22 @@ function finishWord(){
 }
 function flightLoop(ts){
   var f=state.flight;if(!f){state.raf=0;return}if(!f.last)f.last=ts;var dt=Math.min(.05,(ts-f.last)/1000);f.last=ts;
-  if(f.active&&!f.transitioning&&f.gates.length){var hit=false;f.gates.forEach(function(g){g.z+=560*dt;var y=Math.sin((g.z+g.lane*100)/260)*10;g.el.style.transform="translate3d("+(g.lane*220)+"px,"+y+"px,"+g.z+"px)";if(g.z>=-35&&!hit)hit=true});if(hit)evaluateGate()}
+  if(f.active&&!f.transitioning&&f.gates.length){
+    var world=$("flightWorld"),hitGate=null,allPassed=true;
+    f.gates.forEach(function(g){
+      if(g.resolved)return;
+      g.z+=520*dt;
+      var t=clamp((g.z+1500)/1480,0,1.12),ease=t*t*(3-2*t);
+      var lanePx=(world?world.clientWidth:1000)*(.13+.025*ease)*g.lane;
+      var approachY=(world?world.clientHeight:700)*.235*ease+Math.sin((g.z+g.lane*110)/280)*7;
+      g.el.style.transform="translate3d("+lanePx+"px,"+approachY+"px,"+g.z+"px)";
+      g.el.style.opacity=t>1.02?Math.max(0,1-(t-1.02)*8):1;
+      if(t>.68&&t<1.035&&gateTouchesPlane(g)&&!hitGate)hitGate=g;
+      if(t<1.055)allPassed=false;
+    });
+    if(hitGate)evaluateGate(hitGate,false);
+    else if(allPassed)evaluateGate(null,true);
+  }
   state.raf=requestAnimationFrame(flightLoop);
 }
 function startFlight(){
@@ -245,7 +303,8 @@ function startFlight(){
   $("welcomeSign").textContent=(state.level.destination||"WELCOME").toUpperCase();
   $("runway").style.opacity="";
   $("playerPlane").classList.remove("landing","bank-left","bank-right");
-  seedClouds();setPlaneLane(0);setFlightPhase("takeoff");updateFlightHud();showScreen("flightScreen");
+  $("touchdownSmoke").classList.remove("active");
+  seedClouds();seedVegetation();setPlaneLane(0);setFlightPhase("takeoff");updateFlightHud();showScreen("flightScreen");
   postProgress("attempt",{totalLetters:total});
   message("Tower: "+p.name+", cleared for takeoff!",1800);
   speak("Cleared for takeoff. First word: "+state.flight.word);
@@ -291,10 +350,11 @@ function beginLanding(success,done){
   speak(success?"Approach clear. Prepare for landing.":"We are diverting safely to the Practice Airfield.");
   setTimeout(function(){
     if(!state.flight)return;
-    message("Touchdown! Great flying.",900);
+    $("touchdownSmoke").classList.remove("active");void $("touchdownSmoke").offsetWidth;$("touchdownSmoke").classList.add("active");
+    message("Touchdown! Great flying.",1000);
     speak("Touchdown.");
-    setTimeout(function(){if(done)done()},950);
-  },3300);
+    setTimeout(function(){if(done)done()},1100);
+  },3650);
 }
 function backToPractice(){state.flight=null;renderWordList();renderPracticeWord();showScreen("practiceScreen")}
 function initBindings(){
