@@ -763,10 +763,13 @@ app.post("/api/spelling/progress", (req, res) => {
   const allowed = new Set(["practice_open", "word_mastered", "story_read", "attempt", "complete", "divert"]);
   if (!allowed.has(event)) return res.status(400).json({ error: "Unsupported spelling event." });
 
-  const row = getPlayer(clientId, cleanNickname(req.body?.nickname), db.players[clientId]?.appearance || {});
-  row.spelling ||= {};
-  const progress = row.spelling[levelId] ||= {
-    profileId: cleanText(req.body?.profileId, 80),
+  const nickname = cleanNickname(req.body?.nickname);
+  const profileId = cleanProfileId(req.body?.profileId);
+  const row = getPlayer(clientId, nickname, db.players[clientId]?.appearance || {});
+  const profile = getProfile(clientId, profileId, nickname, row.appearance || {});
+  profile.spelling ||= {};
+  const progress = profile.spelling[levelId] ||= {
+    profileId,
     practiceOpens: 0,
     masteredWords: {},
     storyRead: false,
@@ -1179,7 +1182,10 @@ io.on("connection", socket => {
     dayBucket().matches += 1;
     for (const sid of room.players) {
       const p = identities.get(sid);
-      if (p) getPlayer(p.clientId, p.nickname, p.appearance).matches += 1;
+      if (p) {
+        getPlayer(p.clientId, p.nickname, p.appearance).matches += 1;
+        getProfile(p.clientId, p.profileId, p.nickname, p.appearance).matches += 1;
+      }
     }
     activity("match_started", { nickname: ident.nickname, roomCode: room.code, players: room.players.size });
     persistSoon();
