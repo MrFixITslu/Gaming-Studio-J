@@ -746,7 +746,7 @@ app.post("/api/admin/spelling/levels", requireAdmin, async (req, res) => {
   if (level.published && (level.words.length < 10 || level.words.length > 12)) {
     return res.status(400).json({ error: "Published spelling missions must contain 10–12 words." });
   }
-  const needsGeneration = !suppliedContent || generatedRowsNeedingRepair(level.content, level.words).length > 0;
+  const needsGeneration = !suppliedContent || generatedRowsNeedingRepair(req.body?.content || [], level.words).length > 0;
   if (needsGeneration && level.words.length) {
     const generated = await generateSpellingContent(level.words, level.story);
     level.content = generated.content;
@@ -767,7 +767,7 @@ app.put("/api/admin/spelling/levels/:id", requireAdmin, async (req, res) => {
   if (level.published && (level.words.length < 10 || level.words.length > 12)) {
     return res.status(400).json({ error: "Published spelling missions must contain 10–12 words." });
   }
-  const needsGeneration = !suppliedContent || generatedRowsNeedingRepair(level.content, level.words).length > 0;
+  const needsGeneration = !suppliedContent || generatedRowsNeedingRepair(req.body?.content || [], level.words).length > 0;
   if (needsGeneration && level.words.length) {
     const generated = await generateSpellingContent(level.words, level.story);
     level.content = generated.content;
