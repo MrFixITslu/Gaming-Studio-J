@@ -1034,18 +1034,22 @@ function registerSession(socket, payload = {}) {
 
   const nickname = cleanNickname(payload.nickname);
   const appearance = cleanAppearance(payload.appearance);
+  const profileId = cleanProfileId(payload.profileId);
   const context = payload.context === "game" ? "game" : "lobby";
   const row = getPlayer(clientId, nickname, appearance);
+  const profile = getProfile(clientId, profileId, nickname, appearance);
   row.sessions += 1;
 
   db.totals.sessions += 1;
   const today = dayBucket();
   today.sessions += 1;
   today.players[clientId] = true;
+  today.profiles[profile.key] = true;
   trimOldDays();
 
   const ident = {
     clientId,
+    profileId,
     nickname,
     appearance,
     context,
@@ -1057,6 +1061,7 @@ function registerSession(socket, payload = {}) {
   identities.set(socket.id, ident);
   socket.data.registered = true;
   socket.data.clientId = clientId;
+  socket.data.profileId = profileId;
 
   db.totals.peakConcurrent = Math.max(db.totals.peakConcurrent || 0, identities.size);
   activity("session_start", { nickname, context });
@@ -1071,13 +1076,18 @@ io.on("connection", socket => {
     if (!ident) ident = registerSession(socket, payload);
     if (!ident) return ack({ ok: false, error: "Invalid player ID." });
 
+    ident.profileId = cleanProfileId(payload?.profileId || ident.profileId);
     ident.nickname = cleanNickname(payload?.nickname || ident.nickname);
     ident.appearance = cleanAppearance(payload?.appearance || ident.appearance);
     ident.context = payload?.context === "game" ? "game" : "lobby";
     const row = getPlayer(ident.clientId, ident.nickname, ident.appearance);
+    const profile = getProfile(ident.clientId, ident.profileId, ident.nickname, ident.appearance);
     row.nickname = ident.nickname;
     row.appearance = ident.appearance;
     row.lastSeen = new Date().toISOString();
+    profile.nickname = ident.nickname;
+    profile.appearance = ident.appearance;
+    profile.lastSeen = row.lastSeen;
 
     ack({ ok: true, socketId: socket.id, chat: chatHistory, players: presenceList(), rooms: listRooms() });
     persistSoon();
@@ -1090,9 +1100,13 @@ io.on("connection", socket => {
     ident.nickname = cleanNickname(payload?.nickname || ident.nickname);
     ident.appearance = cleanAppearance(payload?.appearance || ident.appearance);
     const row = getPlayer(ident.clientId, ident.nickname, ident.appearance);
+    const profile = getProfile(ident.clientId, ident.profileId, ident.nickname, ident.appearance);
     row.nickname = ident.nickname;
     row.appearance = ident.appearance;
     row.lastSeen = new Date().toISOString();
+    profile.nickname = ident.nickname;
+    profile.appearance = ident.appearance;
+    profile.lastSeen = row.lastSeen;
     persistSoon();
     emitLobbyState();
     ack({ ok: true, nickname: ident.nickname, appearance: ident.appearance });
@@ -1214,11 +1228,20 @@ io.on("connection", socket => {
     const level = Math.floor(clampNumber(payload?.level, 1, 8, 1));
     const completed = Boolean(payload?.completed);
     const row = getPlayer(ident.clientId, ident.nickname, ident.appearance);
-    const improved = score > (row.bestScore || 0);
+    const profile = getProfile(ident.clientId, ident.profileId, ident.nickname, ident.appearance);
+    const title = getTitleStats("mr-melons-adventure", "Mr. Melon's Adventure", "game");
+    const improved = score > (profile.bestScore || row.bestScore || 0);
     row.bestScore = Math.max(row.bestScore || 0, score);
     row.maxLevel = Math.max(row.maxLevel || 1, level);
+    profile.bestScore = Math.max(profile.bestScore || 0, score);
+    profile.maxLevel = Math.max(profile.maxLevel || 1, level);
+    title.scores += 1;
+    title.bestScore = Math.max(title.bestScore || 0, score);
+    title.profiles[profile.key] = true;
     if (completed && !socket.data.completedRecorded) {
       row.completions = (row.completions || 0) + 1;
+      profile.completions = (profile.completions || 0) + 1;
+      title.completions = (title.completions || 0) + 1;
       socket.data.completedRecorded = true;
     }
 
@@ -1226,7 +1249,7 @@ io.on("connection", socket => {
     dayBucket().scoreSubmissions += 1;
     if (improved) activity("high_score", { nickname: ident.nickname, score, level });
     persistSoon();
-    ack({ ok: true, bestScore: row.bestScore, maxLevel: row.maxLevel });
+    ack({ ok: true, bestScore: profile.bestScore, maxLevel: profile.maxLevel });
   });
 
   socket.on("disconnect", () => {
@@ -1311,10 +1334,12 @@ function summaryPayload() {
 
 app.get("/api/admin/summary", requireAdmin, (_req, res) => res.json(summaryPayload()));
 app.get("/api/admin/leaderboard", requireAdmin, (_req, res) => {
-  const leaderboard = Object.values(db.players)
+  const source = Object.values(db.profiles || {}).length ? Object.values(db.profiles) : Object.values(db.players);
+  const leaderboard = source
     .sort((a, b) => (b.bestScore || 0) - (a.bestScore || 0) || (b.maxLevel || 0) - (a.maxLevel || 0))
     .slice(0, 100)
     .map(p => ({
+      profileId: p.profileId || "legacy",
       nickname: p.nickname,
       appearance: p.appearance,
       bestScore: p.bestScore || 0,
