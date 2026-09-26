@@ -7,7 +7,7 @@
 <meta name="description" content="Spelling Bee — learn weekly spelling words, read them in stories, then fly a 3D spelling mission.">
 <title>Spelling Bee — Gaming Studio J</title>
 <link rel="icon" href="../../assets/spelling-bee-icon.svg">
-<link rel="stylesheet" href="./spelling-bee.css?v=1">
+<link rel="stylesheet" href="./spelling-bee.css?v=2">
 </head>
 <body>
 <div class="app-shell">
@@ -107,11 +107,19 @@
 
       <div class="flight-world" id="flightWorld">
         <div class="sky-glow"></div><div class="sun"></div>
+        <div class="horizon-haze"></div>
+        <div class="cloud-layer back" id="cloudLayerBack"></div>
         <div class="cloud-layer" id="cloudLayer"></div>
         <div class="mountains far"></div><div class="mountains near"></div>
-        <div class="runway" id="runway"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="terrain-stream"><i></i><i></i><i></i><i></i></div>
+        <div class="destination-scene" id="destinationScene" aria-hidden="true">
+          <div class="terminal"><span></span><span></span><span></span><span></span></div>
+          <div class="tower"></div>
+          <div class="welcome-sign" id="welcomeSign">WELCOME</div>
+        </div>
+        <div class="runway" id="runway"><i></i><i></i><i></i><i></i><i></i><i></i><b></b></div>
         <div class="scene3d" id="scene3d"></div>
-        <div class="player-plane" id="playerPlane"><span>✈</span><i></i></div>
+        <div class="player-plane" id="playerPlane"><span>✈</span><i></i><em></em></div>
         <div class="flight-message" id="flightMessage"></div>
       </div>
 
@@ -138,6 +146,6 @@
   </main>
 </div>
 <div class="toast-area" id="toastArea" aria-live="polite"></div>
-<script src="./spelling-bee.js?v=1"></script>
+<script src="./spelling-bee.js?v=2"></script>
 </body>
 </html>
