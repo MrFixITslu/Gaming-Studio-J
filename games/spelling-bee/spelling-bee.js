@@ -52,18 +52,18 @@ function localExampleFor(word){
   if(storyExample)return storyExample;
   var index=Math.max(0,(state.level&&state.level.words||[]).indexOf(word));
   var templates=[
-    function(w){return "Maya used "+w+" naturally while telling her family about her day.";},
-    function(w){return "Jordan chose "+w+" because it clearly expressed what he wanted to say.";},
-    function(w){return "Kai read a sentence with "+w+" and understood how it was being used.";},
-    function(w){return "Amara added "+w+" to her paragraph where it matched the meaning perfectly.";},
-    function(w){return "Leo heard "+w+" in a story and used it correctly in his own sentence.";},
-    function(w){return "Nia included "+w+" when she described what happened during the adventure.";},
-    function(w){return "Eli used "+w+" in his journal so the sentence said exactly what he meant.";},
-    function(w){return "Sofia found a natural place for "+w+" while writing her short story.";},
-    function(w){return "Malik used "+w+" correctly when he explained his idea to the group.";},
-    function(w){return "Zoe included "+w+" in a sentence that made the meaning clear.";},
-    function(w){return "Noah used "+w+" while describing the scene in his reading activity.";},
-    function(w){return "Ava placed "+w+" in her sentence because it suited the situation best.";}
+    function(w){return "Maya wrote “"+w+"” in her notebook and checked the spelling carefully.";},
+    function(w){return "Jordan read “"+w+"” aloud before copying it neatly onto his page.";},
+    function(w){return "Kai highlighted “"+w+"” when he found it during his reading activity.";},
+    function(w){return "Amara practised “"+w+"” once more before moving to the next activity.";},
+    function(w){return "Leo circled “"+w+"” after finding it in the weekly reading passage.";},
+    function(w){return "Nia listened carefully to “"+w+"” before writing it from memory.";},
+    function(w){return "Eli checked every letter in “"+w+"” before showing his work.";},
+    function(w){return "Sofia found “"+w+"” in the passage and read the whole line aloud.";},
+    function(w){return "Malik copied “"+w+"” carefully, paying attention to each letter.";},
+    function(w){return "Zoe listened for “"+w+"” while the weekly words were read aloud.";},
+    function(w){return "Noah wrote “"+w+"” on his practice card and reviewed it later.";},
+    function(w){return "Ava recognised “"+w+"” when it appeared in the reading exercise.";}
   ];
   return templates[index%templates.length](word);
 }
