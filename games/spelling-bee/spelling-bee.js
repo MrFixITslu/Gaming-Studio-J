@@ -7,6 +7,7 @@ var STUDIO_STORE_KEY="gsj_store_v2";
 var ACTIVE_PROFILE_KEY="gsj_active_profile_id";
 var ANALYTICS_CLIENT_KEY="gsj_client_id_v1";
 var EVENT_KEY="gsj_game_events_v1";
+var TITLE_ID="spelling-bee",TITLE_NAME="Spelling Bee";
 var FLIGHT_AUDIO_KEY="gsj_spelling_flight_audio_v1";
 var state={levels:[],level:null,wordIndex:0,save:null,buildLetters:[],buildChosen:[],flight:null,raf:0};
 var flightAudio={enabled:localStorage.getItem(FLIGHT_AUDIO_KEY)!=="off",ctx:null,master:null,engine1:null,engine2:null,engineGain:null,wind:null,windGain:null,windFilter:null};
@@ -31,6 +32,15 @@ function clientId(){
   var id=localStorage.getItem(ANALYTICS_CLIENT_KEY);
   if(!id){id=(crypto.randomUUID?crypto.randomUUID():"client_"+Date.now()+"_"+Math.random().toString(36).slice(2)).replace(/[^A-Za-z0-9_-]/g,"");localStorage.setItem(ANALYTICS_CLIENT_KEY,id)}
   return id;
+}
+var titleSessionStarted=Date.now(),titleSessionEnded=false;
+function reportUsage(event,extra){
+  var p=studioProfile(),payload=Object.assign({clientId:clientId(),profileId:p.id||"default",nickname:p.name||"Player",titleId:TITLE_ID,title:TITLE_NAME,kind:"game",event:event},extra||{});
+  fetch("../../api/usage",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload),keepalive:true}).catch(function(){});
+}
+function endUsageSession(){
+  if(titleSessionEnded)return;titleSessionEnded=true;
+  reportUsage("session_end",{seconds:Math.max(0,Math.round((Date.now()-titleSessionStarted)/1000))});
 }
 function loadSave(){var data=null;try{data=JSON.parse(localStorage.getItem(STORE_KEY)||"null")}catch(e){}if(!data||typeof data!=="object")data={version:1,profiles:{}};data.profiles=data.profiles||{};state.save=data}
 function saveAll(){localStorage.setItem(STORE_KEY,JSON.stringify(state.save))}
@@ -423,6 +433,8 @@ function endFlight(success){
     $("reviewBox").innerHTML=difficult.length?"<b>Words to practise</b><p>"+difficult.map(escapeHtml).join(" • ")+"</p>":"<b>Excellent control!</b><p>No words caused a wrong-letter fuel loss.</p>";
     stopPlaneAudio();
     showScreen("resultsScreen");
+    reportUsage("score",{score:accuracy});
+    if(success)reportUsage("complete",{score:accuracy});
     postProgress(success?"complete":"divert",{accuracy:accuracy,mistakes:f.mistakes,totalLetters:f.totalLetters,difficultWords:difficult.slice(0,12)});
     if(success)addAchievement("first-flight","First Landing","Complete a Spelling Bee weekly flight mission.","🛬",45);
     if(success&&accuracy===100)addAchievement("perfect-flight","Perfect Flight","Complete a Spelling Bee flight with 100% spelling accuracy.","⭐",70);
@@ -458,6 +470,11 @@ function initBindings(){
   qsa("[data-steer]").forEach(function(b){b.addEventListener("pointerdown",function(e){e.preventDefault();steer(Number(b.dataset.steer))})});$("flightSoundBtn").addEventListener("click",toggleFlightAudio);$("retryFlight").addEventListener("click",startFlight);$("reviewWords").addEventListener("click",backToPractice);$("resultMissions").addEventListener("click",function(){stopPlaneAudio();state.flight=null;state.level=null;showScreen("missionsScreen");renderMissionGrid()});
   window.addEventListener("keydown",function(e){if(!$("flightScreen").classList.contains("active"))return;if(e.key==="ArrowLeft"||e.key==="a"||e.key==="A"){e.preventDefault();steer(-1)}if(e.key==="ArrowRight"||e.key==="d"||e.key==="D"){e.preventDefault();steer(1)}if(e.key===" "){e.preventDefault();if(state.flight)speak("Spell "+state.flight.word)}});
 }
-function init(){loadSave();initBindings();updateFlightSoundButton();window.addEventListener("pagehide",stopPlaneAudio);loadLevels()}
+function init(){
+  loadSave();initBindings();updateFlightSoundButton();
+  reportUsage("session_start");
+  window.addEventListener("pagehide",function(){stopPlaneAudio();endUsageSession()},{once:true});
+  loadLevels();
+}
 init();
 })();
