@@ -7,7 +7,7 @@
 <meta name="description" content="Spelling Bee — learn weekly spelling words, read them in stories, then fly a 3D spelling mission.">
 <title>Spelling Bee — Gaming Studio J</title>
 <link rel="icon" href="../../assets/spelling-bee-icon.svg">
-<link rel="stylesheet" href="./spelling-bee.css?v=3">
+<link rel="stylesheet" href="./spelling-bee.css?v=4">
 </head>
 <body>
 <div class="app-shell">
@@ -26,7 +26,7 @@
           <p>Master this week's spelling list in Flight School, read the words in a story, then guide your aircraft through the correct letters before the fuel runs out.</p>
           <div class="hero-chips"><span>10–12 weekly words</span><span>Sentence practice</span><span>3D flight missions</span></div>
         </div>
-        <div class="hero-plane" aria-hidden="true"><div class="plane-art">✈</div><div class="hero-cloud c1"></div><div class="hero-cloud c2"></div><div class="hero-cloud c3"></div></div>
+        <div class="hero-plane" aria-hidden="true"><img class="hero-plane-img" src="./spelling-plane.svg" alt=""><div class="hero-cloud c1"></div><div class="hero-cloud c2"></div><div class="hero-cloud c3"></div></div>
       </div>
       <div class="section-head"><div><span class="eyebrow">WEEKLY FLIGHTS</span><h2>Choose your mission</h2></div><button class="ghost-btn" id="refreshLevels" type="button">↻ Refresh</button></div>
       <div class="mission-grid" id="missionGrid"><div class="loading">Checking the flight board…</div></div>
@@ -127,8 +127,10 @@
         <div class="cloud-layer back" id="cloudLayerBack"></div>
         <div class="cloud-layer" id="cloudLayer"></div>
         <div class="mountains far"></div><div class="mountains near"></div>
+        <div class="cruise-islands" id="cruiseIslands" aria-hidden="true"></div>
         <div class="terrain-stream"><i></i><i></i><i></i><i></i></div>
         <div class="vegetation-stream" id="vegetationStream" aria-hidden="true"></div>
+        <div class="ground-rush" aria-hidden="true"><i></i><i></i><i></i></div>
         <div class="speed-lines" aria-hidden="true"></div>
         <div class="destination-scene" id="destinationScene" aria-hidden="true">
           <div class="terminal"><span></span><span></span><span></span><span></span></div>
@@ -142,6 +144,8 @@
           <span class="propeller-disc" aria-hidden="true"></span>
           <i class="engine-glow" aria-hidden="true"></i>
           <em class="contrails" aria-hidden="true"></em>
+          <span class="landing-gear gear-left" aria-hidden="true"></span>
+          <span class="landing-gear gear-right" aria-hidden="true"></span>
           <b class="plane-hit-point" id="planeHitPoint" aria-hidden="true"></b>
         </div>
         <div class="touchdown-smoke" id="touchdownSmoke" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
@@ -170,6 +174,6 @@
   </main>
 </div>
 <div class="toast-area" id="toastArea" aria-live="polite"></div>
-<script src="./spelling-bee.js?v=3"></script>
+<script src="./spelling-bee.js?v=4"></script>
 </body>
 </html>
