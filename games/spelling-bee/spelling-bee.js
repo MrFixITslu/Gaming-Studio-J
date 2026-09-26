@@ -67,9 +67,19 @@ function localExampleFor(word){
   ];
   return templates[index%templates.length](word);
 }
+function weakExample(word,example){
+  var s=String(example||"").trim(),lower=s.toLowerCase(),w=normalWord(word);
+  if(!s)return true;
+  if(lower.indexOf("spelling word")>=0||lower.indexOf("spelling list")>=0)return true;
+  if(lower.indexOf("the word "+w+" ")===0)return true;
+  if(lower.indexOf("what it means")>=0)return true;
+  if(lower.indexOf("use "+w+" in a sentence")>=0)return true;
+  return false;
+}
 function supportFor(word){
   var c=(state.level.content||[]).find(function(x){return normalWord(x.word)===normalWord(word)})||{};
-  return {word:word,definition:c.definition||"A spelling word for this week's learning mission.",example:c.example||localExampleFor(word),hint:c.hint||("It starts with "+String(word).charAt(0).toUpperCase()+" and has "+lettersOf(word).length+" letters."),syllables:c.syllables||String(word).split("").join(" · ")};
+  var example=weakExample(word,c.example)?localExampleFor(word):c.example;
+  return {word:word,definition:c.definition||"A spelling word for this week's learning mission.",example:example,hint:c.hint||("It starts with "+String(word).charAt(0).toUpperCase()+" and has "+lettersOf(word).length+" letters."),syllables:c.syllables||String(word).split("").join(" · ")};
 }
 function speak(text){
   if(!("speechSynthesis" in window)){toast("Speech is not available in this browser.");return}
