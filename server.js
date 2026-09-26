@@ -234,18 +234,18 @@ function fallbackExampleSentence(word, index, story, used) {
   }
 
   const templates = [
-    w => "During class, Maya carefully used " + w + " while explaining her idea.",
-    w => "Jordan included " + w + " in a sentence that matched the lesson.",
-    w => "At home, Kai found a good example of how to use " + w + " correctly.",
-    w => "The class discussed " + w + " and then used it in their own writing.",
-    w => "Amara wrote a clear sentence with " + w + " before reading it aloud.",
-    w => "During the activity, Leo chose " + w + " because it fit the meaning of his sentence.",
-    w => "Nia used " + w + " in her journal and checked that the sentence made sense.",
-    w => "For homework, Eli created a sentence where " + w + " was used correctly.",
-    w => "The teacher asked the class to explain " + w + " by using it naturally in a sentence.",
-    w => "Sofia added " + w + " to her paragraph because it expressed exactly what she meant.",
-    w => "Malik read a sentence containing " + w + " and explained what it meant.",
-    w => "In the group exercise, Zoe used " + w + " correctly while sharing her answer."
+    w => "Maya wrote “" + w + "” in her notebook and checked the spelling carefully.",
+    w => "Jordan read “" + w + "” aloud before copying it neatly onto his page.",
+    w => "Kai highlighted “" + w + "” when he found it during his reading activity.",
+    w => "Amara practised “" + w + "” once more before moving to the next activity.",
+    w => "Leo circled “" + w + "” after finding it in the weekly reading passage.",
+    w => "Nia listened carefully to “" + w + "” before writing it from memory.",
+    w => "Eli checked every letter in “" + w + "” before showing his work.",
+    w => "Sofia found “" + w + "” in the passage and read the whole line aloud.",
+    w => "Malik copied “" + w + "” carefully, paying attention to each letter.",
+    w => "Zoe listened for “" + w + "” while the weekly words were read aloud.",
+    w => "Noah wrote “" + w + "” on his practice card and reviewed it later.",
+    w => "Ava recognised “" + w + "” when it appeared in the reading exercise."
   ];
   const sentence = templates[index % templates.length](word);
   used.add(sentenceSignature(sentence));
