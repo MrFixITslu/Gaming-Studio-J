@@ -76,7 +76,8 @@ function renderPreview(){
   $("#previewAccessory").textContent=accessoryIcon($("#accessoryInput").value);
 }
 function identityPayload(){
-  return {clientId:getClientId(),nickname:profile.nickname,appearance:{body:profile.body,accent:profile.accent,accessory:profile.accessory},context:"lobby"};
+  const studio=studioProfile();
+  return {clientId:getClientId(),profileId:studio?.id||"default",nickname:profile.nickname,appearance:{body:profile.body,accent:profile.accent,accessory:profile.accessory},context:"lobby"};
 }
 function connectIdentity(){
   socket.emit("identity:set",identityPayload(),res=>{
