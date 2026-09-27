@@ -443,10 +443,15 @@ const W=canvas.width,H=canvas.height;
 const $=id=>document.getElementById(id);
 const keys={};
 const MOBILE_PLAY=window.matchMedia("(pointer:coarse)").matches||navigator.maxTouchPoints>0;
-let last=0, paused=false, inGame=false, quizOpen=false, shopOpen=false, levelStart=0;
+let last=0, paused=false, inGame=false, quizOpen=false, shopOpen=false, levelStart=0, levelCompleting=false, pendingLevelBuild=false;
 let camX=0, shake=0, currentQuiz=null, particles=[], shots=[], enemies=[], pickups=[], platforms=[], hazards=[], decor=[];
 let checkpoint={x:90,y:450},checkpointReached=false,combo=0,comboTimer=0,prevPlayerBottom=0,objectiveTimer=null;
 let jumpBuffer=0,coyote=0;
+function clearGameInputs(){
+  Object.keys(keys).forEach(k=>keys[k]=false);
+  document.querySelectorAll(".touchBtn").forEach(b=>b.classList.remove("pressed"));
+  jumpBuffer=0;coyote=0;
+}
 const FRIEND_CODE="MELONCREW";
 const SAVE_KEY="mrMelonAdventure_v1";
 const CREW_KEY="mrMelonCrewScores_v1";
@@ -857,8 +862,9 @@ function buildLevel(index){
   shots=[];particles=[];decor=[];
   player.x=L.start[0];player.y=L.start[1];player.vx=0;player.vy=0;
   player.hp=save.maxHp;player.freeze=save.freezeMax;player.inv=0;player.groundPound=false;player.wasOnGround=false;player.landing=0;
+  player.onGround=false;player.swim=false;player.shootCd=0;player.freezeCd=0;
   checkpoint={x:L.start[0],y:L.start[1]};checkpointReached=false;combo=0;comboTimer=0;
-  jumpBuffer=0;coyote=0;
+  levelCompleting=false;pendingLevelBuild=false;clearGameInputs();
   camX=0; levelStart=performance.now();
   generateDecor(L);
   banner(L.name);
@@ -884,7 +890,7 @@ function generateDecor(L){
 }
 function startGame(){
   requestImmersiveMode();
-  inGame=true; paused=false; quizOpen=false; shopOpen=false;
+  inGame=true; paused=false; quizOpen=false; shopOpen=false;levelCompleting=false;pendingLevelBuild=false;clearGameInputs();
   $("screenCover").style.display="none"; $("hud").style.display="flex";
   $("questBox").style.display="block"; $("minimap").style.display="block"; $("questBox").classList.remove("collapsed");
   save.level=Math.max(0,Math.min(save.level,LEVELS.length-1));
@@ -893,7 +899,7 @@ function startGame(){
   startMusic();
 }
 function backToMenu(){
-  inGame=false; paused=false; quizOpen=false; shopOpen=false;
+  inGame=false; paused=false; quizOpen=false; shopOpen=false;levelCompleting=false;pendingLevelBuild=false;clearGameInputs();
   stopMusic();
   $("hud").style.display="none";$("questBox").style.display="none";$("minimap").style.display="none";
   $("quizOverlay").style.display="none";$("shopOverlay").style.display="none";$("pauseOverlay").style.display="none";$("victoryOverlay").style.display="none";
@@ -924,7 +930,7 @@ function updateMenuSummary(){
   $("saveSummary").textContent=`${save.character} • Level ${Math.min(save.level+1,LEVELS.length)}/${LEVELS.length} • ${save.coins} melons • ${save.score} pts • ${Object.keys(save.foundSecrets||{}).length}/${LEVELS.length} Golden Seeds`;
 }
 function showShop(fromMenu=false){
-  shopOpen=true; paused=true;
+  shopOpen=true; paused=true;clearGameInputs();
   renderShop();
   $("shopOverlay").style.display="flex";
   $("bottleExchange").style.display=(save.bottle&&!save.bottleTraded)?"block":"none";
@@ -946,6 +952,10 @@ function renderShop(){
 }
 function closeShop(){
   shopOpen=false; paused=false;$("shopOverlay").style.display="none";
+  if(inGame&&pendingLevelBuild){
+    pendingLevelBuild=false;
+    buildLevel(save.level);
+  }
 }
 function studioAchievement(id,title,icon,xp=45){
   try{
@@ -1024,7 +1034,7 @@ function makeMathProblem(level){
 let currentQuizSolution="";
 
 function openQuiz(source){
-  if(quizOpen)return;quizOpen=true;paused=true;currentQuiz=source;
+  if(quizOpen)return;quizOpen=true;paused=true;currentQuiz=source;clearGameInputs();
   const problem=makeMathProblem(save.level),ans=problem.ans;
   currentQuizSolution=problem.why;
   $("quizQ").textContent=problem.q;
@@ -1067,7 +1077,7 @@ function damagePlayer(amount,fromX){
 function respawnPlayer(){
   save.score=Math.max(0,save.score-100);persist();
   player.x=checkpoint.x;player.y=checkpoint.y;player.vx=0;player.vy=0;player.hp=save.maxHp;player.inv=150;player.groundPound=false;
-  jumpBuffer=0;coyote=0;
+  player.onGround=false;player.swim=false;player.shootCd=0;player.freezeCd=0;clearGameInputs();
   toast(checkpointReached?"Back to the checkpoint!":"Mr. Melon bounced back!","💚");sfx("checkpoint");updateHUD();
 }
 function updateComboUI(){
@@ -1249,10 +1259,9 @@ function update(dt){
   pickups.forEach(p=>{p.t+=.04;if(!p.taken&&rects(player,{x:p.x-12,y:p.y-12,w:36,h:36}))collect(p)});
   particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.05;p.life--});particles=particles.filter(p=>p.life>0);
 
-  if(player.x>L.exit){
-    if(save.level<LEVELS.length-1){
-      save.score+=300;save.level++;saveCrewScore();persist();submitOnlineScore(false);sfx("level");toast("Level complete! +300 points","🏁");showShop();
-    }
+  if(!levelCompleting&&player.x>L.exit&&save.level<LEVELS.length-1){
+    levelCompleting=true;pendingLevelBuild=true;
+    save.score+=300;save.level++;saveCrewScore();persist();submitOnlineScore(false);sfx("level");toast("Level complete! +300 points","🏁");showShop();
   }
   const lookAhead=Math.max(-90,Math.min(90,player.vx*18));
   const cameraTarget=Math.max(0,Math.min(L.world-W,player.x-W*.40+lookAhead));
@@ -1642,7 +1651,7 @@ function keyUp(e){
   }
 }
 addEventListener("keydown",keyDown);addEventListener("keyup",keyUp);
-addEventListener("blur",()=>{Object.keys(keys).forEach(k=>keys[k]=false);document.querySelectorAll(".touchBtn").forEach(b=>b.classList.remove("pressed"));jumpBuffer=0;if(inGame&&!paused&&!quizOpen&&!shopOpen){paused=true;$("pauseOverlay").style.display="flex"}});
+addEventListener("blur",()=>{clearGameInputs();if(inGame&&!paused&&!quizOpen&&!shopOpen){paused=true;$("pauseOverlay").style.display="flex"}});
 
 document.querySelectorAll(".touchBtn").forEach(b=>{
   const code=b.dataset.key;
@@ -1668,7 +1677,7 @@ $("enterBtn").onclick=()=>{
 };
 $("playBtn").onclick=startGame;
 $("menuShopBtn").onclick=()=>showShop(true);
-$("closeShop").onclick=()=>{closeShop();if(inGame&&save.level<LEVELS.length)buildLevel(save.level)};
+$("closeShop").onclick=()=>closeShop();
 $("crewBtn").onclick=()=>{renderCrew();$("crewOverlay").style.display="flex"};
 $("villageBtn").onclick=()=>openVillage();
 $("charactersBtn").onclick=()=>openCharacters();
