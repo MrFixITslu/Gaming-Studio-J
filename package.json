@@ -6,7 +6,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "check": "node --check server.js"
+    "check": "node --check server.js && node --check games/spelling-bee/spelling-bee.js && node scripts/gameplay-smoke.js"
   },
   "engines": {
     "node": ">=22"

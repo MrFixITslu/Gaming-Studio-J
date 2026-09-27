@@ -48,7 +48,8 @@ button,input{font:inherit}
 .hero p{color:var(--ink-soft);font-size:clamp(1rem,1.6vw,1.2rem);line-height:1.7;max-width:690px}
 .hero-chips{display:flex;gap:10px;flex-wrap:wrap;margin-top:25px}
 .hero-chips span{padding:8px 14px;border-radius:999px;background:var(--cream-deep);border:2px solid var(--line);color:var(--ink);font-weight:700;font-size:.86rem}
-.hero-plane{position:relative;min-height:360px;background:linear-gradient(180deg,#5FBFFF,#BFE8FF 62%,#FFF3D6 100%);overflow:hidden}
+.hero-plane{position:relative;min-height:360px;background:#8fd7ff url("./spelling-bee-world.svg") center/cover no-repeat;overflow:hidden}
+.hero-plane:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,#ffffff0d 0,transparent 52%,#fff4cf32 100%);pointer-events:none}
 .hero-plane-img{position:absolute;left:50%;top:52%;width:min(70%,340px);height:auto;transform:translate(-50%,-50%) rotate(-3deg);filter:drop-shadow(0 22px 20px rgba(58,36,8,.28));animation:heroFlight 4.8s ease-in-out infinite}
 @keyframes heroFlight{50%{transform:translate(-50%,-58%) rotate(2deg)}}
 .hero-cloud{position:absolute;background:#fff;border-radius:999px;filter:blur(.3px);opacity:.9}
@@ -187,18 +188,7 @@ button,input{font:inherit}
 .sun{position:absolute;width:88px;height:88px;border-radius:50%;background:radial-gradient(circle,#fffde7 0 34%,#ffe98f 67%,#ffd65c 100%);right:12%;top:16%;box-shadow:0 0 25px #fff,0 0 90px #fff8;z-index:1}
 .horizon-haze{position:absolute;left:0;right:0;top:54%;height:21%;background:linear-gradient(180deg,transparent,#ffe6c8aa 44%,transparent);filter:blur(10px);z-index:2;pointer-events:none}
 .mountains{display:none}
-.runway{position:absolute;left:31%;right:31%;bottom:-4%;height:59%;background:linear-gradient(90deg,#9c8a68 0 5%,#fff3d9 5% 6%,#6b5a3e 6% 94%,#fff3d9 94% 95%,#9c8a68 95%);clip-path:polygon(43% 0,57% 0,100% 100%,0 100%);transform-origin:50% 100%;z-index:8;box-shadow:0 -10px 50px rgba(58,36,8,.28);overflow:hidden}
-.flight-world.takeoff .runway{display:block;animation:runwayTakeoff 3.1s cubic-bezier(.25,.65,.2,1) forwards}
-.flight-world.cruise .runway{display:none!important}
-.flight-world.landing .runway{display:block;animation:landingRunway 4.5s cubic-bezier(.2,.72,.2,1) forwards}
-@keyframes runwayTakeoff{0%{opacity:1;transform:translateY(0) scale(1)}72%{opacity:1;transform:translateY(18%) scale(.85)}99%{opacity:.1;transform:translateY(64%) scale(.42)}100%{opacity:0;visibility:hidden;transform:translateY(75%) scale(.35)}}
-@keyframes landingRunway{0%{opacity:0;transform:translateY(-48%) scale(.08)}12%{opacity:.2}34%{opacity:.62;transform:translateY(-30%) scale(.28)}68%{opacity:1;transform:translateY(-6%) scale(.68)}92%{transform:translateY(-1%) scale(.96)}100%{opacity:1;transform:translateY(0) scale(1)}}
-.runway:before{content:"";position:absolute;left:49%;top:0;width:2%;height:100%;background:repeating-linear-gradient(#fff 0 6%,transparent 6% 14%);filter:drop-shadow(0 0 4px #fff8)}
-.runway:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent 7%,#ffd873bb 7.2% 7.7%,transparent 8% 92%,#ffd873bb 92.3% 92.8%,transparent 93%);opacity:.95}
-.runway i{position:absolute;width:18%;height:4px;background:#fff9;left:41%;animation:runwayMove .85s linear infinite}
-.runway i:nth-child(1){top:5%}.runway i:nth-child(2){top:20%}.runway i:nth-child(3){top:35%}.runway i:nth-child(4){top:50%}.runway i:nth-child(5){top:65%}.runway i:nth-child(6){top:80%}
-@keyframes runwayMove{to{transform:translateY(195px) scale(1.55)}}
-
+/* The bee launches and lands in the meadow; there is intentionally no runway. */
 .cloud-layer{position:absolute;inset:0;z-index:5;pointer-events:none}
 .cloud-layer.back{z-index:2;opacity:.42;filter:blur(2px);transform:scale(.84)}
 .flight-cloud{position:absolute;background:#ffffffe8;border-radius:50%;filter:blur(.7px);box-shadow:38px 8px 0 9px #ffffffe8,-38px 9px 0 3px #ffffffd0;animation:cloudDrift linear infinite;will-change:transform}
@@ -248,17 +238,17 @@ button,input{font:inherit}
 .propeller-disc,.landing-gear,.engine-glow{display:none}
 .player-plane.shielded:after{content:"";position:absolute;inset:-16px;border-radius:50%;border:4px solid #8FE3FF;box-shadow:0 0 20px #8FE3FFcc,inset 0 0 20px #8FE3FF66;animation:shieldPulse 1.2s ease-in-out infinite;z-index:4}
 @keyframes shieldPulse{0%,100%{opacity:.55;transform:scale(1)}50%{opacity:1;transform:scale(1.07)}}
-.plane-hit-point{position:absolute;left:50%;top:22%;width:10px;height:10px;margin:-5px;border-radius:50%;background:#fff0;z-index:9;pointer-events:none}
+.plane-hit-point{position:absolute;left:50%;top:50%;width:10px;height:10px;margin:-5px;border-radius:50%;background:#fff0;z-index:9;pointer-events:none}
 .contrails{position:absolute;left:50%;bottom:-38px;width:138px;height:72px;transform:translateX(-50%);opacity:0;z-index:0;transition:opacity .5s}
 .flight-world.cruise .contrails{opacity:.22}
 .contrails:before,.contrails:after{content:"";position:absolute;top:0;width:7px;height:68px;border-radius:50%;background:linear-gradient(#ffd9ecb0,transparent);filter:blur(5px)}
 .contrails:before{left:25px;transform:rotate(6deg)}.contrails:after{right:25px;transform:rotate(-6deg)}
-.touchdown-smoke{position:absolute;left:50%;bottom:2%;width:180px;height:70px;transform:translateX(-50%);z-index:15;pointer-events:none;opacity:0}
-.touchdown-smoke i{position:absolute;left:50%;bottom:0;width:26px;height:26px;border-radius:50%;background:#fff3d0dd;filter:blur(2px);transform:translate(-50%,0) scale(.2)}
+.touchdown-smoke{position:absolute;left:50%;bottom:5%;width:190px;height:84px;transform:translateX(-50%);z-index:15;pointer-events:none;opacity:0}
+.touchdown-smoke i{position:absolute;left:50%;bottom:8px;width:13px;height:13px;border-radius:50%;background:#ffd94a;box-shadow:0 0 0 5px #fff4a055,0 0 18px #ffd94aaa;transform:translate(-50%,0) scale(.3)}
 .touchdown-smoke.active{opacity:1}
-.touchdown-smoke.active i{animation:touchSmoke .95s ease-out forwards}
-.touchdown-smoke.active i:nth-child(2){animation-delay:.08s}.touchdown-smoke.active i:nth-child(3){animation-delay:.14s}.touchdown-smoke.active i:nth-child(4){animation-delay:.22s}
-@keyframes touchSmoke{0%{opacity:.85;transform:translate(-50%,0) scale(.25)}100%{opacity:0;transform:translate(calc(-50% + var(--sx,35px)),-48px) scale(2.2)}}
+.touchdown-smoke.active i{animation:pollenBurst .92s ease-out forwards}
+.touchdown-smoke.active i:nth-child(1){--sx:-52px;--sy:-38px}.touchdown-smoke.active i:nth-child(2){--sx:-18px;--sy:-61px;animation-delay:.06s}.touchdown-smoke.active i:nth-child(3){--sx:28px;--sy:-56px;animation-delay:.12s}.touchdown-smoke.active i:nth-child(4){--sx:58px;--sy:-34px;animation-delay:.18s}
+@keyframes pollenBurst{0%{opacity:.95;transform:translate(-50%,0) scale(.35)}100%{opacity:0;transform:translate(calc(-50% + var(--sx)),var(--sy)) scale(1.3)}}
 .flight-world.takeoff .player-plane{animation:planeTakeoff 3.1s cubic-bezier(.2,.74,.2,1) both}
 .flight-world.cruise .player-plane{animation:cruiseBob 4.4s ease-in-out infinite}
 .flight-world.landing .player-plane{animation:planeLanding 4.5s cubic-bezier(.32,.06,.18,1) forwards}
@@ -269,29 +259,22 @@ button,input{font:inherit}
 .player-plane.bank-left{transform:translateX(-50%) rotate(-11deg)!important}
 .player-plane.bank-right{transform:translateX(-50%) rotate(11deg)!important}
 
-.destination-scene{position:absolute;left:0;right:0;bottom:17%;height:25%;z-index:7;opacity:0;transform:translateY(20px) scale(.58);transform-origin:50% 100%;transition:opacity .9s,transform 3.2s cubic-bezier(.2,.72,.2,1);pointer-events:none}
+.destination-scene{position:absolute;left:0;right:0;bottom:0;height:38%;z-index:7;opacity:0;transform:translateY(42px) scale(.74);transform-origin:50% 100%;transition:opacity .8s,transform 3s cubic-bezier(.2,.72,.2,1);pointer-events:none;background:linear-gradient(180deg,transparent 0 26%,#a8df7855 27% 50%,#55ad63aa 100%)}
 .flight-world.landing .destination-scene{opacity:1;transform:translateY(0) scale(1)}
-.airport-apron{position:absolute;left:51%;right:1%;bottom:-5%;height:35%;background:linear-gradient(180deg,#E0C48F,#B4914F);clip-path:polygon(16% 0,100% 0,100% 100%,0 100%);opacity:.88;border-top:2px solid #fff3d9}
-.airport-apron:after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 17%,#fff3d98c 17.3% 17.8%,transparent 18.1% 35%);opacity:.65}
-.terminal{position:absolute;right:4%;bottom:19%;width:29%;height:44%;border-radius:7px 7px 1px 1px;background:linear-gradient(#fff3d9,#FFD873 58%,#FF9F1C);box-shadow:inset 0 0 0 2px #fff,0 10px 22px rgba(58,36,8,.3)}
-.terminal:before{content:"";position:absolute;left:4%;right:4%;top:22%;height:30%;background:repeating-linear-gradient(90deg,#7a3d10 0 8%,#FFE9B5 8% 13%);opacity:.9}
-.terminal:after{content:"";position:absolute;left:-3%;right:-3%;top:-17%;height:19%;background:linear-gradient(#FF6FA5,#E0508C);clip-path:polygon(5% 100%,13% 0,90% 0,97% 100%)}
-.terminal span{position:absolute;bottom:-12px;width:5px;height:18px;background:#6b4423}
-.terminal span:nth-child(1){left:15%}.terminal span:nth-child(2){left:39%}.terminal span:nth-child(3){left:63%}.terminal span:nth-child(4){left:86%}
-.tower{position:absolute;right:34%;bottom:18%;width:5%;height:75%;background:linear-gradient(90deg,#B98BFF,#E4D2FF 45%,#B98BFF);clip-path:polygon(35% 0,65% 0,82% 100%,18% 100%);filter:drop-shadow(0 8px 8px rgba(58,36,8,.3))}
-.tower:before{content:"";position:absolute;left:-48%;top:-2%;width:196%;height:18%;background:linear-gradient(#8B5CE0,#5C34A8);border:3px solid #fff;border-radius:5px}
-.tower:after{content:"";position:absolute;left:44%;top:-24%;width:12%;height:24%;background:#5C34A8}
-.hangar{position:absolute;right:39%;bottom:18%;width:18%;height:30%;background:linear-gradient(#E4F7EA,#4CAF7D);clip-path:polygon(8% 18%,20% 0,80% 0,92% 18%,100% 100%,0 100%);box-shadow:inset 0 0 0 2px #fff}
-.hangar:after{content:"";position:absolute;left:20%;right:20%;bottom:0;height:66%;background:#2E8B57;border:2px solid #4CAF7D;border-bottom:0}
-.parked-plane{position:absolute;right:18%;bottom:14%;width:72px;height:36px;transform:rotate(-3deg);filter:drop-shadow(0 3px 3px rgba(58,36,8,.3))}
-.parked-plane:before{content:"";position:absolute;left:29px;top:1px;width:13px;height:34px;border-radius:50% 50% 36% 36%;background:#fff3d9}
-.parked-plane:after{content:"";position:absolute;left:5px;top:16px;width:62px;height:8px;border-radius:50%;background:#FF6FA5}
-.parked-plane i{position:absolute;left:18px;bottom:2px;width:36px;height:5px;border-radius:50%;background:#E0C48F}
-.parked-plane b{position:absolute;left:32px;top:-4px;width:7px;height:9px;background:#FFD873;border-radius:4px}
-.approach-lights{position:absolute;left:37%;right:37%;bottom:-9%;height:76%;z-index:-1}
-.approach-lights i{position:absolute;left:50%;width:4px;height:4px;border-radius:50%;background:#fff;box-shadow:0 0 7px #fff3d0,0 0 12px #ffb84d}
-.approach-lights i:nth-child(1){bottom:8%;margin-left:-62px}.approach-lights i:nth-child(2){bottom:8%;margin-left:58px}.approach-lights i:nth-child(3){bottom:28%;margin-left:-39px}.approach-lights i:nth-child(4){bottom:28%;margin-left:35px}.approach-lights i:nth-child(5){bottom:49%;margin-left:-20px}.approach-lights i:nth-child(6){bottom:49%;margin-left:16px}
-.welcome-sign{position:absolute;left:6%;bottom:20%;padding:7px 11px;border-radius:7px;background:var(--honey-deep);border:2px solid #fff;color:#fff;font-size:.66rem;font-weight:1000;letter-spacing:.08em;box-shadow:var(--shadow-sm)}
+.garden-glow{position:absolute;left:50%;bottom:2%;width:min(760px,76vw);height:180px;transform:translateX(-50%);border-radius:50%;background:radial-gradient(ellipse,#fff6a980 0 22%,#9ee46a42 45%,transparent 72%);filter:blur(6px)}
+.landing-flower{position:absolute;width:132px;height:132px;bottom:7%;filter:drop-shadow(0 12px 9px rgba(52,79,28,.26));transform-origin:50% 100%}
+.landing-flower:before{content:"";position:absolute;left:41px;top:8px;width:50px;height:50px;border-radius:55% 45% 52% 48%;background:#ff8ec5;box-shadow:0 48px 0 -1px #ff8ec5,-41px 23px 0 -2px #ff8ec5,41px 23px 0 -2px #ff8ec5,-28px 58px 0 -4px #ff8ec5,28px 58px 0 -4px #ff8ec5;transform:rotate(1deg)}
+.landing-flower i{position:absolute;left:48px;top:48px;width:38px;height:38px;border-radius:50%;background:radial-gradient(circle at 36% 30%,#fff7b1 0 12%,#ffd24a 13% 68%,#f1a900 70%);box-shadow:0 0 0 5px #ffffff55;z-index:2}
+.landing-flower:after{content:"";position:absolute;left:63px;top:88px;width:7px;height:80px;border-radius:8px;background:linear-gradient(#4fa952,#2e8747);z-index:-1}
+.flower-main{left:50%;transform:translateX(-50%) scale(1.16)}
+.flower-left{left:18%;bottom:2%;transform:scale(.78) rotate(-7deg);opacity:.86}
+.flower-right{right:16%;bottom:3%;transform:scale(.88) rotate(7deg);opacity:.9}
+.flower-left:before{background:#fff6ea;box-shadow:0 48px 0 -1px #fff6ea,-41px 23px 0 -2px #fff6ea,41px 23px 0 -2px #fff6ea,-28px 58px 0 -4px #fff6ea,28px 58px 0 -4px #fff6ea}
+.flower-right:before{background:#c49bff;box-shadow:0 48px 0 -1px #c49bff,-41px 23px 0 -2px #c49bff,41px 23px 0 -2px #c49bff,-28px 58px 0 -4px #c49bff,28px 58px 0 -4px #c49bff}
+.garden-daisies{position:absolute;left:4%;right:4%;bottom:0;height:32%}
+.garden-daisies i{position:absolute;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:12px 0 0 -3px #fff,-12px 0 0 -3px #fff,0 12px 0 -3px #fff,0 -12px 0 -3px #fff,0 0 0 6px #ffd34f55}
+.garden-daisies i:nth-child(1){left:7%;bottom:18%;transform:scale(.7)}.garden-daisies i:nth-child(2){left:31%;bottom:7%;transform:scale(.5)}.garden-daisies i:nth-child(3){left:67%;bottom:16%;transform:scale(.62)}.garden-daisies i:nth-child(4){left:84%;bottom:5%;transform:scale(.48)}.garden-daisies i:nth-child(5){left:45%;bottom:26%;transform:scale(.42)}
+.welcome-sign{position:absolute;left:6%;bottom:13%;padding:8px 12px;border-radius:999px;background:#fff9dfeb;border:2px solid var(--honey);color:var(--ink);font-size:.68rem;font-weight:1000;letter-spacing:.08em;box-shadow:var(--shadow-sm)}
 .flight-message{position:absolute;left:50%;top:25%;transform:translateX(-50%);z-index:26;background:linear-gradient(180deg,#FFFDF6f2,#FFF3D6f2);border:3px solid var(--honey);border-radius:18px;padding:13px 20px;text-align:center;max-width:min(560px,86vw);font-weight:900;color:var(--ink);opacity:0;transition:opacity .25s;box-shadow:var(--shadow)}
 .flight-message.show{opacity:1}
 .mobile-controls{position:absolute;left:0;right:0;bottom:24px;z-index:28;display:flex;justify-content:space-between;padding:0 max(18px,env(safe-area-inset-left));pointer-events:none}
@@ -322,7 +305,7 @@ button,input{font:inherit}
   .player-plane{width:205px;height:146px;bottom:10%}
   .letter-gate{width:104px;height:104px;margin:-52px}
   .gate-letter{font-size:2.1rem}
-  .destination-scene{height:20%;bottom:18%}
+  .destination-scene{height:30%;bottom:0}
   .terminal{width:31%}
   .welcome-sign{display:none}
   .hero{grid-template-columns:1fr}
