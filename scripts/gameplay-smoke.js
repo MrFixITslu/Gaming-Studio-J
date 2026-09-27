@@ -1,0 +1,92 @@
+"use strict";
+
+const fs = require("fs");
+const vm = require("vm");
+
+function assert(condition, message) {
+  if (!condition) throw new Error(message);
+}
+
+function extractFunction(source, name) {
+  const start = source.indexOf("function " + name + "(");
+  if (start < 0) throw new Error("Missing function: " + name);
+  const brace = source.indexOf("{", start);
+  let depth = 0, quote = null, escaped = false;
+  for (let i = brace; i < source.length; i++) {
+    const ch = source[i], next = source[i + 1];
+    if (quote) {
+      if (escaped) { escaped = false; continue; }
+      if (ch === "\\") { escaped = true; continue; }
+      if (ch === quote) quote = null;
+      continue;
+    }
+    if (ch === "'" || ch === '"' || ch === "`") { quote = ch; continue; }
+    if (ch === "/" && next === "/") {
+      const end = source.indexOf("\n", i + 2);
+      i = end < 0 ? source.length : end;
+      continue;
+    }
+    if (ch === "/" && next === "*") {
+      const end = source.indexOf("*/", i + 2);
+      i = end < 0 ? source.length : end + 1;
+      continue;
+    }
+    if (ch === "{") depth++;
+    if (ch === "}" && --depth === 0) return source.slice(start, i + 1);
+  }
+  throw new Error("Unclosed function: " + name);
+}
+
+function loadFunction(source, name, sandbox = {}) {
+  return vm.runInNewContext("(" + extractFunction(source, name) + ")", sandbox);
+}
+
+const beeJs = fs.readFileSync("games/spelling-bee/spelling-bee.js", "utf8");
+const beeHtml = fs.readFileSync("games/spelling-bee/index.html", "utf8");
+const beeCss = fs.readFileSync("games/spelling-bee/spelling-bee.css", "utf8");
+const melonHtml = fs.readFileSync("games/mr-melons-adventure/index.html", "utf8");
+
+for (const file of [
+  "games/spelling-bee/spelling-bee-hero.svg",
+  "games/spelling-bee/spelling-bee-player.svg",
+  "games/spelling-bee/spelling-bee-world.svg"
+]) assert(fs.existsSync(file), "Missing current Spelling Bee art: " + file);
+
+assert(!beeHtml.includes('id="runway"'), "Runway markup returned to Spelling Bee.");
+assert(!beeCss.includes(".runway{"), "Runway styling returned to Spelling Bee.");
+assert(beeHtml.includes("spelling-bee-player.svg"), "Flight must use the rear-view bee asset.");
+assert(beeJs.includes('gate.lane!==f.lane'), "Spelling Bee collision must be lane deterministic.");
+assert(beeJs.includes("PRACTICE GARDEN"), "Safe diversion must use the Practice Garden.");
+assert(beeJs.includes("reported:false"), "Mastery reporting must be idempotent.");
+
+const normalWord = loadFunction(beeJs, "normalWord");
+assert(normalWord("  CAN’T  ") === "can't", "Smart apostrophe spelling normalization failed.");
+assert(normalWord("ice–cream") === "ice-cream", "Dash spelling normalization failed.");
+assert(normalWord("  two   words ") === "two words", "Whitespace spelling normalization failed.");
+
+const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
+const gateSpeed = loadFunction(beeJs, "gateSpeed", { clamp });
+assert(gateSpeed({wordIndex: 0, combo: 0}) === 500, "Unexpected starting gate speed.");
+assert(gateSpeed({wordIndex: 99, combo: 99}) <= 690, "Gate speed exceeds child-friendly cap.");
+
+const collisionSandbox = { state: { flight: { lane: 1 } }, Number };
+const gateTouchesPlane = loadFunction(beeJs, "gateTouchesPlane", collisionSandbox);
+assert(gateTouchesPlane({lane: 0}, .95) === false, "Wrong lane must not register a hit.");
+assert(gateTouchesPlane({lane: 1}, .95) === true, "Correct lane should register inside the hit window.");
+assert(gateTouchesPlane({lane: 1}, .70) === false, "A distant gate must not register early.");
+
+assert(melonHtml.includes("levelCompleting=true;pendingLevelBuild=true"), "Mr Melon level-completion guard missing.");
+assert(melonHtml.includes("player.onGround=false;player.swim=false;player.shootCd=0;player.freezeCd=0"), "Mr Melon transition state reset missing.");
+assert(melonHtml.includes("function clearGameInputs()"), "Mr Melon held-input reset missing.");
+
+const makeMathProblem = loadFunction(melonHtml, "makeMathProblem", { Math });
+for (let level = 0; level < 8; level++) {
+  for (let i = 0; i < 120; i++) {
+    const problem = makeMathProblem(level);
+    assert(problem && typeof problem.q === "string" && problem.q.length > 20, "Invalid maths prompt at level " + level);
+    assert(Number.isFinite(problem.ans) && problem.ans >= 0, "Invalid maths answer at level " + level);
+    assert(typeof problem.why === "string" && problem.why.length > 2, "Missing maths explanation at level " + level);
+  }
+}
+
+console.log("Gameplay smoke checks passed for Spelling Bee and Mr. Melon's Adventure.");
