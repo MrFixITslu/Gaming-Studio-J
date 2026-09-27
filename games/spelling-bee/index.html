@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./spelling-bee.css?v=5">
+<link rel="stylesheet" href="./spelling-bee.css?v=6">
 </head>
 <body>
 <div class="app-shell">
@@ -74,7 +74,7 @@
             </article>
 
             <article class="training-step sentence-step" id="sentenceStep">
-              <div class="step-head"><span>3</span><div><b>Use it in a sentence</b><small>Choose the sentence that uses the word correctly.</small></div></div>
+              <div class="step-head"><span>3</span><div><b>Use it in a sentence</b><small>Choose the word that correctly completes the sentence.</small></div></div>
               <div class="sentence-options" id="sentenceOptions"></div>
               <div class="step-actions"><span id="sentenceResult"></span></div>
             </article>
@@ -136,23 +136,17 @@
         <div class="ground-rush" aria-hidden="true"><i></i><i></i><i></i></div>
         <div class="speed-lines" aria-hidden="true"></div>
         <div class="destination-scene" id="destinationScene" aria-hidden="true">
-          <div class="airport-apron"></div>
-          <div class="hangar"></div>
-          <div class="parked-plane"><i></i><b></b></div>
-          <div class="terminal"><span></span><span></span><span></span><span></span></div>
-          <div class="tower"></div>
-          <div class="approach-lights"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          <div class="garden-glow"></div>
+          <div class="landing-flower flower-main"><i></i></div>
+          <div class="landing-flower flower-left"><i></i></div>
+          <div class="landing-flower flower-right"><i></i></div>
+          <div class="garden-daisies"><i></i><i></i><i></i><i></i><i></i></div>
           <div class="welcome-sign" id="welcomeSign">WELCOME</div>
         </div>
-        <div class="runway" id="runway"><i></i><i></i><i></i><i></i><i></i><i></i><b></b></div>
         <div class="scene3d" id="scene3d"></div>
         <div class="player-plane" id="playerPlane">
           <img src="./spelling-bee-hero.svg" alt="Your spelling bee">
-          <span class="propeller-disc" aria-hidden="true"></span>
-          <i class="engine-glow" aria-hidden="true"></i>
           <em class="contrails" aria-hidden="true"></em>
-          <span class="landing-gear gear-left" aria-hidden="true"></span>
-          <span class="landing-gear gear-right" aria-hidden="true"></span>
           <b class="plane-hit-point" id="planeHitPoint" aria-hidden="true"></b>
         </div>
         <div class="touchdown-smoke" id="touchdownSmoke" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
@@ -181,6 +175,6 @@
   </main>
 </div>
 <div class="toast-area" id="toastArea" aria-live="polite"></div>
-<script src="./spelling-bee.js?v=4"></script>
+<script src="./spelling-bee.js?v=5"></script>
 </body>
 </html>
