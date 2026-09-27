@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 300" role="img" aria-label="Spelling Bee flying away">
+<defs>
+  <linearGradient id="pb" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#ffe475"/><stop offset=".5" stop-color="#ffc536"/><stop offset="1" stop-color="#efa000"/></linearGradient>
+  <linearGradient id="pw" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff" stop-opacity=".94"/><stop offset=".55" stop-color="#d8f4ff" stop-opacity=".78"/><stop offset="1" stop-color="#a9e3ff" stop-opacity=".42"/></linearGradient>
+  <filter id="ps" x="-30%" y="-30%" width="160%" height="180%"><feDropShadow dx="0" dy="14" stdDeviation="10" flood-color="#5a330c" flood-opacity=".28"/></filter>
+</defs>
+<g filter="url(#ps)">
+  <ellipse cx="104" cy="151" rx="72" ry="40" fill="url(#pw)" stroke="#b7e8fb" stroke-width="4" transform="rotate(-16 104 151)"/>
+  <ellipse cx="256" cy="151" rx="72" ry="40" fill="url(#pw)" stroke="#b7e8fb" stroke-width="4" transform="rotate(16 256 151)"/>
+  <path d="M149 89 C137 54 119 43 104 38" fill="none" stroke="#4b2b08" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="103" cy="37" r="7" fill="#4b2b08"/>
+  <path d="M211 89 C223 54 241 43 256 38" fill="none" stroke="#4b2b08" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="257" cy="37" r="7" fill="#4b2b08"/>
+  <circle cx="180" cy="100" r="52" fill="#ffd85c" stroke="#513008" stroke-width="7"/>
+  <ellipse cx="180" cy="193" rx="70" ry="90" fill="url(#pb)" stroke="#513008" stroke-width="8"/>
+  <clipPath id="pc"><ellipse cx="180" cy="193" rx="66" ry="86"/></clipPath>
+  <g clip-path="url(#pc)" fill="#513008">
+    <rect x="105" y="135" width="150" height="21" rx="10" transform="rotate(1 180 145)"/>
+    <rect x="105" y="180" width="150" height="23" rx="11" transform="rotate(-1 180 191)"/>
+    <rect x="111" y="227" width="138" height="23" rx="11" transform="rotate(1 180 239)"/>
+  </g>
+  <path d="M154 69 C167 60 194 59 207 69" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="8" stroke-linecap="round"/>
+  <path d="M180 279 L165 260 L195 260 Z" fill="#513008"/>
+</g>
+</svg>
