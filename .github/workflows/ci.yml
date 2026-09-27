@@ -76,3 +76,18 @@ jobs:
 
       - name: Build application container
         run: docker build -t gaming-studio-j:ci .
+
+      - name: Verify container can serve game pages
+        run: |
+          docker run -d --name gaming-studio-j-ci -p 18080:80 gaming-studio-j:ci
+          trap 'docker logs gaming-studio-j-ci || true; docker rm -f gaming-studio-j-ci || true' EXIT
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:18080/healthz >/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:18080/healthz
+          curl -fsS http://127.0.0.1:18080/games/spelling-bee/index.html >/dev/null
+          curl -fsS http://127.0.0.1:18080/games/mr-melons-adventure/index.html >/dev/null
+          docker exec gaming-studio-j-ci sh -c 'test -r /app/games/spelling-bee/index.html && test -r /app/games/mr-melons-adventure/index.html'

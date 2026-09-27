@@ -8,8 +8,14 @@ RUN npm install --omit=dev --no-audit --no-fund \
     && setcap 'cap_net_bind_service=+ep' "$(readlink -f "$(which node)")"
 
 COPY . .
-RUN mkdir -p /app/runtime \
-    && chown -R node:node /app/runtime
+# Source checkouts can inherit a restrictive host umask (for example 077),
+# which makes copied static files unreadable by the non-root Node user.
+# Normalise application file permissions inside the image while keeping
+# runtime data writable only by the application user.
+RUN chmod -R a+rX /app \
+    && mkdir -p /app/runtime \
+    && chown -R node:node /app/runtime \
+    && chmod 700 /app/runtime
 
 ENV NODE_ENV=production
 ENV PORT=80
