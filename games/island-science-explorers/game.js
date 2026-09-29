@@ -89,7 +89,7 @@ function varyScience(item){
  if(!alts.length||Math.random()<.5)return item;
  return alts[Math.floor(Math.random()*alts.length)];
 }
-let current=null,round=[],index=0,correct=0,answered=false;
+let current=null,round=[],index=0,correct=0,repaired=0,mistakes=0,answered=false,questionMisses=0;
 function profile(){return window.GSJLearning?.profile?.()||{name:"Explorer"}}
 function speak(text){if(!("speechSynthesis" in window))return;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.rate=.86;u.pitch=1.03;speechSynthesis.speak(u)}
 function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
@@ -155,7 +155,7 @@ function selectRound(m){
  return pool.slice(0,Math.min(size,pool.length)).map(varyScience);
 }
 function startMission(id){
- current=missions.find(m=>m.id===id);if(!current)return;round=selectRound(current);index=0;correct=0;answered=false;
+ current=missions.find(m=>m.id===id);if(!current)return;round=selectRound(current);index=0;correct=0;repaired=0;mistakes=0;answered=false;questionMisses=0;
  $("homeView").style.display="none";$("resultsView").classList.remove("active");$("missionView").classList.add("active");
  $("missionName").textContent=current.icon+" "+current.title;renderChallenge();
 }
@@ -163,7 +163,7 @@ function renderChallenge(){
  const x=round[index],band=window.GSJLearning?.band?.(x.o)||"Support",stage=window.GSJLearning?.stage?.(x.o)||"Learning";
  $("bandPill").textContent=band+" path";$("stagePill").textContent=stage;
  $("missionProgress").style.width=Math.round(index/round.length*100)+"%";
- answered=false;
+ answered=false;questionMisses=0;
  let choices=x.c.map((label,i)=>({label,correct:i===x.a}));choices=shuffle(choices);
  if(band==="Support"){const right=choices.find(v=>v.correct),wrong=choices.filter(v=>!v.correct).slice(0,2);choices=shuffle([right,...wrong].filter(Boolean))}
  if(!choices.some(v=>v.correct))choices[0]={label:x.c[x.a],correct:true};
@@ -176,21 +176,37 @@ function renderChallenge(){
 }
 function answer(btn,choice,x,buttons){
  if(answered)return;answered=true;buttons.forEach(b=>b.disabled=true);
- const ok=choice.correct;if(ok){correct++;btn.classList.add("correct")}else{btn.classList.add("wrong");buttons.forEach((b,i)=>{if(b.textContent===x.c[x.a])b.classList.add("correct")})}
- const skill=window.GSJLearning?.record?.(x.o,ok,{subject:SUBJECT,gameId:GAME_ID,activity:current.id});
- const fb=$("feedback");fb.className="lw-feedback "+(ok?"good":"bad");fb.innerHTML=(ok?"✅ <b>Good evidence!</b> ":"📘 <b>Learn from this:</b> ")+x.why+(skill?'<br><small>'+skill.stage+' • '+skill.band+' path</small>':"");
- $("nextBtn").disabled=false;speak((ok?"Correct. ":"Let's learn it. ")+x.why);
+ const ok=choice.correct,firstTry=questionMisses===0;
+ if(ok){
+   if(firstTry)correct++;else repaired++;
+   btn.classList.add("correct");
+   const skill=window.GSJLearning?.record?.(x.o,true,{subject:SUBJECT,gameId:GAME_ID,activity:current.id});
+   const fb=$("feedback");fb.className="lw-feedback good";
+   fb.innerHTML=(firstTry?"✅ <b>Good evidence!</b> ":"🛠️ <b>Great repair!</b> ")+x.why+(skill?'<br><small>'+skill.stage+' • '+skill.band+' path</small>':"");
+   $("nextBtn").disabled=false;
+   speak((firstTry?"Correct. ":"Great repair. ")+x.why);
+   return;
+ }
+ mistakes++;questionMisses++;
+ btn.classList.add("wrong");
+ const skill=window.GSJLearning?.record?.(x.o,false,{subject:SUBJECT,gameId:GAME_ID,activity:current.id});
+ const fb=$("feedback");fb.className="lw-feedback bad";
+ fb.innerHTML='📘 <b>Let’s learn it, then try again.</b> '+x.why+(skill?'<br><small>'+skill.stage+' • '+skill.band+' path</small>':"");
+ $("nextBtn").disabled=true;
+ speak("Let's learn it. "+x.why);
+ setTimeout(function(){
+   if(answered){answered=false;buttons.forEach(b=>{if(!b.classList.contains("wrong"))b.disabled=false});}
+ },850);
 }
 function finish(){
  $("missionView").classList.remove("active");$("resultsView").classList.add("active");const pct=Math.round(correct/round.length*100);
- $("resultsTitle").textContent=pct>=80?"Explorer Badge earned!":pct>=60?"Good investigation!":"Keep experimenting!";
- $("resultsText").textContent="You got "+correct+" of "+round.length+" evidence decisions correct. Mistakes are saved as concepts to revisit—not as lost lives.";
- $("resultsStats").innerHTML='<div class="lw-card"><h2>'+pct+'%</h2><p>Accuracy</p></div><div class="lw-card"><h2>'+correct+'/'+round.length+'</h2><p>Evidence decisions</p></div><div class="lw-card"><h2>'+missionBand(current)+'</h2><p>Next difficulty</p></div>';
+ $("resultsTitle").textContent=pct>=80?"Explorer Badge earned!":"Field report complete!";
+ $("resultsText").textContent="You completed every investigation. "+(repaired?repaired+" concept"+(repaired===1?" was":"s were")+" repaired after feedback. ":"")+"Mistakes became practice—not lost lives.";
+ $("resultsStats").innerHTML='<div class="lw-card"><h2>'+pct+'%</h2><p>First-try accuracy</p></div><div class="lw-card"><h2>'+repaired+'</h2><p>Concepts repaired</p></div><div class="lw-card"><h2>'+missionBand(current)+'</h2><p>Next difficulty</p></div>';
  window.GSJLearning?.usage?.("score",{gameId:GAME_ID,title:GAME_TITLE,score:pct});
- if(pct>=80){
-   window.GSJLearning?.usage?.("complete",{gameId:GAME_ID,title:GAME_TITLE,score:pct});
-   award("science-"+current.id,"Explorer Badge: "+current.title,"Complete this Grade 2 science mission with strong evidence.","🏅",50);
- }
+ window.GSJLearning?.usage?.("complete",{gameId:GAME_ID,title:GAME_TITLE,score:pct});
+ award("science-"+current.id,"Explorer Badge: "+current.title,"Complete this Grade 2 science mission and repair any missed concepts.","🏅",50);
+ if(pct>=80)award("science-evidence-"+current.id,"Evidence Star: "+current.title,"Complete the mission with at least 80% first-try accuracy.","⭐",30);
  const allMastered=missions.flatMap(m=>m.outcomes).every(o=>window.GSJLearning?.stage?.(o)==="Mastered");
  if(allMastered)award("science-master","Island Science Master","Master every Grade 2 Science outcome in Island Science Explorers.","🔬",120);
 }

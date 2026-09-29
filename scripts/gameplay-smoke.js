@@ -74,13 +74,20 @@ assert(outcomeIds("science").length === 13, "Science ELO map must contain 13 out
 assert(outcomeIds("socialStudies").length === 24, "Social Studies ELO map must contain 24 outcomes.");
 assert(scienceJs.includes("evidenceScene") && scienceJs.includes("bindEvidenceScene"), "Science must require interactive evidence collection.");
 assert(socialJs.includes("communityScene") && socialJs.includes("bindCommunityScene"), "Social Studies must include interactive community exploration.");
+assert(scienceJs.includes("Great repair!") && scienceJs.includes("try again"), "Science must teach and require a repair after mistakes.");
+assert(socialJs.includes("Great repair!") && socialJs.includes("try again"), "Social Studies must teach and require a repair after mistakes.");
+assert(melonHtml.includes("requiredMathForLevel") && melonHtml.includes("Math Gate:"), "Mr. Melon must require mathematics before opening level portals.");
+assert(melonHtml.includes("levelMathSolved++"), "Mr. Melon math gate must count successfully solved challenges.");
+assert(melonHtml.includes("math-repair"), "Mr. Melon must record repaired math attempts separately.");
 assert(beeJs.includes("buildLanguageChallenges") && beeJs.includes("LANG-G2-LS-ELO1"), "Bee Academy Language Arts mission missing.");
 assert(learningEngineJs.includes('return "Ready"'), "Shared mastery stage must be subject-neutral.");
+assert(learningEngineJs.includes("startBreakCoach"), "Shared learning engine must include the child break coach.");
+assert(learningEngineJs.includes("25*60*1000"), "Break coach interval must be approximately 25 minutes.");
 
 assert(serverJs.includes("CURRICULUM_OUTCOME_SUBJECT.get(outcomeId)"), "Server must derive learning subject from validated curriculum outcome.");
 const swJs=fs.readFileSync("sw.js","utf8");
-assert(swJs.includes('gaming-studio-j-v6'), "PWA cache version must be bumped for Grade 2 worlds.");
-assert(swJs.includes('learning-engine.js?v=2') && swJs.includes('learning-worlds.css?v=2'), "PWA cache must include current learning assets.");
+assert(swJs.includes('gaming-studio-j-v7'), "PWA cache version must be current for Grade 2 worlds.");
+assert(swJs.includes('learning-engine.js?v=3') && swJs.includes('learning-worlds.css?v=2'), "PWA cache must include current learning assets.");
 
 assert(!lobbyHtml.includes('id="chatInput"'), "Kid-safe lobby must not expose free-text chat.");
 assert(lobbyHtml.includes('id="chatPreset"'), "Kid-safe lobby quick-chat selector missing.");
