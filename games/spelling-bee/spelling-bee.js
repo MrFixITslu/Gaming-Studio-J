@@ -20,12 +20,19 @@ function escapeRegExp(s){return String(s||"").replace(/[.*+?^$()|[\]\\{}]/g,"\\$
 function normalWord(s){
   return String(s||"").normalize("NFKC").replace(/[’‘]/g,"'").replace(/[‐‑‒–—]/g,"-").trim().toLowerCase().replace(/\s+/g," ");
 }
+function plainStoryText(value){
+  return String(value||"")
+    .replace(/\*\*([^*]+)\*\*/g,"$1")
+    .replace(/__([^_]+)__/g,"$1")
+    .replace(/^\s*[-*]\s+/gm,"")
+    .trim();
+}
 function lettersOf(s){
   return Array.from(String(s||"").normalize("NFKC").replace(/[’‘]/g,"'").replace(/[‐‑‒–—]/g,"-").trim().toUpperCase()).filter(function(ch){return /[A-Z'-]/.test(ch)});
 }
 function shuffle(arr){arr=arr.slice();for(var i=arr.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=arr[i];arr[i]=arr[j];arr[j]=t}return arr}
 function toast(msg){var el=document.createElement("div");el.className="toast";el.textContent=msg;$("toastArea").appendChild(el);setTimeout(function(){el.remove()},2600)}
-function showScreen(id){qsa(".screen").forEach(function(x){x.classList.toggle("active",x.id===id)});window.scrollTo(0,0)}
+function showScreen(id){qsa(".screen").forEach(function(x){x.classList.toggle("active",x.id===id)});document.body.classList.toggle("flight-active",id==="flightScreen");window.scrollTo(0,0)}
 function studioProfile(){
   var store=null;try{store=JSON.parse(localStorage.getItem(STUDIO_STORE_KEY)||"null")}catch(e){}
   if(!store||!Array.isArray(store.profiles)||!store.profiles.length)return {id:"local-player",name:"Player",avatar:"🐝"};
@@ -56,8 +63,12 @@ function masteredCount(level){
   if(!level)return 0;var saved=levelSave(level.id);
   return level.words.filter(function(w){var x=saved.words[normalWord(w)]||{};return x.build&&x.spell&&x.sentence}).length;
 }
+function masteredWords(level){
+  if(!level||!Array.isArray(level.words))return [];
+  return level.words.filter(function(w){return isMastered(w)});
+}
 function storyExampleFor(word){
-  var story=String(state.level&&state.level.story||"");
+  var story=plainStoryText(state.level&&state.level.story||"");
   if(!story)return "";
   var re=new RegExp("(^|[^A-Za-z])"+escapeRegExp(word)+"([^A-Za-z]|$)","i");
   var parts=story.split(/(?<=[.!?])\s+|\n+/).map(function(x){return x.trim()}).filter(Boolean);
@@ -200,7 +211,7 @@ function renderMissionGrid(){
   var grid=$("missionGrid");
   if(!state.levels.length){grid.innerHTML='<div class="empty-state"><b>No weekly spelling mission has been published yet.</b><br>An adult can add the 10–12 weekly words and story from Spelling Bee Admin.</div>';return}
   grid.innerHTML=state.levels.map(function(level){
-    var m=masteredCount(level),total=level.words.length,pct=Math.round(m/Math.max(1,total)*100),ls=levelSave(level.id),status=ls.completions>0?"Fly again":m===total?"Ready to fly":"Start training";
+    var m=masteredCount(level),total=level.words.length,pct=Math.round(m/Math.max(1,total)*100),ls=levelSave(level.id),status=ls.completions>0?"Fly again":m===total?"Full flight ready":m>=Math.min(3,total)?"Warm-up ready":"Start training";
     return '<article class="mission-card"><span class="eyebrow">'+escapeHtml(level.week||"WEEKLY MISSION")+'</span><div class="route">HOME 🌸 '+escapeHtml(level.destination||"Adventure Island")+'</div><h3>'+escapeHtml(level.title)+'</h3><p>'+total+' spelling words • '+escapeHtml(level.theme||"Sky Adventure")+'</p><div class="card-bottom"><div class="progress-ring" style="--p:'+pct+'%"><b>'+m+'/'+total+'</b></div><button class="flight-btn" data-level="'+escapeHtml(level.id)+'">'+status+' →</button></div></article>';
   }).join("");
   qsa("[data-level]").forEach(function(b){b.addEventListener("click",function(){openLevel(b.dataset.level)})});
@@ -258,11 +269,19 @@ function checkSpelling(){
   else{$("spellResult").textContent="Almost. Listen and try again.";speak(word);$("spellInput").select()}
 }
 function updateReady(){
-  if(!state.level)return;var m=masteredCount(state.level),total=state.level.words.length,ready=m===total;
-  $("startFlightBtn").disabled=!ready;$("readyHeading").textContent=ready?"Cleared for takeoff!":"Keep training";$("readyMessage").textContent=ready?"You mastered all "+total+" words. Your bee is ready to fly.":"Master every weekly word to unlock your flight mission. "+m+" of "+total+" are Flight Ready.";
+  if(!state.level)return;
+  var m=masteredCount(state.level),total=state.level.words.length,ready=m===total,warm=m>=Math.min(3,total);
+  $("startFlightBtn").disabled=!warm;
+  $("startFlightBtn").textContent=ready?"🐝 Fly Full Mission":warm?"🐝 Warm-up Flight ("+m+" words)":"🐝 Master 3 Words to Fly";
+  $("readyHeading").textContent=ready?"Full mission unlocked!":warm?"Warm-up flight unlocked!":"Train 3 words to start flying";
+  $("readyMessage").textContent=ready
+    ?"You mastered all "+total+" words. Fly the full route to "+(state.level.destination||"your destination")+"."
+    :warm
+      ?"You can fly a short warm-up using the "+m+" words you already mastered. Keep training to unlock the full mission."
+      :"Master any "+Math.min(3,total)+" words, then take a short warm-up flight. "+m+" of "+total+" are Flight Ready.";
 }
 function renderStory(){
-  if(!state.level)return;var story=String(state.level.story||"No story has been added for this week yet."),words=state.level.words.slice().sort(function(a,b){return b.length-a.length});
+  if(!state.level)return;var story=plainStoryText(state.level.story||"No story has been added for this week yet."),words=state.level.words.slice().sort(function(a,b){return b.length-a.length});
   if(words.length){var escaped=words.map(escapeRegExp),re=new RegExp("\\b("+escaped.join("|")+")\\b","gi");story=escapeHtml(story).replace(re,function(match){return '<button class="story-word" data-story-word="'+escapeHtml(match.toLowerCase())+'">'+escapeHtml(match)+'</button>'})}else story=escapeHtml(story);
   $("storyCopy").innerHTML=story.replace(/\n/g,"<br>");$("storyWordCount").textContent=state.level.words.length+" spelling words in this mission";
   qsa("[data-story-word]").forEach(function(b){b.addEventListener("click",function(){var word=b.dataset.storyWord,sup=supportFor(word);speak(word+". "+sup.definition);toast(sup.definition)})});
@@ -350,15 +369,20 @@ function flowerGateSvg(){
   return '<svg class="gate-flower" viewBox="0 0 120 120" aria-hidden="true"><g>'+petals+'</g><circle cx="60" cy="60" r="24" fill="#FFFBEA" stroke="currentColor" stroke-width="4"/></svg>';
 }
 function gateSpeed(f){
-  if(!f)return 500;var ramp=Math.min(150,f.wordIndex*14),comboKick=(f.combo||0)>=6?30:0;return clamp(500+ramp+comboKick,500,690);
+  if(!f)return 390;
+  var ramp=Math.min(150,f.wordIndex*18),comboKick=(f.combo||0)>=6?20:0,help=(f.mistakes||0)>=2?-45:0;
+  return clamp(390+ramp+comboKick+help,340,610);
 }
 function updateFlightHud(){
   var f=state.flight;if(!f)return;var fuel=flightFuel(),decisions=f.correct+f.mistakes,accuracy=decisions?Math.round(f.correct/decisions*100):100;
-  $("fuelFill").style.width=fuel+"%";$("fuelText").textContent=fuel+"%";$("accuracyText").textContent=accuracy+"%";$("mistakeText").textContent=f.mistakes+" / "+f.allowance+" nectar mistakes";$("flightWordCount").textContent="WORD "+(f.wordIndex+1)+" / "+state.level.words.length;$("flightPattern").textContent=f.wordLetters.map(function(ch,i){return i<f.letterIndex?ch:"_"}).join(" ");
+  $("fuelFill").style.width=fuel+"%";$("fuelText").textContent=fuel+"%";$("accuracyText").textContent=accuracy+"%";
+  $("mistakeText").textContent=f.mistakes>f.allowance?"Nectar empty":"Wrong letters: "+f.mistakes+" / "+f.allowance;
+  $("flightWordCount").textContent=(f.warmup?"WARM-UP • ":"")+"WORD "+(f.wordIndex+1)+" / "+f.words.length;
+  $("flightPattern").textContent=f.wordLetters.map(function(ch,i){return i<f.letterIndex?ch:"_"}).join(" ");
   var pct=Math.round(f.correct/Math.max(1,f.totalLetters)*100);$("routeFill").style.width=pct+"%";$("routePlane").style.left=pct+"%";if($("routePercent"))$("routePercent").textContent=pct+"%";
   var comboEl=$("comboText");if(comboEl)comboEl.textContent=(f.combo||0)+"x combo"+(f.shield?" · 🛡 shield":"");
   var pp=$("playerPlane");if(pp)pp.classList.toggle("shielded",!!f.shield);
-  var speedEl=$("speedText");if(speedEl)speedEl.textContent=Math.round((gateSpeed(f)/500)*100)+"% speed";
+  var speedEl=$("speedText"),speed=gateSpeed(f);if(speedEl)speedEl.textContent=speed<430?"Gentle pace":speed<525?"Steady pace":"Fast buzz";
 }
 function clearGates(){if(!state.flight)return;state.flight.gates.forEach(function(g){if(g.el&&g.el.parentNode)g.el.remove()});state.flight.gates=[]}
 function spawnGates(){
@@ -372,7 +396,7 @@ function spawnGates(){
 function gateTouchesPlane(gate,progress){
   var f=state.flight;if(!gate||!f)return false;
   if(gate.lane!==f.lane)return false;
-  if(Number.isFinite(progress))return progress>=.90&&progress<=1.025;
+  if(Number.isFinite(progress))return progress>=.84&&progress<=1.05;
   if(!gate.el||!$("planeHitPoint"))return false;
   var gr=gate.el.getBoundingClientRect(),pr=$("planeHitPoint").getBoundingClientRect();
   if(!gr.width||!gr.height)return false;
@@ -384,6 +408,19 @@ function removeOtherGates(keep){
   var f=state.flight;if(!f)return;
   f.gates.forEach(function(g){if(g!==keep&&g.el&&g.el.parentNode)g.el.remove()});
   f.gates=keep?[keep]:[];
+}
+function burstPetals(){
+  var world=$("flightWorld");if(!world)return;
+  var colors=["#FFC93C","#FF6FA5","#A77BFF","#8FD36A","#FFFFFF"];
+  for(var i=0;i<14;i++){
+    var petal=document.createElement("i");petal.className="petal-pop";
+    petal.style.setProperty("--dx",(-110+Math.random()*220).toFixed(0)+"px");
+    petal.style.setProperty("--dy",(-70-Math.random()*150).toFixed(0)+"px");
+    petal.style.setProperty("--rot",(-180+Math.random()*360).toFixed(0)+"deg");
+    petal.style.background=colors[i%colors.length];
+    world.appendChild(petal);
+    setTimeout((function(el){return function(){el.remove()}})(petal),1050);
+  }
 }
 function evaluateGate(gate,missed){
   var f=state.flight;if(!f||f.transitioning||f.ending)return;
@@ -401,6 +438,11 @@ function evaluateGate(gate,missed){
     flightSfx("correct");message("✓ "+gate.letter+" — direct hit!"+bonusMsg,750);updateFlightHud();
     if(f.letterIndex>=f.wordLetters.length)setTimeout(finishWord,480);else setTimeout(spawnGates,Math.max(300,470-f.wordIndex*8));
   }else{
+    if(missed){
+      f.flightMisses=(f.flightMisses||0)+1;f.combo=0;updateFlightHud();
+      message("Almost! Steer into a flower next time — no nectar lost.",850);
+      setTimeout(spawnGates,650);return;
+    }
     if(f.shield){
       f.shield=false;f.combo=0;updateFlightHud();
       flightSfx("correct");message("🛡 Shield absorbed the miss — keep going!",950);
@@ -413,9 +455,17 @@ function evaluateGate(gate,missed){
   }
 }
 function finishWord(){
-  var f=state.flight;if(!f||f.transitioning)return;f.transitioning=true;clearGates();var sup=supportFor(f.word);message("★ "+f.word.toUpperCase()+" — "+sup.example,1450);f.wordIndex++;
-  if(f.wordIndex>=state.level.words.length){setTimeout(function(){endFlight(true)},1600);return}
-  setTimeout(function(){f.word=state.level.words[f.wordIndex];f.wordLetters=lettersOf(f.word);f.letterIndex=0;f.transitioning=false;updateFlightHud();speak("Spell "+f.word);spawnGates()},1600);
+  var f=state.flight;if(!f||f.transitioning)return;
+  f.transitioning=true;clearGates();var sup=supportFor(f.word);
+  f.bonusFuel=Math.min(28,(f.bonusFuel||0)+4);burstPetals();flightSfx("correct");
+  message("🌼 "+f.word.toUpperCase()+" complete! + nectar",1350);
+  speak(f.word+". "+sup.example);
+  f.wordIndex++;
+  updateFlightHud();
+  if(f.wordIndex>=f.words.length){setTimeout(function(){endFlight(true)},1450);return}
+  setTimeout(function(){
+    f.word=f.words[f.wordIndex];f.wordLetters=lettersOf(f.word);f.letterIndex=0;f.transitioning=false;updateFlightHud();speak("Spell "+f.word);spawnGates();
+  },1450);
 }
 function flightLoop(ts){
   var f=state.flight;if(!f){state.raf=0;return}if(!f.last)f.last=ts;var dt=Math.min(.05,(ts-f.last)/1000);f.last=ts;
@@ -440,50 +490,55 @@ function flightLoop(ts){
   state.raf=requestAnimationFrame(flightLoop);
 }
 function startFlight(){
-  if(!state.level||!Array.isArray(state.level.words)||!state.level.words.length||masteredCount(state.level)!==state.level.words.length)return;
-  var total=state.level.words.reduce(function(n,w){return n+lettersOf(w).length},0),p=studioProfile(),ls=levelSave(state.level.id);
+  if(!state.level||!Array.isArray(state.level.words)||!state.level.words.length)return;
+  var learned=masteredWords(state.level),minWarm=Math.min(3,state.level.words.length);
+  if(learned.length<minWarm)return;
+  var fullMission=learned.length===state.level.words.length,flightWords=fullMission?state.level.words.slice():learned.slice();
+  var total=flightWords.reduce(function(n,w){return n+lettersOf(w).length},0),p=studioProfile(),ls=levelSave(state.level.id);
   ls.attempts=(ls.attempts||0)+1;saveAll();
-  state.flight={active:false,transitioning:false,ending:false,landing:false,lane:0,gates:[],wordIndex:0,word:state.level.words[0],wordLetters:lettersOf(state.level.words[0]),letterIndex:0,totalLetters:total,allowance:Math.floor(total*.2),correct:0,mistakes:0,streak:0,bestStreak:0,combo:0,bestCombo:0,shield:false,bonusFuel:0,difficult:{},last:0};
+  state.flight={
+    active:false,transitioning:false,ending:false,landing:false,lane:0,gates:[],words:flightWords,warmup:!fullMission,
+    wordIndex:0,word:flightWords[0],wordLetters:lettersOf(flightWords[0]),letterIndex:0,totalLetters:total,
+    allowance:fullMission?Math.max(1,Math.floor(total*.2)):Math.max(3,Math.floor(total*.2)),
+    correct:0,mistakes:0,flightMisses:0,streak:0,bestStreak:0,combo:0,bestCombo:0,shield:true,bonusFuel:0,difficult:{},last:0
+  };
   $("originLabel").textContent="HIVE";
-  $("destinationLabel").textContent=(state.level.destination||"DESTINATION").toUpperCase();
-  $("welcomeSign").textContent=(state.level.destination||"WELCOME").toUpperCase();
+  $("destinationLabel").textContent=(fullMission?(state.level.destination||"DESTINATION"):"WARM-UP GARDEN").toUpperCase();
+  $("welcomeSign").textContent=(fullMission?(state.level.destination||"WELCOME"):"WARM-UP GARDEN").toUpperCase();
   $("playerPlane").classList.remove("landing","bank-left","bank-right");
   $("touchdownSmoke").classList.remove("active");
   seedClouds();seedCruiseIslands();seedVegetation();setPlaneLane(0);setFlightPhase("takeoff");updateFlightHud();showScreen("flightScreen");
   startPlaneAudio("takeoff");
-  postProgress("attempt",{totalLetters:total});
-  message("Hive: "+p.name+", wings ready — let's fly!",1800);
-  speak("Wings ready. First word: "+state.flight.word);
+  postProgress("attempt",{totalLetters:total,warmup:!fullMission});
+  message(fullMission?"🐝 Full mission! Tap/drag or use ← → to match the next letter.":"🐝 Warm-up flight! Missed flowers are free retries.",2400);
+  speak((fullMission?"Full mission. ":"Warm up flight. ")+"First word: "+state.flight.word);
   if(!state.raf)state.raf=requestAnimationFrame(flightLoop);
   setTimeout(function(){
     if(!state.flight||state.flight.ending)return;
-    setFlightPhase("cruise");
-    setPlaneAudioPhase("cruise");
-    state.flight.active=true;
-    message("Cruise altitude reached. Spell "+state.flight.word,1300);
-    spawnGates();
-  },3100);
+    setFlightPhase("cruise");setPlaneAudioPhase("cruise");state.flight.active=true;
+    message("Find the next letter. Tap or drag to steer.",1300);spawnGates();
+  },3300);
 }
 function endFlight(success){
   var f=state.flight;if(!f||f.ending)return;
   f.ending=true;f.active=false;f.transitioning=true;clearGates();
-  var decisions=f.correct+f.mistakes,accuracy=decisions?Math.round(f.correct/decisions*100):0,fuel=flightFuel(),completedWords=success?state.level.words.length:f.wordIndex,ls=levelSave(state.level.id);
-  ls.bestAccuracy=Math.max(Number(ls.bestAccuracy)||0,accuracy);if(success)ls.completions=(ls.completions||0)+1;saveAll();
+  var decisions=f.correct+f.mistakes,accuracy=decisions?Math.round(f.correct/decisions*100):0,fuel=flightFuel(),completedWords=success?f.words.length:f.wordIndex,ls=levelSave(state.level.id),fullMission=!f.warmup;
+  ls.bestAccuracy=Math.max(Number(ls.bestAccuracy)||0,accuracy);if(success&&fullMission)ls.completions=(ls.completions||0)+1;saveAll();
   var difficult=Object.keys(f.difficult).sort(function(a,b){return f.difficult[b]-f.difficult[a]});
   beginLanding(success,function(){
     $("resultsIcon").textContent=success?"🌼":"🌸";
-    $("resultsEyebrow").textContent=success?"MISSION COMPLETE":"SAFE DIVERSION";
-    $("resultsTitle").textContent=success?"Welcome to "+(state.level.destination||"your destination")+"!":"Practice Garden";
-    $("resultsMessage").textContent=success?"You landed safely, gathering energy by spelling the weekly words in the correct order.":"More than 20% of the mission letters were missed, so the hive diverted you to the Practice Garden. Review the difficult words and try again.";
-    $("resultAccuracy").textContent=accuracy+"%";$("resultWords").textContent=completedWords+"/"+state.level.words.length;$("resultFuel").textContent=fuel+"%";$("resultStreak").textContent=f.bestCombo||f.bestStreak;
-    $("reviewBox").innerHTML=difficult.length?"<b>Words to practise</b><p>"+difficult.map(escapeHtml).join(" • ")+"</p>":"<b>Excellent control!</b><p>No words caused a wrong-letter nectar loss.</p>";
-    stopPlaneAudio();
-    showScreen("resultsScreen");
-    reportUsage("score",{score:accuracy});
-    if(success)reportUsage("complete",{score:accuracy});
-    postProgress(success?"complete":"divert",{accuracy:accuracy,mistakes:f.mistakes,totalLetters:f.totalLetters,difficultWords:difficult.slice(0,12)});
-    if(success)addAchievement("first-flight","First Flower Landing","Complete a Spelling Bee weekly flight mission.","🌼",45);
-    if(success&&accuracy===100)addAchievement("perfect-flight","Perfect Flight","Complete a Spelling Bee flight with 100% spelling accuracy.","⭐",70);
+    $("resultsEyebrow").textContent=success?(f.warmup?"WARM-UP COMPLETE":"MISSION COMPLETE"):"SAFE DIVERSION";
+    $("resultsTitle").textContent=success?(f.warmup?"Great warm-up flight!":"Welcome to "+(state.level.destination||"your destination")+"!"):"Practice Garden";
+    $("resultsMessage").textContent=success
+      ?(f.warmup?"You flew the "+f.words.length+" words you have mastered. Train more words to unlock the full mission.":"You landed safely by spelling the weekly words in the correct order.")
+      :"Too many wrong-letter choices emptied the nectar. Missed flowers do not count, so practise the difficult words and try again.";
+    $("resultAccuracy").textContent=accuracy+"%";$("resultWords").textContent=completedWords+"/"+f.words.length;$("resultFuel").textContent=fuel+"%";$("resultStreak").textContent=f.bestCombo||f.bestStreak;
+    $("reviewBox").innerHTML=difficult.length?"<b>Words to practise</b><p>"+difficult.map(escapeHtml).join(" • ")+"</p>":"<b>Excellent spelling!</b><p>You did not choose any wrong-letter flowers.</p>";
+    stopPlaneAudio();showScreen("resultsScreen");reportUsage("score",{score:accuracy});
+    if(success&&fullMission)reportUsage("complete",{score:accuracy});
+    if(fullMission)postProgress(success?"complete":"divert",{accuracy:accuracy,mistakes:f.mistakes,totalLetters:f.totalLetters,difficultWords:difficult.slice(0,12)});
+    if(success&&fullMission)addAchievement("first-flight","First Flower Landing","Complete a Spelling Bee weekly flight mission.","🌼",45);
+    if(success&&fullMission&&accuracy===100)addAchievement("perfect-flight","Perfect Flight","Complete a Spelling Bee flight with 100% spelling accuracy.","⭐",70);
   });
 }
 function beginLanding(success,done){
@@ -492,7 +547,7 @@ function beginLanding(success,done){
   $("playerPlane").classList.remove("bank-left","bank-right");
   $("playerPlane").classList.add("landing");
   $("originLabel").textContent=success?"APPROACH":"DIVERSION";
-  var destination=success?(state.level.destination||"DESTINATION"):"PRACTICE GARDEN";
+  var destination=success?(f.warmup?"WARM-UP GARDEN":(state.level.destination||"DESTINATION")):"PRACTICE GARDEN";
   $("destinationLabel").textContent=destination.toUpperCase();
   $("welcomeSign").textContent=destination.toUpperCase();
   setFlightPhase("landing");
@@ -509,11 +564,29 @@ function beginLanding(success,done){
   },3600);
 }
 function backToPractice(){stopPlaneAudio();state.flight=null;renderWordList();renderPracticeWord();showScreen("practiceScreen")}
+function bindFlightPointerControls(){
+  var world=$("flightWorld");if(!world)return;var steering=false;
+  function laneForEvent(e){
+    var r=world.getBoundingClientRect(),x=(e.clientX-r.left)/Math.max(1,r.width);
+    return x<.39?-1:x>.61?1:0;
+  }
+  world.addEventListener("pointerdown",function(e){
+    if(!state.flight||!state.flight.active)return;
+    steering=true;try{world.setPointerCapture(e.pointerId)}catch(err){}
+    setPlaneLane(laneForEvent(e));
+  });
+  world.addEventListener("pointermove",function(e){
+    if(!steering||!state.flight||!state.flight.active)return;
+    setPlaneLane(laneForEvent(e));
+  });
+  world.addEventListener("pointerup",function(){steering=false});
+  world.addEventListener("pointercancel",function(){steering=false});
+}
 function initBindings(){
   $("homeBtn").addEventListener("click",function(){stopPlaneAudio();location.href="../../"});$("refreshLevels").addEventListener("click",loadLevels);$("backToMissions").addEventListener("click",function(){state.level=null;showScreen("missionsScreen");renderMissionGrid()});
   qsa(".practice-tabs button").forEach(function(b){b.addEventListener("click",function(){setTab(b.dataset.tab)})});
   $("speakWord").addEventListener("click",function(){speak(state.level.words[state.wordIndex])});$("hearSentence").addEventListener("click",function(){speak(supportFor(state.level.words[state.wordIndex]).example)});$("spellHear").addEventListener("click",function(){speak(state.level.words[state.wordIndex])});$("resetBuild").addEventListener("click",resetBuild);$("checkSpelling").addEventListener("click",checkSpelling);$("spellInput").addEventListener("keydown",function(e){if(e.key==="Enter")checkSpelling()});$("nextWordBtn").addEventListener("click",function(){state.wordIndex=(state.wordIndex+1)%state.level.words.length;renderWordList();renderPracticeWord()});$("readStory").addEventListener("click",function(){speak(state.level.story||"")});$("storyReadCheck").addEventListener("change",function(){levelSave(state.level.id).storyRead=this.checked;saveAll();if(this.checked)postProgress("story_read",{})});$("startFlightBtn").addEventListener("click",startFlight);$("flightSpeak").addEventListener("click",function(){if(state.flight)speak("Spell "+state.flight.word)});
-  qsa("[data-steer]").forEach(function(b){b.addEventListener("pointerdown",function(e){e.preventDefault();steer(Number(b.dataset.steer))})});$("flightSoundBtn").addEventListener("click",toggleFlightAudio);$("retryFlight").addEventListener("click",startFlight);$("reviewWords").addEventListener("click",backToPractice);$("resultMissions").addEventListener("click",function(){stopPlaneAudio();state.flight=null;state.level=null;showScreen("missionsScreen");renderMissionGrid()});
+  qsa("[data-steer]").forEach(function(b){b.addEventListener("pointerdown",function(e){e.preventDefault();steer(Number(b.dataset.steer))})});bindFlightPointerControls();$("flightSoundBtn").addEventListener("click",toggleFlightAudio);$("retryFlight").addEventListener("click",startFlight);$("reviewWords").addEventListener("click",backToPractice);$("resultMissions").addEventListener("click",function(){stopPlaneAudio();state.flight=null;state.level=null;showScreen("missionsScreen");renderMissionGrid()});
   window.addEventListener("keydown",function(e){if(!$("flightScreen").classList.contains("active"))return;if(e.key==="ArrowLeft"||e.key==="a"||e.key==="A"){e.preventDefault();steer(-1)}if(e.key==="ArrowRight"||e.key==="d"||e.key==="D"){e.preventDefault();steer(1)}if(e.key===" "){e.preventDefault();if(state.flight)speak("Spell "+state.flight.word)}});
 }
 function init(){

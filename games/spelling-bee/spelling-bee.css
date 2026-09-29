@@ -120,14 +120,14 @@ button,input{font:inherit}
 .step-head small{display:block;color:var(--ink-faint);margin-top:2px}
 .build-answer{min-height:48px;border-bottom:3px dashed var(--line);display:flex;gap:4px;align-items:center;justify-content:center;font-size:1.7rem;font-weight:900;letter-spacing:.12em;color:var(--ink)}
 .letter-bank{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;padding:15px 0}
-.letter-chip{width:42px;height:42px;border:0;border-radius:10px;background:linear-gradient(180deg,var(--honey),var(--honey-deep));color:#fff;font-weight:900;cursor:pointer;box-shadow:0 3px 0 rgba(224,80,140,.3)}
+.letter-chip{width:50px;height:50px;font-size:1.08rem;border:0;border-radius:10px;background:linear-gradient(180deg,var(--honey),var(--honey-deep));color:#fff;font-weight:900;cursor:pointer;box-shadow:0 3px 0 rgba(224,80,140,.3)}
 .letter-chip:disabled{opacity:.25}
 .step-actions{display:flex;align-items:center;gap:10px;min-height:36px}
 .small-btn.primary{background:var(--honey);color:#4A2408;border-color:transparent;font-weight:900}
 .listen-pill{padding:8px 12px;margin-bottom:10px}
 .spell-input{width:100%;border:2px solid var(--line);background:var(--paper);color:var(--ink);border-radius:12px;padding:13px;margin-bottom:9px;font-size:1.1rem}
 .sentence-options{display:grid;gap:9px}
-.sentence-option{border:2px solid var(--line);background:var(--paper);color:var(--ink);padding:13px 15px;border-radius:13px;text-align:left;cursor:pointer;font-weight:700}
+.sentence-option{border:2px solid var(--line);background:var(--paper);color:var(--ink);padding:15px 17px;border-radius:13px;text-align:left;cursor:pointer;font-weight:800;font-size:1rem;transition:transform .12s,box-shadow .12s}.sentence-option:hover{transform:translateY(-1px);box-shadow:var(--shadow-sm)}
 .sentence-option.correct{border-color:var(--leaf);background:var(--leaf-light)}
 .sentence-option.wrong{border-color:var(--petal-deep);background:var(--petal-light)}
 .lesson-footer{margin-top:18px;padding-top:18px;border-top:2px solid var(--cream-deep);display:flex;justify-content:space-between;align-items:center;gap:20px}
@@ -175,7 +175,7 @@ button,input{font:inherit}
 .route-track i{display:block;position:relative;z-index:1;height:100%;width:0;background:linear-gradient(90deg,var(--leaf),var(--honey));border-radius:9px}
 .route-plane{position:absolute;z-index:3;left:0;top:50%;transform:translate(-50%,-55%);font-size:1.2rem;filter:drop-shadow(0 2px 3px rgba(58,36,8,.35))}
 
-.flight-world{height:calc(100vh - 70px);min-height:560px;position:relative;overflow:hidden;background:linear-gradient(180deg,#5FBFFF 0,#9FDBFF 45%,#DFF2FF 78%,#FFF3D6 100%);perspective:1050px;isolation:isolate}
+.flight-world{height:calc(100vh - 70px);min-height:560px;position:relative;overflow:hidden;background:linear-gradient(180deg,#5FBFFF 0,#9FDBFF 45%,#DFF2FF 78%,#FFF3D6 100%);perspective:1050px;isolation:isolate;touch-action:none;user-select:none;cursor:ew-resize}
 .flight-world:after{content:"";position:absolute;left:0;right:0;bottom:0;height:40%;z-index:2;pointer-events:none;opacity:0;transition:opacity .5s;background:linear-gradient(180deg,transparent 0 18%,#5f965f4a 38%,#3d754fb0 100%)}
 .flight-world.takeoff:after{opacity:.6}
 .flight-world.landing:after{opacity:.24;background:linear-gradient(180deg,transparent 0 35%,#5f8f5a4a 55%,#486b498c 100%)}
@@ -221,7 +221,7 @@ button,input{font:inherit}
 @keyframes speedSweep{to{transform:translateY(18px)}}
 
 .scene3d{position:absolute;inset:0;transform-style:preserve-3d;perspective:1050px;z-index:12}
-.letter-gate{position:absolute;left:50%;top:43%;width:132px;height:132px;margin:-66px;display:grid;place-items:center;transform-style:preserve-3d;color:var(--honey-deep);will-change:transform,opacity}
+.letter-gate{position:absolute;left:50%;top:43%;width:148px;height:148px;margin:-74px;display:grid;place-items:center;transform-style:preserve-3d;color:var(--honey-deep);will-change:transform,opacity}
 .gate-flower{position:absolute;inset:0;width:100%;height:100%;filter:drop-shadow(0 10px 16px rgba(122,20,60,.32))}
 .gate-letter{position:relative;z-index:1;font-family:var(--font-head);font-size:2.6rem;font-weight:700;color:#4A2408}
 .letter-gate:before,.letter-gate:after{content:"✿";position:absolute;color:#fff;text-shadow:0 0 7px #fff;font-size:.9rem;animation:sparkle 1s ease-in-out infinite alternate;z-index:2}
@@ -277,8 +277,10 @@ button,input{font:inherit}
 .welcome-sign{position:absolute;left:6%;bottom:13%;padding:8px 12px;border-radius:999px;background:#fff9dfeb;border:2px solid var(--honey);color:var(--ink);font-size:.68rem;font-weight:1000;letter-spacing:.08em;box-shadow:var(--shadow-sm)}
 .flight-message{position:absolute;left:50%;top:25%;transform:translateX(-50%);z-index:26;background:linear-gradient(180deg,#FFFDF6f2,#FFF3D6f2);border:3px solid var(--honey);border-radius:18px;padding:13px 20px;text-align:center;max-width:min(560px,86vw);font-weight:900;color:var(--ink);opacity:0;transition:opacity .25s;box-shadow:var(--shadow)}
 .flight-message.show{opacity:1}
+.petal-pop{position:absolute;left:50%;top:50%;width:13px;height:20px;border-radius:70% 35% 70% 35%;z-index:27;pointer-events:none;box-shadow:0 2px 4px #5a33082a;animation:petalPop 1s cubic-bezier(.16,.72,.24,1) forwards}
+@keyframes petalPop{0%{opacity:1;transform:translate(-50%,-50%) scale(.55) rotate(0)}100%{opacity:0;transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(1.25) rotate(var(--rot))}}
 .mobile-controls{position:absolute;left:0;right:0;bottom:24px;z-index:28;display:flex;justify-content:space-between;padding:0 max(18px,env(safe-area-inset-left));pointer-events:none}
-.mobile-controls button{pointer-events:auto;width:76px;height:76px;border-radius:50%;border:3px solid #fff;background:rgba(255,159,28,.75);color:#fff;font-size:2rem;backdrop-filter:blur(9px);box-shadow:var(--shadow)}
+.mobile-controls button{pointer-events:auto;width:68px;height:68px;border-radius:50%;border:3px solid #fff;background:rgba(255,159,28,.75);color:#fff;font-size:2rem;backdrop-filter:blur(9px);box-shadow:var(--shadow)}
 
 .results-card{max-width:850px;margin:40px auto;border:3px solid var(--line);background:var(--paper);border-radius:30px;padding:clamp(26px,6vw,60px);text-align:center;box-shadow:var(--shadow)}
 .results-icon{font-size:5rem}
@@ -296,17 +298,26 @@ button,input{font:inherit}
 @keyframes toastIn{from{opacity:0;transform:translateY(8px)}}
 
 @media(max-width:850px){
-  .flight-hud{grid-template-columns:1fr 1fr;top:6px;left:6px;right:6px;gap:6px}
+  body.flight-active{overflow:hidden}
+  body.flight-active .game-topbar{display:none}
+  body.flight-active .flight-screen{min-height:100vh}
+  body.flight-active .flight-world{height:100vh;min-height:100vh}
+  .flight-hud{grid-template-columns:1.25fr 1fr 1fr;top:6px;left:6px;right:6px;gap:6px}
   .flight-brand{display:none}
-  .hud-card{min-height:68px;padding:7px 9px}
-  .word-hud{grid-column:1/-1;grid-row:1}
-  .flight-metrics{grid-column:1}
-  .route-hud{grid-column:2}
-  .player-plane{width:205px;height:146px;bottom:10%}
-  .letter-gate{width:104px;height:104px;margin:-52px}
-  .gate-letter{font-size:2.1rem}
+  .hud-card{min-height:66px;padding:7px 9px;border-width:2px;border-radius:14px}
+  .word-hud{grid-column:auto;grid-row:auto;grid-template-columns:40px 1fr;gap:7px}
+  .word-hud button{width:38px;height:38px;font-size:1rem;border-width:2px}
+  .word-hud b{font-size:1.25rem}
+  .flight-metrics{grid-column:auto;gap:6px}
+  .fuel-track{height:10px;margin:3px 0}
+  .accuracy-card{padding-left:6px}
+  .accuracy-card b{font-size:1.2rem}
+  .route-hud{grid-column:auto;padding-right:23px;gap:2px}
+  .route-track{margin:4px 4px 0}
+  .player-plane{width:180px;height:128px;bottom:8%}
+  .letter-gate{width:112px;height:112px;margin:-56px}
+  .gate-letter{font-size:2.25rem}
   .destination-scene{height:30%;bottom:0}
-  .terminal{width:31%}
   .welcome-sign{display:none}
   .hero{grid-template-columns:1fr}
   .hero-plane{min-height:240px}
@@ -318,7 +329,7 @@ button,input{font:inherit}
   .sentence-step{grid-column:auto}
   .level-banner{grid-template-columns:auto 1fr}
   .mastery-dial{grid-column:1/-1;width:100%;height:auto;border-radius:16px;border-width:1px;padding:12px;display:flex;justify-content:center;gap:8px}
-  .flight-world{height:calc(100vh - 126px)}
+  .flight-world{height:calc(100vh - 70px);min-height:500px}
   .result-stats{grid-template-columns:1fr 1fr}
   .story-head,.lesson-footer,.ready-strip{align-items:stretch;flex-direction:column}
   .story-footer{flex-direction:column;gap:10px}
@@ -326,6 +337,31 @@ button,input{font:inherit}
   .top-btn:after{content:"⌂";font-size:1.1rem}
   .mission-title{margin-left:auto;margin-right:12px}
   .mission-title small{display:none}
+}
+@media(max-width:850px) and (max-height:500px){
+  .flight-hud{top:4px;left:4px;right:4px;gap:4px}
+  .hud-card{min-height:58px;padding:5px 7px;border-radius:12px}
+  .word-hud{grid-template-columns:34px 1fr}
+  .word-hud button{width:32px;height:32px;font-size:.88rem}
+  .word-hud>div>span{display:none}
+  .word-hud b{font-size:1.08rem;letter-spacing:.11em}
+  .word-hud small{font-size:.5rem}
+  .metric>span,.route-hud>span{font-size:.52rem}
+  .metric>b{font-size:.95rem}
+  .accuracy-card b{font-size:1.08rem}
+  .accuracy-card small{display:none}
+  .fuel-track{height:8px;border-width:1px}
+  .route-labels,.speed-badge{display:none}
+  .route-hud{grid-template-rows:auto 1fr;align-content:center}
+  .route-track{height:7px;margin-top:4px}
+  #routePercent{font-size:.78rem}
+  .audio-toggle{width:22px;height:22px;font-size:.65rem}
+  .player-plane{width:150px;height:107px;bottom:7%}
+  .letter-gate{width:96px;height:96px;margin:-48px}
+  .gate-letter{font-size:1.95rem}
+  .flight-message{top:78px;padding:8px 12px;font-size:.82rem;max-width:70vw}
+  .mobile-controls{bottom:9px;padding:0 10px}
+  .mobile-controls button{width:50px;height:50px;font-size:1.35rem;opacity:.72}
 }
 @media(min-width:851px){.mobile-controls{display:none}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
