@@ -16,6 +16,7 @@ const OLLAMA_URL = String(process.env.OLLAMA_URL || "").trim();
 const OLLAMA_MODEL = String(process.env.OLLAMA_MODEL || "qwen2.5:3b").trim();
 const ADMIN_PASSWORD = String(process.env.ADMIN_PASSWORD || "");
 const ADMIN_SESSION_SECRET = String(process.env.ADMIN_SESSION_SECRET || "");
+const PLATFORM_SHARED_SECRET = String(process.env.V79_PLATFORM_SHARED_SECRET || "");
 const MAX_ROOM_PLAYERS = 4;
 const MAX_CHAT_HISTORY = 50;
 const MAX_ACTIVITY = 250;
@@ -737,6 +738,90 @@ app.use((req, res, next) => {
 });
 
 app.get("/healthz", (_req, res) => res.type("text/plain").send("ok\n"));
+
+function safeEqualHex(leftValue, rightValue) {
+  try {
+    const left = Buffer.from(String(leftValue), "hex");
+    const right = Buffer.from(String(rightValue), "hex");
+    return left.length === right.length && crypto.timingSafeEqual(left, right);
+  } catch {
+    return false;
+  }
+}
+
+function requirePlatformRead(req, res, next) {
+  const timestamp = String(req.get("x-v79-timestamp") || "");
+  const signature = String(req.get("x-v79-signature") || "");
+  const serviceId = String(req.get("x-v79-service-id") || "");
+  if (PLATFORM_SHARED_SECRET.length < 32) {
+    return res.status(503).json({ error: "V79 platform integration is not configured." });
+  }
+  if (serviceId !== "v79-hub" || !timestamp || !signature) {
+    return res.status(401).json({ error: "Invalid V79 platform credentials." });
+  }
+  const when = Number(timestamp);
+  if (!Number.isFinite(when) || Math.abs(Date.now() - when) > 5 * 60_000) {
+    return res.status(401).json({ error: "Expired V79 platform request." });
+  }
+  const pathname = new URL(req.originalUrl, "http://v79.internal").pathname;
+  const bodyHash = crypto.createHash("sha256").update("").digest("hex");
+  const canonical = [req.method.toUpperCase(), pathname, timestamp, bodyHash].join("\n");
+  const expected = crypto.createHmac("sha256", PLATFORM_SHARED_SECRET).update(canonical).digest("hex");
+  if (!safeEqualHex(expected, signature)) {
+    return res.status(401).json({ error: "Invalid V79 platform signature." });
+  }
+  next();
+}
+
+function platformMetrics() {
+  const spellingTotals = db.spelling?.totals || {};
+  const topTitles = Object.values(db.titles || {})
+    .slice()
+    .sort((a, b) => Number(b.sessions || 0) - Number(a.sessions || 0))
+    .slice(0, 8)
+    .map(title => ({
+      id: title.id,
+      title: title.title,
+      kind: title.kind,
+      opens: Number(title.opens || 0),
+      sessions: Number(title.sessions || 0),
+      completions: Number(title.completions || 0),
+      bestScore: Number(title.bestScore || 0),
+    }));
+  return {
+    portalViews: Number(db.totals?.portalViews || 0),
+    sessions: Number(db.totals?.sessions || 0),
+    matches: Number(db.totals?.matches || 0),
+    scoreSubmissions: Number(db.totals?.scoreSubmissions || 0),
+    peakConcurrent: Number(db.totals?.peakConcurrent || 0),
+    totalSessionSeconds: Number(db.totals?.totalSessionSeconds || 0),
+    players: Object.keys(db.players || {}).length,
+    profiles: Object.keys(db.profiles || {}).length,
+    titles: Object.keys(db.titles || {}).length,
+    publishedSpellingLevels: spelling.levels.filter(level => level.published).length,
+    spellingAttempts: Number(spellingTotals.attempts || 0),
+    spellingCompletions: Number(spellingTotals.completions || 0),
+    wordsMastered: Number(spellingTotals.wordsMastered || 0),
+    topTitles,
+  };
+}
+
+app.get("/api/platform/summary/:subject", requirePlatformRead, (req, res) => {
+  const subject = String(req.params.subject || "").trim();
+  if (!/^[A-Za-z0-9._:@-]{1,180}$/.test(subject)) {
+    return res.status(400).json({ error: "Invalid platform subject." });
+  }
+  res.json({
+    product: "games",
+    subjectId: subject,
+    generatedAt: new Date().toISOString(),
+    metrics: platformMetrics(),
+  });
+});
+
+app.get("/api/platform/admin/stats", requirePlatformRead, (_req, res) => {
+  res.json({ ...platformMetrics(), generatedAt: new Date().toISOString() });
+});
 
 function serveCleanPage(route, file) {
   app.get([route, route + "/"], (req, res) => {
