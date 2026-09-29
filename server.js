@@ -195,8 +195,15 @@ function cleanSpellingWords(value) {
   return out;
 }
 
+function stripStoryMarkdown(value) {
+  return cleanLongText(value, 8000)
+    .replace(/\*\*([^*]+)\*\*/g, "$1")
+    .replace(/__([^_]+)__/g, "$1")
+    .replace(/^\s*[-*]\s+/gm, "");
+}
+
 function storySentence(story, word) {
-  const source = cleanLongText(story, 8000);
+  const source = stripStoryMarkdown(story);
   if (source) {
     const parts = source.split(/(?<=[.!?])\s+|\n+/).map(x => x.trim()).filter(Boolean);
     const re = new RegExp("(^|[^A-Za-z])" + escapeRegex(word) + "([^A-Za-z]|$)", "i");
@@ -228,7 +235,117 @@ function weakLearningSentence(sentence, word) {
   if (s.includes("practice the word") || s.includes("practise the word")) return true;
   if (s.includes(" in a sentence") && (s.includes("use ") || s.includes("used ") || s.includes("using "))) return true;
   if (s.includes("what it means") && s.includes(w)) return true;
+  if (s.includes("reading activity") || s.includes("weekly reading passage")) return true;
+  if (s.includes("checked every letter") || s.includes("copying it neatly")) return true;
+  if (s.includes("writing it from memory") || s.includes("practice card")) return true;
+  if (s.includes("appeared in the reading exercise") || s.includes("listened for")) return true;
+  if (s.includes("found") && s.includes("passage") && s.includes("read")) return true;
+  if (s.includes("practised") || s.includes("practiced")) return true;
+  if (s.includes("notebook") && (s.includes("spelling") || s.includes("checked"))) return true;
   return false;
+}
+
+function weakLearningDefinition(definition) {
+  const s = cleanText(definition, 240).toLowerCase();
+  if (!s) return true;
+  return s.includes("spelling list") ||
+    s.includes("spelling word") ||
+    s.includes("learning mission") ||
+    s.includes("learn its meaning") ||
+    s === "a word to learn.";
+}
+
+const COMMON_SPELLING_DEFINITIONS = {
+  beautiful: "very pleasing to look at, hear, or experience",
+  careful: "taking time to avoid mistakes, damage, or danger",
+  friendly: "kind, pleasant, and welcoming to other people",
+  helpful: "willing or able to make something easier for someone",
+  cheerful: "noticeably happy, positive, and full of good spirits",
+  honest: "truthful and fair, without trying to deceive anyone",
+  gentle: "kind and calm, not rough or harsh",
+  clever: "quick to understand, learn, or solve a problem",
+  colourful: "full of bright or different colours",
+  playful: "full of fun and wanting to play",
+  morning: "the early part of the day before noon",
+  outside: "not inside a building or enclosed place",
+  everyone: "every person in a group",
+  neighbourhood: "the area around your home and the people and places nearby",
+  community: "a group of people who live, work, or share something together",
+  children: "more than one child",
+  shouted: "spoke or called out very loudly",
+  value: "the importance, usefulness, or worth of something",
+  expand: "to make or become larger",
+  together: "with one another in the same place or activity",
+  brave: "willing to face something difficult or frightening",
+  suddenly: "quickly and unexpectedly",
+  surprise: "something unexpected, or the feeling caused by it",
+  present: "something given to someone as a gift",
+  got: "received, obtained, or came to have something",
+  garden: "a place where flowers, vegetables, or other plants are grown",
+  with: "together with, accompanied by, or using something",
+  take: "to carry or move something from one place to another",
+  crab: "a sea animal with a hard shell, eight legs, and two claws",
+  old: "having existed for a long time; not new",
+  here: "in this place or at this position",
+  from: "showing where someone or something starts, comes, or is sent",
+  best: "better than all the others",
+  throw: "to send something through the air with a movement of the arm"
+};
+const COMMON_SPELLING_EXAMPLES = {
+  beautiful: "The beautiful rainbow appeared after the afternoon rain.",
+  careful: "Be careful when you carry the glass of water.",
+  friendly: "Our friendly neighbour waved and said hello.",
+  helpful: "The helpful student picked up the books that fell.",
+  cheerful: "Her cheerful smile made everyone feel welcome.",
+  honest: "He was honest and told the teacher what really happened.",
+  gentle: "Use gentle hands when you hold the tiny kitten.",
+  clever: "The clever child found a quick way to solve the puzzle.",
+  colourful: "We saw colourful fish swimming around the coral reef.",
+  playful: "The playful puppy chased the ball across the yard.",
+  morning: "We ate breakfast early in the morning.",
+  outside: "The children played outside after the rain stopped.",
+  everyone: "Everyone clapped when the song ended.",
+  neighbourhood: "Our neighbourhood has a school, a shop, and a small park.",
+  community: "The community worked together to clean the beach.",
+  children: "The children lined up quietly for the bus.",
+  shouted: "Dad shouted my name so I could hear him across the field.",
+  value: "This old photograph has special value to our family.",
+  expand: "Warm air can expand and take up more space.",
+  together: "We worked together to finish the project.",
+  brave: "The brave girl spoke in front of the whole class.",
+  suddenly: "The lights suddenly went out during the storm.",
+  surprise: "The birthday cake was a wonderful surprise.",
+  present: "I wrapped the present before the party.",
+  got: "I got a new library book after school.",
+  garden: "Butterflies landed on flowers in the garden.",
+  with: "Mia walked with her brother to the beach.",
+  take: "Please take your water bottle when we leave.",
+  crab: "A small crab crawled sideways across the sand.",
+  old: "We found an old coin inside the wooden box.",
+  here: "Put your school bag here beside the chair.",
+  from: "This postcard came from my cousin in Dominica.",
+  best: "She did her best to finish the race.",
+  throw: "Do not throw stones near the windows."
+};
+
+const COMMON_SYLLABLES = {
+  got: "got", with: "with", take: "take", crab: "crab", old: "old",
+  here: "here", from: "from", best: "best", throw: "throw", brave: "brave",
+  beautiful: "beau · ti · ful", careful: "care · ful", friendly: "friend · ly",
+  helpful: "help · ful", cheerful: "cheer · ful", honest: "hon · est",
+  gentle: "gen · tle", clever: "clev · er", colourful: "col · our · ful",
+  playful: "play · ful", morning: "morn · ing", outside: "out · side",
+  everyone: "eve · ry · one", neighbourhood: "neigh · bour · hood",
+  community: "com · mu · ni · ty", children: "chil · dren", shouted: "shout · ed",
+  value: "val · ue", expand: "ex · pand", together: "to · geth · er",
+  suddenly: "sud · den · ly", surprise: "sur · prise", present: "pres · ent",
+  garden: "gar · den"
+};
+
+
+function fallbackDefinition(word) {
+  return COMMON_SPELLING_DEFINITIONS[String(word || "").toLowerCase()] ||
+    "A word from this week's list. Use the story and example sentence to work out its meaning.";
 }
 
 function sentenceSignature(sentence) {
@@ -240,9 +357,15 @@ function sentenceSignature(sentence) {
 }
 
 function fallbackExampleSentence(word, index, story, used) {
+  const known = COMMON_SPELLING_EXAMPLES[String(word || "").toLowerCase()];
+  if (known) {
+    used.add(sentenceSignature(known));
+    return known;
+  }
+
   const fromStory = storySentence(story, word);
   const storyKey = sentenceSignature(fromStory);
-  if (fromStory && !weakLearningSentence(fromStory, word) && !used.has(storyKey)) {
+  if (fromStory && !weakLearningSentence(fromStory, word)) {
     used.add(storyKey);
     return fromStory;
   }
@@ -268,8 +391,11 @@ function fallbackExampleSentence(word, index, story, used) {
 
 function roughSyllables(word) {
   const w = String(word || "").toLowerCase();
+  if (COMMON_SYLLABLES[w]) return COMMON_SYLLABLES[w];
+  const vowelGroups = w.match(/[aeiouy]+/g) || [];
+  if (vowelGroups.length <= 1) return w;
   const groups = w.match(/[^aeiouy]*[aeiouy]+(?:[^aeiouy]|$)*/g);
-  if (!groups || groups.length < 2) return w.split("").join(" · ");
+  if (!groups || groups.length < 2) return w;
   return groups.map(x => x.replace(/[^a-z'-]/g, "")).filter(Boolean).join(" · ");
 }
 
@@ -277,7 +403,7 @@ function fallbackSpellingContent(words, story) {
   const used = new Set();
   return words.map((word, index) => ({
     word,
-    definition: "A word from this week's spelling list. Learn its meaning from the story and practise using it correctly.",
+    definition: fallbackDefinition(word),
     example: fallbackExampleSentence(word, index, story, used),
     hint: "It starts with " + word.charAt(0).toUpperCase() + " and has " + word.length + " letters.",
     syllables: roughSyllables(word)
@@ -329,7 +455,14 @@ async function requestOllamaJson(endpoint, prompt, timeoutMs = 30000) {
   const response = await fetch(endpoint, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ model: OLLAMA_MODEL, prompt, stream: false, format: "json" }),
+    body: JSON.stringify({
+      model: OLLAMA_MODEL,
+      prompt,
+      stream: false,
+      format: "json",
+      keep_alive: "10m",
+      options: { temperature: 0.2, num_predict: 1600 }
+    }),
     signal: AbortSignal.timeout(timeoutMs)
   });
   if (!response.ok) throw new Error("Ollama returned " + response.status);
@@ -343,7 +476,7 @@ function generatedRowsNeedingRepair(rows, words) {
     const row = rows.find(x => cleanSpellingWord(x?.word).toLowerCase() === word.toLowerCase()) || {};
     const example = cleanText(row.example || row.exampleSentence, 280);
     const sig = sentenceSignature(example);
-    if (weakLearningSentence(example, word) || !sig || used.has(sig)) invalid.push(word);
+    if (weakLearningSentence(example, word) || weakLearningDefinition(row.definition) || !sig || used.has(sig)) invalid.push(word);
     else used.add(sig);
   }
   return invalid;
@@ -376,7 +509,7 @@ async function generateSpellingContent(words, story) {
   ].join("\n");
 
   try {
-    let rows = await requestOllamaJson(endpoint, prompt, 30000);
+    let rows = await requestOllamaJson(endpoint, prompt, 90000);
     if (!rows.length) throw new Error("No generated rows");
 
     const repairWords = generatedRowsNeedingRepair(rows, words);
@@ -393,7 +526,7 @@ async function generateSpellingContent(words, story) {
       ].filter(Boolean).join("\n");
 
       try {
-        const repairs = await requestOllamaJson(endpoint, repairPrompt, 22000);
+        const repairs = await requestOllamaJson(endpoint, repairPrompt, 45000);
         rows = rows.map(row => {
           const word = cleanSpellingWord(row?.word);
           const replacement = repairs.find(x => cleanSpellingWord(x?.word).toLowerCase() === word.toLowerCase());
@@ -413,23 +546,48 @@ async function generateSpellingContent(words, story) {
 
 
 async function repairStoredSpellingContent() {
-  if (!OLLAMA_URL || !spelling.levels.length) return;
+  if (!spelling.levels.length) return;
   let changed = false;
+
   for (const level of spelling.levels) {
     if (!Array.isArray(level.words) || !level.words.length) continue;
-    const weak = generatedRowsNeedingRepair(level.content || [], level.words);
-    if (!weak.length) continue;
-    try {
-      const generated = await generateSpellingContent(level.words, level.story);
-      if (generated.mode === "ollama") {
-        level.content = generated.content;
-        changed = true;
-        console.log("repaired spelling learning content:", level.title, weak.join(", "));
+    const fallback = fallbackSpellingContent(level.words, level.story);
+    const rows = cleanGeneratedContent(level.content || [], level.words, level.story);
+    let levelChanged = false;
+
+    level.content = rows.map((row, i) => {
+      const repaired = { ...row };
+      const cleanedExample = stripStoryMarkdown(repaired.example);
+      if (cleanedExample !== repaired.example) {
+        repaired.example = cleanedExample;
+        levelChanged = true;
       }
-    } catch (err) {
-      console.warn("stored spelling content repair failed:", level.title, err.message);
+      if (weakLearningDefinition(repaired.definition)) {
+        repaired.definition = fallback[i].definition;
+        levelChanged = true;
+      }
+      if (weakLearningSentence(repaired.example, repaired.word)) {
+        repaired.example = fallback[i].example;
+        levelChanged = true;
+      }
+      if (!cleanText(repaired.hint, 180)) {
+        repaired.hint = fallback[i].hint;
+        levelChanged = true;
+      }
+      const preferredSyllables = COMMON_SYLLABLES[String(repaired.word || "").toLowerCase()];
+      if (!cleanText(repaired.syllables, 100) || (preferredSyllables && repaired.syllables !== preferredSyllables)) {
+        repaired.syllables = preferredSyllables || fallback[i].syllables;
+        levelChanged = true;
+      }
+      return repaired;
+    });
+
+    if (levelChanged) {
+      changed = true;
+      console.log("repaired spelling learning content locally:", level.title);
     }
   }
+
   if (changed) await writeSpelling();
 }
 

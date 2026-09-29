@@ -58,22 +58,71 @@ assert(beeHtml.includes("spelling-bee-player.svg"), "Flight must use the rear-vi
 assert(beeJs.includes('gate.lane!==f.lane'), "Spelling Bee collision must be lane deterministic.");
 assert(beeJs.includes("PRACTICE GARDEN"), "Safe diversion must use the Practice Garden.");
 assert(beeJs.includes("reported:false"), "Mastery reporting must be idempotent.");
+assert(beeJs.includes("Missed flowers are free retries"), "Motor-skill misses must be non-punitive.");
+assert(beeJs.includes("if(missed){"), "Missed gates need a separate no-nectar-loss branch.");
+assert(beeJs.includes("masteredWords(state.level)"), "Warm-up flights must use mastered words only.");
+assert(beeJs.includes("shield:true"), "Kids should start each flight with one safety shield.");
+assert(beeHtml.includes("Warm-up flights after 3 words"), "Mission screen must advertise the warm-up reward loop.");
 
 const normalWord = loadFunction(beeJs, "normalWord");
+const plainStoryText = loadFunction(beeJs, "plainStoryText");
+assert(plainStoryText("A **brave** bee") === "A brave bee", "Story markdown cleanup failed.");
 assert(normalWord("  CAN’T  ") === "can't", "Smart apostrophe spelling normalization failed.");
 assert(normalWord("ice–cream") === "ice-cream", "Dash spelling normalization failed.");
 assert(normalWord("  two   words ") === "two words", "Whitespace spelling normalization failed.");
 
 const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
 const gateSpeed = loadFunction(beeJs, "gateSpeed", { clamp });
-assert(gateSpeed({wordIndex: 0, combo: 0}) === 500, "Unexpected starting gate speed.");
-assert(gateSpeed({wordIndex: 99, combo: 99}) <= 690, "Gate speed exceeds child-friendly cap.");
+assert(gateSpeed({wordIndex: 0, combo: 0, mistakes: 0}) === 390, "Unexpected starting gate speed.");
+assert(gateSpeed({wordIndex: 99, combo: 99, mistakes: 0}) <= 610, "Gate speed exceeds child-friendly cap.");
+assert(gateSpeed({wordIndex: 0, combo: 0, mistakes: 3}) < 390, "Adaptive help should slow the gates after mistakes.");
 
 const collisionSandbox = { state: { flight: { lane: 1 } }, Number };
 const gateTouchesPlane = loadFunction(beeJs, "gateTouchesPlane", collisionSandbox);
 assert(gateTouchesPlane({lane: 0}, .95) === false, "Wrong lane must not register a hit.");
-assert(gateTouchesPlane({lane: 1}, .95) === true, "Correct lane should register inside the hit window.");
-assert(gateTouchesPlane({lane: 1}, .70) === false, "A distant gate must not register early.");
+assert(gateTouchesPlane({lane: 1}, .85) === true, "Correct lane should register in the wider child-friendly hit window.");
+assert(gateTouchesPlane({lane: 1}, .80) === false, "A distant gate must not register early.");
+
+const missState = {
+  flight: {
+    transitioning: false, ending: false, wordLetters: ["B"], letterIndex: 0,
+    gates: [], shield: false, mistakes: 0, combo: 2, flightMisses: 0,
+    difficult: {}, word: "bee"
+  }
+};
+const evaluateMiss = loadFunction(beeJs, "evaluateGate", {
+  state: missState,
+  removeOtherGates: () => {},
+  updateFlightHud: () => {},
+  message: () => {},
+  setTimeout: () => {},
+  spawnGates: () => {},
+  flightSfx: () => {},
+  speak: () => {}
+});
+evaluateMiss(null, true);
+assert(missState.flight.mistakes === 0, "Missing a flower must not count as a spelling mistake.");
+assert(missState.flight.flightMisses === 1, "Motor-skill misses should still be tracked separately.");
+
+const shieldState = {
+  flight: {
+    transitioning: false, ending: false, wordLetters: ["B"], letterIndex: 0,
+    gates: [], shield: true, mistakes: 0, combo: 2, flightMisses: 0,
+    difficult: {}, word: "bee"
+  }
+};
+const evaluateShield = loadFunction(beeJs, "evaluateGate", {
+  state: shieldState,
+  removeOtherGates: () => {},
+  updateFlightHud: () => {},
+  message: () => {},
+  setTimeout: () => {},
+  spawnGates: () => {},
+  flightSfx: () => {},
+  speak: () => {}
+});
+evaluateShield({ letter: "X", resolved: false, el: null }, false);
+assert(shieldState.flight.mistakes === 0 && shieldState.flight.shield === false, "Starter shield must absorb the first wrong-letter choice.");
 
 assert(melonHtml.includes("levelCompleting=true;pendingLevelBuild=true"), "Mr Melon level-completion guard missing.");
 assert(melonHtml.includes("player.onGround=false;player.swim=false;player.shootCd=0;player.freezeCd=0"), "Mr Melon transition state reset missing.");

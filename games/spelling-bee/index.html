@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./spelling-bee.css?v=6">
+<link rel="stylesheet" href="./spelling-bee.css?v=7">
 </head>
 <body>
 <div class="app-shell">
@@ -27,7 +27,7 @@
           <span class="eyebrow">SPELL • READ • FLY</span>
           <h1>Train your words.<br>Then take to the sky.</h1>
           <p>Master this week's spelling list in Flight School, read the words in a story, then guide your bee through the correct flowers before your energy runs out.</p>
-          <div class="hero-chips"><span>10–12 weekly words</span><span>Sentence practice</span><span>3D flight missions</span></div>
+          <div class="hero-chips"><span>10–12 weekly words</span><span>Sentence practice</span><span>Warm-up flights after 3 words</span><span>Full 3D mission</span></div>
         </div>
         <div class="hero-plane" aria-hidden="true"><img class="hero-plane-img" src="./spelling-bee-hero.svg" alt=""><div class="hero-cloud c1"></div><div class="hero-cloud c2"></div><div class="hero-cloud c3"></div></div>
       </div>
@@ -112,14 +112,14 @@
         </div>
         <div class="hud-card flight-metrics">
           <div class="metric fuel-card"><span>🍯 NECTAR</span><div class="fuel-track"><i id="fuelFill"></i></div><b id="fuelText">60%</b></div>
-          <div class="metric accuracy-card"><span>⭐ ACCURACY</span><b id="accuracyText">100%</b><small id="mistakeText">0 mistakes</small><small id="comboText">0x combo</small></div>
+          <div class="metric accuracy-card"><span>⭐ SPELLING</span><b id="accuracyText">100%</b><small id="mistakeText">Wrong letters: 0</small><small id="comboText">🛡 Starter shield</small></div>
         </div>
         <div class="hud-card route-hud">
           <span>ROUTE PROGRESS</span>
           <button class="audio-toggle" id="flightSoundBtn" type="button" aria-label="Mute buzzing sounds" title="Buzzing sounds on">🔊</button>
           <div class="route-labels"><small id="originLabel">HOME</small><small id="destinationLabel">DESTINATION</small></div>
           <div class="route-track"><i id="routeFill"></i><span class="route-plane" id="routePlane">🐝</span></div>
-          <b id="routePercent">0%</b><small id="speedText" class="speed-badge">100% speed</small>
+          <b id="routePercent">0%</b><small id="speedText" class="speed-badge">Gentle pace</small>
         </div>
       </div>
 
@@ -150,7 +150,7 @@
           <b class="plane-hit-point" id="planeHitPoint" aria-hidden="true"></b>
         </div>
         <div class="touchdown-smoke" id="touchdownSmoke" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
-        <div class="flight-message" id="flightMessage"></div>
+        <div class="flight-message" id="flightMessage" aria-live="polite"></div>
       </div>
 
       <div class="mobile-controls" aria-label="Flight controls"><button data-steer="-1" type="button">◀</button><button data-steer="1" type="button">▶</button></div>
@@ -175,6 +175,6 @@
   </main>
 </div>
 <div class="toast-area" id="toastArea" aria-live="polite"></div>
-<script src="./spelling-bee.js?v=5"></script>
+<script src="./spelling-bee.js?v=6"></script>
 </body>
 </html>
