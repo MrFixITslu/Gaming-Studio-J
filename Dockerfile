@@ -10,9 +10,10 @@ RUN npm install --omit=dev --no-audit --no-fund \
 COPY . .
 # Source checkouts can inherit a restrictive host umask (for example 077),
 # which makes copied static files unreadable by the non-root Node user.
-# Normalise application file permissions inside the image while keeping
-# runtime data writable only by the application user.
-RUN chmod -R a+rX /app \
+# Normalise application source permissions while explicitly skipping node_modules;
+# walking the dependency tree made deployments unnecessarily I/O-heavy.
+RUN find /app -path /app/node_modules -prune -o -type d -exec chmod a+rx {} + \
+    && find /app -path /app/node_modules -prune -o -type f -exec chmod a+r {} + \
     && mkdir -p /app/runtime \
     && chown -R node:node /app/runtime \
     && chmod 700 /app/runtime
