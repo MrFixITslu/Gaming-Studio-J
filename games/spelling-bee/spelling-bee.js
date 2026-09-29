@@ -10,7 +10,7 @@ var EVENT_KEY="gsj_game_events_v1";
 var TITLE_ID="spelling-bee",TITLE_NAME="Spelling Bee";
 var FLIGHT_AUDIO_KEY="gsj_spelling_flight_audio_v1";
 var state={levels:[],level:null,wordIndex:0,save:null,buildLetters:[],buildChosen:[],flight:null,raf:0};
-var flightAudio={enabled:localStorage.getItem(FLIGHT_AUDIO_KEY)!=="off",ctx:null,master:null,engine1:null,engine2:null,engineGain:null,wind:null,windGain:null,windFilter:null};
+var flightAudio={enabled:localStorage.getItem(FLIGHT_AUDIO_KEY)!=="off",ctx:null,master:null,engine1:null,engine2:null,engineGain:null,wind:null,windGain:null,windFilter:null,wingLfo:null,wingLfoGain:null,wingPitchLfo:null,wingPitchGain1:null,wingPitchGain2:null,buzzFilter:null};
 
 function $(id){return document.getElementById(id)}
 function qsa(sel){return Array.prototype.slice.call(document.querySelectorAll(sel))}
@@ -108,9 +108,27 @@ function supportFor(word){
   var example=weakExample(word,c.example)?localExampleFor(word):c.example;
   return {word:word,definition:c.definition||"A spelling word for this week's learning mission.",example:example,hint:c.hint||("It starts with "+String(word).charAt(0).toUpperCase()+" and has "+lettersOf(word).length+" letters."),syllables:c.syllables||String(word).split("").join(" · ")};
 }
-function speak(text){
-  if(!("speechSynthesis" in window)){toast("Speech is not available in this browser.");return}
-  speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(String(text||""));u.rate=.82;u.pitch=1.05;u.lang="en-US";speechSynthesis.speak(u);
+function speak(text,options){
+  options=options||{};
+  var doneCalled=false;
+  function done(){
+    if(doneCalled)return;doneCalled=true;
+    if(typeof options.onDone==="function")options.onDone();
+  }
+  if(!("speechSynthesis" in window)){
+    toast("Speech is not available in this browser.");
+    setTimeout(done,350);return null;
+  }
+  if(options.interrupt!==false)speechSynthesis.cancel();
+  var u=new SpeechSynthesisUtterance(String(text||""));
+  u.rate=options.rate||.82;u.pitch=options.pitch||1.05;u.lang=options.lang||"en-US";
+  u.onend=done;u.onerror=done;
+  speechSynthesis.speak(u);
+  if(typeof options.onDone==="function"){
+    var words=String(text||"").trim().split(/\s+/).filter(Boolean).length;
+    setTimeout(done,Math.min(14000,Math.max(4500,words*720+1800)));
+  }
+  return u;
 }
 function updateFlightSoundButton(){
   var b=$("flightSoundBtn");if(!b)return;
@@ -124,7 +142,7 @@ function ensureFlightAudio(){
     if(!flightAudio.ctx){
       var Ctx=window.AudioContext||window.webkitAudioContext;
       if(!Ctx)return null;
-      var ctx=new Ctx(),master=ctx.createGain();master.gain.value=.7;master.connect(ctx.destination);
+      var ctx=new Ctx(),master=ctx.createGain();master.gain.value=.58;master.connect(ctx.destination);
       flightAudio.ctx=ctx;flightAudio.master=master;
     }
     if(flightAudio.ctx.state==="suspended")flightAudio.ctx.resume().catch(function(){});
@@ -140,25 +158,44 @@ function stopPlaneAudio(){
   var a=flightAudio,ctx=a.ctx;if(!ctx)return;
   try{
     var now=ctx.currentTime;
-    if(a.engineGain){a.engineGain.gain.cancelScheduledValues(now);a.engineGain.gain.setTargetAtTime(0,now,.12)}
-    if(a.windGain){a.windGain.gain.cancelScheduledValues(now);a.windGain.gain.setTargetAtTime(0,now,.12)}
-    var nodes=[a.engine1,a.engine2,a.wind];
-    setTimeout(function(){nodes.forEach(function(n){try{n&&n.stop()}catch(e){}})},500);
+    if(a.engineGain){a.engineGain.gain.cancelScheduledValues(now);a.engineGain.gain.setTargetAtTime(.0001,now,.10)}
+    if(a.windGain){a.windGain.gain.cancelScheduledValues(now);a.windGain.gain.setTargetAtTime(.0001,now,.10)}
+    var nodes=[a.engine1,a.engine2,a.wind,a.wingLfo,a.wingPitchLfo];
+    setTimeout(function(){nodes.forEach(function(n){try{n&&n.stop()}catch(e){}})},420);
   }catch(e){}
-  a.engine1=a.engine2=a.wind=a.engineGain=a.windGain=a.windFilter=null;
+  a.engine1=a.engine2=a.wind=a.wingLfo=a.wingPitchLfo=null;
+  a.engineGain=a.windGain=a.windFilter=a.wingLfoGain=a.wingPitchGain1=a.wingPitchGain2=a.buzzFilter=null;
 }
 function startPlaneAudio(phase){
   if(!flightAudio.enabled)return;
   var ctx=ensureFlightAudio();if(!ctx)return;
   stopPlaneAudio();
-  var e1=ctx.createOscillator(),e2=ctx.createOscillator(),eg=ctx.createGain();
-  e1.type="sawtooth";e2.type="triangle";e1.frequency.value=62;e2.frequency.value=124;eg.gain.value=0;
-  e1.connect(eg);e2.connect(eg);eg.connect(flightAudio.master);
+
+  // A bee-like wing buzz: fast fundamental + softer harmonic, with a gentle organic flutter.
+  var e1=ctx.createOscillator(),e2=ctx.createOscillator(),eg=ctx.createGain(),buzzFilter=ctx.createBiquadFilter();
+  e1.type="sawtooth";e2.type="triangle";e1.frequency.value=185;e2.frequency.value=370;eg.gain.value=.0001;
+  buzzFilter.type="lowpass";buzzFilter.frequency.value=1450;buzzFilter.Q.value=.55;
+  e1.connect(eg);e2.connect(eg);eg.connect(buzzFilter);buzzFilter.connect(flightAudio.master);
+
+  var lfo=ctx.createOscillator(),lfoGain=ctx.createGain();
+  lfo.type="sine";lfo.frequency.value=7.2;lfoGain.gain.value=.0045;
+  lfo.connect(lfoGain);lfoGain.connect(eg.gain);
+
+  // A slower pitch wobble prevents the buzz from sounding like a perfectly tuned electric motor.
+  var pitchLfo=ctx.createOscillator(),pitchGain1=ctx.createGain(),pitchGain2=ctx.createGain();
+  pitchLfo.type="sine";pitchLfo.frequency.value=4.6;pitchGain1.gain.value=6.5;pitchGain2.gain.value=13;
+  pitchLfo.connect(pitchGain1);pitchLfo.connect(pitchGain2);
+  pitchGain1.connect(e1.frequency);pitchGain2.connect(e2.frequency);
+
+  // Very light air noise keeps motion audible without turning the bee into an aircraft.
   var wind=makeNoiseSource(ctx),filter=ctx.createBiquadFilter(),wg=ctx.createGain();
-  filter.type="bandpass";filter.frequency.value=680;filter.Q.value=.7;wg.gain.value=0;
+  filter.type="highpass";filter.frequency.value=1250;filter.Q.value=.45;wg.gain.value=.0001;
   wind.connect(filter);filter.connect(wg);wg.connect(flightAudio.master);
-  e1.start();e2.start();wind.start();
-  flightAudio.engine1=e1;flightAudio.engine2=e2;flightAudio.engineGain=eg;flightAudio.wind=wind;flightAudio.windGain=wg;flightAudio.windFilter=filter;
+
+  e1.start();e2.start();lfo.start();pitchLfo.start();wind.start();
+  flightAudio.engine1=e1;flightAudio.engine2=e2;flightAudio.engineGain=eg;
+  flightAudio.wingLfo=lfo;flightAudio.wingLfoGain=lfoGain;flightAudio.wingPitchLfo=pitchLfo;flightAudio.wingPitchGain1=pitchGain1;flightAudio.wingPitchGain2=pitchGain2;flightAudio.buzzFilter=buzzFilter;
+  flightAudio.wind=wind;flightAudio.windGain=wg;flightAudio.windFilter=filter;
   setPlaneAudioPhase(phase||"cruise");
 }
 function setPlaneAudioPhase(phase){
@@ -167,18 +204,18 @@ function setPlaneAudioPhase(phase){
   var now=ctx.currentTime;
   [a.engine1.frequency,a.engine2.frequency,a.engineGain.gain,a.windGain.gain].forEach(function(p){p.cancelScheduledValues(now)});
   if(phase==="takeoff"){
-    a.engine1.frequency.setValueAtTime(58,now);a.engine1.frequency.exponentialRampToValueAtTime(128,now+2.65);
-    a.engine2.frequency.setValueAtTime(116,now);a.engine2.frequency.exponentialRampToValueAtTime(256,now+2.65);
-    a.engineGain.gain.setValueAtTime(.012,now);a.engineGain.gain.linearRampToValueAtTime(.055,now+1.2);a.engineGain.gain.linearRampToValueAtTime(.044,now+2.7);
-    a.windGain.gain.setValueAtTime(.006,now);a.windGain.gain.linearRampToValueAtTime(.045,now+2.7);
+    a.engine1.frequency.setValueAtTime(155,now);a.engine1.frequency.exponentialRampToValueAtTime(218,now+2.45);
+    a.engine2.frequency.setValueAtTime(310,now);a.engine2.frequency.exponentialRampToValueAtTime(436,now+2.45);
+    a.engineGain.gain.setValueAtTime(.006,now);a.engineGain.gain.linearRampToValueAtTime(.034,now+1.0);a.engineGain.gain.linearRampToValueAtTime(.028,now+2.5);
+    a.windGain.gain.setValueAtTime(.0015,now);a.windGain.gain.linearRampToValueAtTime(.009,now+2.5);
   }else if(phase==="landing"){
-    a.engine1.frequency.setValueAtTime(Math.max(70,a.engine1.frequency.value||105),now);a.engine1.frequency.exponentialRampToValueAtTime(54,now+3.6);
-    a.engine2.frequency.setValueAtTime(Math.max(140,a.engine2.frequency.value||210),now);a.engine2.frequency.exponentialRampToValueAtTime(108,now+3.6);
-    a.engineGain.gain.setValueAtTime(.038,now);a.engineGain.gain.linearRampToValueAtTime(.014,now+3.6);
-    a.windGain.gain.setValueAtTime(.035,now);a.windGain.gain.linearRampToValueAtTime(.008,now+3.6);
+    a.engine1.frequency.setValueAtTime(Math.max(175,a.engine1.frequency.value||205),now);a.engine1.frequency.exponentialRampToValueAtTime(145,now+3.4);
+    a.engine2.frequency.setValueAtTime(Math.max(350,a.engine2.frequency.value||410),now);a.engine2.frequency.exponentialRampToValueAtTime(290,now+3.4);
+    a.engineGain.gain.setValueAtTime(.026,now);a.engineGain.gain.linearRampToValueAtTime(.005,now+3.5);
+    a.windGain.gain.setValueAtTime(.008,now);a.windGain.gain.linearRampToValueAtTime(.001,now+3.5);
   }else{
-    a.engine1.frequency.setTargetAtTime(103,now,.18);a.engine2.frequency.setTargetAtTime(206,now,.18);
-    a.engineGain.gain.setTargetAtTime(.034,now,.15);a.windGain.gain.setTargetAtTime(.031,now,.15);
+    a.engine1.frequency.setTargetAtTime(205,now,.16);a.engine2.frequency.setTargetAtTime(410,now,.16);
+    a.engineGain.gain.setTargetAtTime(.026,now,.12);a.windGain.gain.setTargetAtTime(.007,now,.15);
   }
 }
 function playFlightTone(freq,dur,type,vol){
@@ -456,16 +493,20 @@ function evaluateGate(gate,missed){
 }
 function finishWord(){
   var f=state.flight;if(!f||f.transitioning)return;
-  f.transitioning=true;clearGates();var sup=supportFor(f.word);
+  f.transitioning=true;clearGates();var completedWord=f.word,sup=supportFor(completedWord);
   f.bonusFuel=Math.min(28,(f.bonusFuel||0)+4);burstPetals();flightSfx("correct");
-  message("🌼 "+f.word.toUpperCase()+" complete! + nectar",1350);
-  speak(f.word+". "+sup.example);
-  f.wordIndex++;
-  updateFlightHud();
-  if(f.wordIndex>=f.words.length){setTimeout(function(){endFlight(true)},1450);return}
-  setTimeout(function(){
-    f.word=f.words[f.wordIndex];f.wordLetters=lettersOf(f.word);f.letterIndex=0;f.transitioning=false;updateFlightHud();speak("Spell "+f.word);spawnGates();
-  },1450);
+  message("🌼 "+completedWord.toUpperCase()+" complete! Listen to the sentence.",2200);
+
+  // Do not advance on a fixed timer: wait for the spoken word + sentence to finish.
+  speak(completedWord+". "+sup.example,{onDone:function(){
+    if(!state.flight||state.flight!==f||f.ending)return;
+    f.wordIndex++;
+    if(f.wordIndex>=f.words.length){endFlight(true);return}
+    f.word=f.words[f.wordIndex];f.wordLetters=lettersOf(f.word);f.letterIndex=0;f.transitioning=false;
+    updateFlightHud();message("Next word: "+f.word,1050);
+    speak("Spell "+f.word);
+    setTimeout(function(){if(state.flight===f&&!f.transitioning&&!f.ending)spawnGates()},420);
+  }});
 }
 function flightLoop(ts){
   var f=state.flight;if(!f){state.raf=0;return}if(!f.last)f.last=ts;var dt=Math.min(.05,(ts-f.last)/1000);f.last=ts;
