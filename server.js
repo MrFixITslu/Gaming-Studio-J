@@ -16,7 +16,13 @@ const OLLAMA_URL = String(process.env.OLLAMA_URL || "").trim();
 const OLLAMA_MODEL = String(process.env.OLLAMA_MODEL || "qwen2.5:3b").trim();
 const ADMIN_PASSWORD = String(process.env.ADMIN_PASSWORD || "");
 const ADMIN_SESSION_SECRET = String(process.env.ADMIN_SESSION_SECRET || "");
-const PLATFORM_SHARED_SECRET = String(process.env.V79_PLATFORM_SHARED_SECRET || "");
+function readPlatformSecret() {
+  const direct = String(process.env.V79_PLATFORM_SHARED_SECRET || "").trim();
+  if (direct) return direct;
+  const file = String(process.env.V79_PLATFORM_SHARED_SECRET_FILE || "/run/secrets/v79-readonly-platform-token");
+  try { return fs.readFileSync(file, "utf8").trim(); } catch { return ""; }
+}
+const PLATFORM_SHARED_SECRET = readPlatformSecret();
 const MAX_ROOM_PLAYERS = 4;
 const MAX_CHAT_HISTORY = 50;
 const MAX_ACTIVITY = 250;
