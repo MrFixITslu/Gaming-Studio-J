@@ -3,12 +3,11 @@
 A complete, self-contained browser game based on the original game idea.
 
 ## Play immediately
-1. Open `index.html` in Chrome, Edge, Firefox, or Safari.
-2. Enter a nickname.
-3. Enter the default friend code: `MELONCREW`.
-4. Play.
+1. Launch Mr. Melon's Adventure from Gaming Studio J.
+2. Choose **Play / Continue**.
+3. Play.
 
-No installation, account, ads, tracking, or internet connection is required.
+No game access code is required. The active Gaming Studio J profile is used automatically for the player's name and progress identity.
 
 ## Controls
 - Left / Right arrows or A / D: Move
@@ -33,21 +32,13 @@ No installation, account, ads, tracking, or internet connection is required.
 - Shop
 - Final boss
 - Local save system
-- Friend-code gate
 - Local crew high-score board
 - Mobile controls
 - Procedural sound effects
 - No external assets or dependencies
 
-## Change the private friend code
-Open `index.html` in a text editor and find:
-
-`const FRIEND_CODE="MELONCREW";`
-
-Replace `MELONCREW` with your preferred code.
-
-## Important note about "friends only"
-This edition is intentionally serverless so it can be played immediately. The friend code is a family/private gate, not strong internet security because the whole game runs in the browser. For true private online accounts or real-time multiplayer, the next version would need a small server/backend.
+## Access and multiplayer
+Mr. Melon's Adventure opens directly to its main menu with no access-code gate. Player identity comes from the active Gaming Studio J profile. Multiplayer room codes are separate and are used only for joining live rooms from the Studio J lobby.
 
 ## Share with friends
 You can:

@@ -377,20 +377,7 @@ button:focus-visible,.studio-link:focus-visible{outline:3px solid #ffe584;outlin
     <h1 class="title">Mr. <span class="melon">Melon's</span><br>Adventure</h1>
     <p class="subtitle">Jump, freeze enemies, solve quick maths, discover secret treasure and survive the dangerous Water Map.</p>
 
-    <div id="gate">
-      <div class="card">
-        <h3>Enter the Melon Crew</h3>
-        <p class="small">Choose a nickname and enter the crew code. Default code: <b>MELONCREW</b>.</p>
-        <input id="nickname" class="field" maxlength="16" placeholder="Nickname" value="Player 1">
-        <div style="height:8px"></div>
-        <input id="friendCode" class="field" maxlength="20" placeholder="Friend code">
-        <div style="height:10px"></div>
-        <button class="btn" id="enterBtn">Enter Adventure</button>
-        <p id="gateError" class="small" style="display:none;color:#ff8994">That code is not part of the Melon Crew.</p>
-      </div>
-    </div>
-
-    <div id="mainMenu" style="display:none">
+    <div id="mainMenu">
       <div class="cardgrid">
         <div class="card">
           <h3>🎮 Adventure Mode</h3>
@@ -452,7 +439,6 @@ function clearGameInputs(){
   document.querySelectorAll(".touchBtn").forEach(b=>b.classList.remove("pressed"));
   jumpBuffer=0;coyote=0;
 }
-const FRIEND_CODE="MELONCREW";
 const SAVE_KEY="mrMelonAdventure_v1";
 const CREW_KEY="mrMelonCrewScores_v1";
 const GAME_PARAMS=new URLSearchParams(location.search);
@@ -607,7 +593,6 @@ function initMultiplayer(){
         multiplayer.room=joined.room;
         save.level=Math.max(0,Math.min(Number(joined.room?.level||0),LEVELS.length-1));
         persist();
-        $("gate").style.display="none";
         $("mainMenu").style.display="none";
         if(!inGame)startGame();else buildLevel(save.level);
         updateMultiplayerChip();
@@ -903,7 +888,7 @@ function backToMenu(){
   stopMusic();
   $("hud").style.display="none";$("questBox").style.display="none";$("minimap").style.display="none";
   $("quizOverlay").style.display="none";$("shopOverlay").style.display="none";$("pauseOverlay").style.display="none";$("victoryOverlay").style.display="none";
-  $("screenCover").style.display="flex";$("gate").style.display="none";$("mainMenu").style.display="block";
+  $("screenCover").style.display="flex";$("mainMenu").style.display="block";
   updateMenuSummary();
 }
 const CHARACTER_DATA={
@@ -1663,18 +1648,6 @@ document.querySelectorAll(".touchBtn").forEach(b=>{
   b.addEventListener("pointerdown",down);b.addEventListener("pointerup",up);b.addEventListener("pointercancel",up);b.addEventListener("pointerleave",up);
 });
 
-$("enterBtn").onclick=()=>{
-  audioStart();
-  const code=$("friendCode").value.trim().toUpperCase();
-  if(code!==FRIEND_CODE){$("gateError").style.display="block";sfx("no");return}
-  $("gateError").style.display="none";
-  save.nickname=$("nickname").value.trim()||multiplayer.profile.nickname||"Player 1";
-  multiplayer.profile.nickname=save.nickname;
-  localStorage.setItem(MULTI_PROFILE_KEY,JSON.stringify(multiplayer.profile));
-  syncStudioUsername(save.nickname);
-  persist();
-  $("gate").style.display="none";$("mainMenu").style.display="block";updateMenuSummary();
-};
 $("playBtn").onclick=startGame;
 $("menuShopBtn").onclick=()=>showShop(true);
 $("closeShop").onclick=()=>closeShop();
@@ -1703,7 +1676,11 @@ $("unlockSuper").onclick=()=>{
 $("replayBtn").onclick=()=>{save.level=0;save.completed=false;save.score=0;persist();$("victoryOverlay").style.display="none";startGame()};
 $("victoryMenuBtn").onclick=backToMenu;
 
-$("nickname").value=save.nickname||multiplayer.profile.nickname||"Player 1";
+// No access-code gate: use the active Studio J profile automatically.
+save.nickname=multiplayer.profile.nickname||save.nickname||"Player 1";
+multiplayer.profile.nickname=save.nickname;
+localStorage.setItem(MULTI_PROFILE_KEY,JSON.stringify(multiplayer.profile));
+persist();
 updateSoundButton();
 updateMenuSummary();
 buildLevel(Math.min(save.level,3));
