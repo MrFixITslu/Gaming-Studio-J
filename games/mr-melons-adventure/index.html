@@ -271,6 +271,7 @@ button:focus-visible,.studio-link:focus-visible{outline:3px solid #ffe584;outlin
   <div class="chip glass">🍈 <span id="coinText">0</span></div>
   <div class="chip glass">🛡️ <span id="armorText">0</span></div>
   <div class="chip glass">🌟 <span id="secretText">0/4</span></div>
+  <div class="chip glass" title="Math challenges solved for this level">🧠 <span id="mathGateText">0/1</span></div>
   <div class="chip glass" id="multiChip" style="display:none">👥 <span id="multiText">Multiplayer</span></div>
   <div class="grow"></div>
   <div class="chip glass" id="scoreChip">⭐ <span id="scoreText">0</span></div>
@@ -422,7 +423,7 @@ button:focus-visible,.studio-link:focus-visible{outline:3px solid #ffe584;outlin
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
-<script src="../../assets/learning-engine.js?v=2"></script>
+<script src="../../assets/learning-engine.js?v=3"></script>
 <script>
 (()=>{
 "use strict";
@@ -433,7 +434,7 @@ const keys={};
 const MOBILE_PLAY=window.matchMedia("(pointer:coarse)").matches||navigator.maxTouchPoints>0;
 let last=0, paused=false, inGame=false, quizOpen=false, shopOpen=false, levelStart=0, levelCompleting=false, pendingLevelBuild=false;
 let camX=0, shake=0, currentQuiz=null, particles=[], shots=[], enemies=[], pickups=[], platforms=[], hazards=[], decor=[];
-let checkpoint={x:90,y:450},checkpointReached=false,combo=0,comboTimer=0,prevPlayerBottom=0,objectiveTimer=null;
+let checkpoint={x:90,y:450},checkpointReached=false,combo=0,comboTimer=0,prevPlayerBottom=0,objectiveTimer=null,levelMathSolved=0;
 let jumpBuffer=0,coyote=0;
 function clearGameInputs(){
   Object.keys(keys).forEach(k=>keys[k]=false);
@@ -849,7 +850,7 @@ function buildLevel(index){
   player.x=L.start[0];player.y=L.start[1];player.vx=0;player.vy=0;
   player.hp=save.maxHp;player.freeze=save.freezeMax;player.inv=0;player.groundPound=false;player.wasOnGround=false;player.landing=0;
   player.onGround=false;player.swim=false;player.shootCd=0;player.freezeCd=0;
-  checkpoint={x:L.start[0],y:L.start[1]};checkpointReached=false;combo=0;comboTimer=0;
+  checkpoint={x:L.start[0],y:L.start[1]};checkpointReached=false;combo=0;comboTimer=0;levelMathSolved=0;
   levelCompleting=false;pendingLevelBuild=false;clearGameInputs();
   camX=0; levelStart=performance.now();
   generateDecor(L);
@@ -974,12 +975,22 @@ function toast(text,icon="✨"){
 function banner(text){
   const b=$("levelBanner");b.textContent=text;b.classList.remove("show");void b.offsetWidth;b.classList.add("show");
 }
+function requiredMathForLevel(level){
+  const count=(level?.pickups||[]).filter(p=>p[0]==="quiz").length;
+  return Math.max(1,Math.min(count,save.level===0?1:2));
+}
+function updateMathGateHUD(){
+  const el=$("mathGateText");if(!el)return;
+  const required=requiredMathForLevel(LEVELS[Math.max(0,Math.min(save.level,LEVELS.length-1))]);
+  el.textContent=Math.min(levelMathSolved,required)+"/"+required;
+}
 function updateHUD(){
   $("hpFill").style.width=`${Math.max(0,player.hp/save.maxHp*100)}%`;
   $("hpText").textContent=`${player.hp}/${save.maxHp}`;
   $("freezeFill").style.width=`${Math.max(0,player.freeze/save.freezeMax*100)}%`;
   $("coinText").textContent=save.coins;$("armorText").textContent=save.armor;$("scoreText").textContent=save.score;
   $("secretText").textContent=`${Object.keys(save.foundSecrets||{}).length}/${LEVELS.length}`;
+  updateMathGateHUD();
 }
 
 function mathRnd(a,b){return a+Math.floor(Math.random()*(b-a+1))}
@@ -1074,12 +1085,12 @@ function makeMathProblem(level){
   const problem=fn(band);problem.band=window.GSJLearning?.band?.(problem.outcome)||band;return problem;
 }
 
-let currentQuizSolution="",currentQuizOutcome="",currentQuizBand="Support";
+let currentQuizSolution="",currentQuizOutcome="",currentQuizBand="Support",currentQuizAttempts=0;
 
 function openQuiz(source){
   if(quizOpen)return;quizOpen=true;paused=true;currentQuiz=source;clearGameInputs();
   const problem=makeMathProblem(save.level),ans=problem.ans;
-  currentQuizSolution=problem.why;currentQuizOutcome=problem.outcome;currentQuizBand=problem.band||"Support";
+  currentQuizSolution=problem.why;currentQuizOutcome=problem.outcome;currentQuizBand=problem.band||"Support";currentQuizAttempts=0;
   $("quizQ").textContent=problem.q;
   const options=mathShuffle((problem.options||[]).map(value=>({value,ok:String(value)===String(ans)})));
   $("quizAnswers").innerHTML=options.map((v,i)=>'<button class="answer" data-choice="'+i+'">'+String(v.value)+"</button>").join("");
@@ -1088,21 +1099,32 @@ function openQuiz(source){
   $("quizOverlay").style.display="flex";
 }
 function answerQuiz(btn,choice,ans,buttons){
+  if(btn.disabled)return;
   buttons.forEach(b=>b.disabled=true);
-  const ok=!!choice.ok;
+  const ok=!!choice.ok,firstTry=currentQuizAttempts===0;
   if(ok){
-    btn.classList.add("good");save.coins+=5;save.score+=150;player.freeze=Math.min(save.freezeMax,player.freeze+40);
-    enemies.forEach(e=>{if(Math.abs(e.x-player.x)<500)e.freeze=Math.max(e.freeze,240)});
-    toast("Solved! "+currentQuizSolution+" • +5 melons","🧠");sfx("quizgood");achievement("brainy","Melon Problem Solver","🧠");
-  }else{
-    btn.classList.add("bad");
-    buttons.forEach(b=>{if(String(b.textContent)===String(ans))b.classList.add("good")});
-    toast("Let's learn it: "+currentQuizSolution,"📘");sfx("no");
+    btn.classList.add("good");
+    save.coins+=firstTry?5:3;save.score+=firstTry?150:90;player.freeze=Math.min(save.freezeMax,player.freeze+(firstTry?40:25));
+    enemies.forEach(e=>{if(Math.abs(e.x-player.x)<500)e.freeze=Math.max(e.freeze,220)});
+    toast((firstTry?"Solved! ":"Repaired! ")+currentQuizSolution+" • +"+(firstTry?5:3)+" melons","🧠");sfx("quizgood");achievement("brainy","Melon Problem Solver","🧠");
+    const skill=window.GSJLearning?.record?.(currentQuizOutcome,true,{subject:"Mathematics",gameId:"mr-melons-adventure",activity:firstTry?"math-challenge":"math-repair"});
+    if(skill)toast("Math power! "+skill.stage+" • "+skill.band,"📚");
+    if(currentQuiz&&!currentQuiz.taken){currentQuiz.taken=true;levelMathSolved++}
+    persist();updateHUD();
+    setTimeout(()=>{$("quizOverlay").style.display="none";quizOpen=false;paused=false},1050);
+    return;
   }
-  const skill=window.GSJLearning?.record?.(currentQuizOutcome,ok,{subject:"Mathematics",gameId:"mr-melons-adventure",activity:"math-challenge"});
-  if(skill)toast((ok?"Math power! ":"Practice path: ")+skill.stage+" • "+skill.band,"📚");
-  if(currentQuiz)currentQuiz.taken=true;persist();updateHUD();
-  setTimeout(()=>{$("quizOverlay").style.display="none";quizOpen=false;paused=false},ok?1050:1700);
+  currentQuizAttempts++;
+  btn.classList.add("bad");
+  const skill=window.GSJLearning?.record?.(currentQuizOutcome,false,{subject:"Mathematics",gameId:"mr-melons-adventure",activity:"math-challenge"});
+  toast("Let's learn it, then try again: "+currentQuizSolution,"📘");sfx("no");
+  if(skill)toast("Practice path: "+skill.stage+" • "+skill.band,"📚");
+  setTimeout(()=>{
+    buttons.forEach(b=>{
+      if(!b.classList.contains("bad"))b.disabled=false;
+      if(currentQuizAttempts>=2&&String(b.textContent)===String(ans))b.classList.add("good");
+    });
+  },950);
 }
 
 function rects(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y}
@@ -1299,8 +1321,15 @@ function update(dt){
   particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.05;p.life--});particles=particles.filter(p=>p.life>0);
 
   if(!levelCompleting&&player.x>L.exit&&save.level<LEVELS.length-1){
-    levelCompleting=true;pendingLevelBuild=true;
-    save.score+=300;save.level++;saveCrewScore();persist();submitOnlineScore(false);sfx("level");toast("Level complete! +300 points","🏁");showShop();
+    const required=requiredMathForLevel(L);
+    if(levelMathSolved<required){
+      const left=required-levelMathSolved;
+      toast("Math Gate: solve "+left+" more challenge"+(left===1?"":"s")+" to open the portal.","🧠");
+      openQuiz({type:"quiz",taken:false,mathGate:true});
+    }else{
+      levelCompleting=true;pendingLevelBuild=true;
+      save.score+=300;save.level++;saveCrewScore();persist();submitOnlineScore(false);sfx("level");toast("Level complete! Maths gate cleared. +300 points","🏁");showShop();
+    }
   }
   const lookAhead=Math.max(-90,Math.min(90,player.vx*18));
   const cameraTarget=Math.max(0,Math.min(L.world-W,player.x-W*.40+lookAhead));

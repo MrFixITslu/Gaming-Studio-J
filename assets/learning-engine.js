@@ -140,5 +140,29 @@ function stage(outcomeId){return stateFor(outcomeId).stage||"Learning"}
 function resetProfile(){
   const data=load(),p=studioProfile();delete data.profiles[p.id];save(data);
 }
-global.GSJLearning={record,state:stateFor,band,stage,summary,due,profile:studioProfile,usage,resetProfile,version:1};
+
+let breakCoachTimer=null;
+function scheduleBreakCoach(delayMs){
+  clearTimeout(breakCoachTimer);
+  breakCoachTimer=setTimeout(showBreakCoach,delayMs||25*60*1000);
+}
+function showBreakCoach(){
+  if(document.hidden){scheduleBreakCoach(3*60*1000);return}
+  if(document.getElementById("gsjBreakCoach")){scheduleBreakCoach(25*60*1000);return}
+  const wrap=document.createElement("div");
+  wrap.id="gsjBreakCoach";
+  wrap.setAttribute("role","dialog");
+  wrap.setAttribute("aria-live","polite");
+  wrap.innerHTML='<div><b>🌴 Explorer break</b><p>Great learning! Rest your eyes, stretch your body and get a sip of water for a minute.</p><button type="button">I took a break ✓</button></div>';
+  Object.assign(wrap.style,{position:"fixed",left:"12px",right:"12px",bottom:"12px",zIndex:"99999",display:"flex",justifyContent:"center",pointerEvents:"none"});
+  const card=wrap.firstElementChild;
+  Object.assign(card.style,{pointerEvents:"auto",maxWidth:"520px",background:"#fffdf7",color:"#10233b",border:"2px solid #d7e7ee",borderRadius:"18px",padding:"16px 18px",boxShadow:"0 14px 40px rgba(0,0,0,.24)",fontFamily:"system-ui,-apple-system,sans-serif"});
+  const para=card.querySelector("p");Object.assign(para.style,{margin:"6px 0 12px",lineHeight:"1.45"});
+  const btn=card.querySelector("button");Object.assign(btn.style,{minHeight:"44px",border:"0",borderRadius:"12px",padding:"10px 14px",fontWeight:"800",cursor:"pointer",background:"#0e7896",color:"white"});
+  btn.onclick=function(){wrap.remove();scheduleBreakCoach(25*60*1000)};
+  document.body.appendChild(wrap);
+}
+function startBreakCoach(){if(!breakCoachTimer)scheduleBreakCoach(25*60*1000)}
+global.GSJLearning={record,state:stateFor,band,stage,summary,due,profile:studioProfile,usage,resetProfile,startBreakCoach,version:2};
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",startBreakCoach,{once:true});else startBreakCoach();
 })(window);
