@@ -1,0 +1,466 @@
+{
+  "version": 1,
+  "grade": 2,
+  "framework": "OECS Grade 2",
+  "ageRange": "7\u20138",
+  "sources": {
+    "overview": "https://oecslearninghub.org/curriculum/grade2-subjects",
+    "languageArts": "https://oecslearninghub.org/curriculum/grade2-subjects/language-arts",
+    "mathematics": "https://oecslearninghub.org/curriculum/grade2-subjects/mathematics",
+    "science": "https://oecslearninghub.org/curriculum/grade2-subjects/science",
+    "socialStudies": "https://oecslearninghub.org/curriculum/grade2-subjects/social-studies"
+  },
+  "principles": [
+    "Mastery before acceleration",
+    "Academic difficulty is separate from motor-control difficulty",
+    "Mistakes trigger support, not punishment",
+    "Use Caribbean and OECS-relevant contexts",
+    "Deterministic scoring for mathematics and factual assessment",
+    "Revisit weak concepts through spaced review",
+    "No advertising, public free-text chat, or location sharing in child learning worlds"
+  ],
+  "subjects": {
+    "languageArts": {
+      "title": "Language Arts",
+      "world": "Spelling Bee",
+      "icon": "\ud83d\udc1d",
+      "strands": [
+        {
+          "id": "LANG-G2-LS",
+          "title": "Listening and Speaking",
+          "outcomes": [
+            {
+              "id": "LANG-G2-LS-ELO1",
+              "title": "Use and critically apply oral language for communication, relationships, growth and culture"
+            }
+          ]
+        },
+        {
+          "id": "LANG-G2-RV",
+          "title": "Reading and Viewing",
+          "outcomes": [
+            {
+              "id": "LANG-G2-RV-ELO1",
+              "title": "Select and engage critically with culturally diverse texts for varied purposes"
+            },
+            {
+              "id": "LANG-G2-RV-ELO2",
+              "title": "Use background knowledge and interests to engage critically with texts"
+            },
+            {
+              "id": "LANG-G2-RV-ELO3",
+              "title": "Understand how purpose, genre, text features, vocabulary and style shape meaning"
+            }
+          ]
+        },
+        {
+          "id": "LANG-G2-WR",
+          "title": "Writing and Representing",
+          "outcomes": [
+            {
+              "id": "LANG-G2-WR-ELO1",
+              "title": "Generate, gather and organize ideas for writing or representation"
+            },
+            {
+              "id": "LANG-G2-WR-ELO2",
+              "title": "Revise organization and language for purpose and audience"
+            },
+            {
+              "id": "LANG-G2-WR-ELO3",
+              "title": "Use spoken/written language knowledge and conventions to improve clarity and precision"
+            }
+          ]
+        }
+      ]
+    },
+    "mathematics": {
+      "title": "Mathematics",
+      "world": "Mr. Melon",
+      "icon": "\ud83c\udf48",
+      "strands": [
+        {
+          "id": "MATH-G2-NS",
+          "title": "Number Sense",
+          "outcomes": [
+            {
+              "id": "MATH-G2-NS-ELO1",
+              "title": "Whole numbers: sequence, meaningful counting and skip counting"
+            },
+            {
+              "id": "MATH-G2-NS-ELO2",
+              "title": "Represent and partition quantities"
+            },
+            {
+              "id": "MATH-G2-NS-ELO3",
+              "title": "Compare and order quantities"
+            },
+            {
+              "id": "MATH-G2-NS-ELO4",
+              "title": "Understand place value"
+            },
+            {
+              "id": "MATH-G2-NS-ELO5",
+              "title": "Represent fractions"
+            },
+            {
+              "id": "MATH-G2-NS-ELO6",
+              "title": "Compare and order fractions"
+            }
+          ]
+        },
+        {
+          "id": "MATH-G2-ON",
+          "title": "Operations with Numbers",
+          "outcomes": [
+            {
+              "id": "MATH-G2-ON-ELO1",
+              "title": "Understand addition and subtraction and how they relate"
+            },
+            {
+              "id": "MATH-G2-ON-ELO2",
+              "title": "Compute fluently with addition and subtraction"
+            },
+            {
+              "id": "MATH-G2-ON-ELO3",
+              "title": "Understand introductory multiplication and division through equal groups"
+            }
+          ]
+        },
+        {
+          "id": "MATH-G2-PR",
+          "title": "Patterns and Relationships",
+          "outcomes": [
+            {
+              "id": "MATH-G2-PR-ELO1",
+              "title": "Create and extend repeating and growing patterns"
+            },
+            {
+              "id": "MATH-G2-PR-ELO2",
+              "title": "Recognize, describe and extend increasing/decreasing patterns"
+            },
+            {
+              "id": "MATH-G2-PR-ELO3",
+              "title": "Recognize symbols used as variables"
+            },
+            {
+              "id": "MATH-G2-PR-ELO4",
+              "title": "Understand and represent equivalence"
+            },
+            {
+              "id": "MATH-G2-PR-ELO5",
+              "title": "Write simple expressions and equations"
+            }
+          ]
+        },
+        {
+          "id": "MATH-G2-GT",
+          "title": "Geometrical Thinking",
+          "outcomes": [
+            {
+              "id": "MATH-G2-GT-ELO1",
+              "title": "Develop spatial sense"
+            },
+            {
+              "id": "MATH-G2-GT-ELO2",
+              "title": "Sort, pattern and build with 2D and 3D shapes"
+            },
+            {
+              "id": "MATH-G2-GT-ELO3",
+              "title": "Analyze and describe shapes"
+            },
+            {
+              "id": "MATH-G2-GT-ELO4",
+              "title": "Name 2D and 3D shapes"
+            },
+            {
+              "id": "MATH-G2-GT-ELO5",
+              "title": "Describe relationships among shapes"
+            },
+            {
+              "id": "MATH-G2-GT-ELO6",
+              "title": "Combine shapes"
+            },
+            {
+              "id": "MATH-G2-GT-ELO7",
+              "title": "Deconstruct shapes"
+            },
+            {
+              "id": "MATH-G2-GT-ELO8",
+              "title": "Transform shapes"
+            }
+          ]
+        },
+        {
+          "id": "MATH-G2-M",
+          "title": "Measurement",
+          "outcomes": [
+            {
+              "id": "MATH-G2-M-ELO1",
+              "title": "Understand measurable attributes"
+            },
+            {
+              "id": "MATH-G2-M-ELO2",
+              "title": "Compare and order measurable attributes"
+            },
+            {
+              "id": "MATH-G2-M-ELO3",
+              "title": "Use non-standard units of measure"
+            },
+            {
+              "id": "MATH-G2-M-ELO4",
+              "title": "Use standard units of measurement"
+            },
+            {
+              "id": "MATH-G2-M-ELO5",
+              "title": "Develop personal measurement referents"
+            },
+            {
+              "id": "MATH-G2-M-ELO6",
+              "title": "Use measurement tools"
+            },
+            {
+              "id": "MATH-G2-M-ELO7",
+              "title": "Apply Grade 2 measurement techniques and relationships"
+            }
+          ]
+        },
+        {
+          "id": "MATH-G2-DH",
+          "title": "Data Handling and Probability",
+          "outcomes": [
+            {
+              "id": "MATH-G2-DH-ELO1",
+              "title": "Formulate simple questions that can be answered with data"
+            },
+            {
+              "id": "MATH-G2-DH-ELO2",
+              "title": "Collect, organize, display and communicate data"
+            },
+            {
+              "id": "MATH-G2-DH-ELO3",
+              "title": "Describe data sets"
+            },
+            {
+              "id": "MATH-G2-DH-ELO4",
+              "title": "Analyze simple data sets"
+            },
+            {
+              "id": "MATH-G2-DH-ELO5",
+              "title": "Predict and describe likelihood of events"
+            }
+          ]
+        }
+      ]
+    },
+    "science": {
+      "title": "Science",
+      "world": "Island Science Explorers",
+      "icon": "\ud83d\udd2c",
+      "strands": [
+        {
+          "id": "SCIENCE-G2-SPM",
+          "title": "Structure and Properties of Matter",
+          "outcomes": [
+            {
+              "id": "SCIENCE-G2-SPM-ELO1",
+              "title": "Investigate and classify materials by observable properties"
+            },
+            {
+              "id": "SCIENCE-G2-SPM-ELO2",
+              "title": "Use test data to choose materials for an intended purpose"
+            },
+            {
+              "id": "SCIENCE-G2-SPM-ELO3",
+              "title": "Explain how pieces can be taken apart and made into new objects"
+            },
+            {
+              "id": "SCIENCE-G2-SPM-ELO4",
+              "title": "Use evidence to compare reversible and irreversible heating/cooling changes"
+            }
+          ]
+        },
+        {
+          "id": "SCIENCE-G2-IRE",
+          "title": "Interdependent Relationships in Ecosystems",
+          "outcomes": [
+            {
+              "id": "SCIENCE-G2-IRE-ELO1",
+              "title": "Investigate whether plants need sunlight and water to grow"
+            },
+            {
+              "id": "SCIENCE-G2-IRE-ELO2",
+              "title": "Model pollination/seed dispersal and compare life in habitats"
+            }
+          ]
+        },
+        {
+          "id": "SCIENCE-G2-ES",
+          "title": "Earth Systems",
+          "outcomes": [
+            {
+              "id": "SCIENCE-G2-ES-ELO1",
+              "title": "Use evidence to distinguish fast and slow Earth events"
+            },
+            {
+              "id": "SCIENCE-G2-ES-ELO2",
+              "title": "Compare solutions that slow wind or water erosion"
+            },
+            {
+              "id": "SCIENCE-G2-ES-ELO3",
+              "title": "Model landforms and bodies of water"
+            },
+            {
+              "id": "SCIENCE-G2-ES-ELO4",
+              "title": "Identify where water is found and recognize solid/liquid forms"
+            }
+          ]
+        },
+        {
+          "id": "SCIENCE-G2-ED",
+          "title": "Engineering Design",
+          "outcomes": [
+            {
+              "id": "SCIENCE-G2-ED-ELO1",
+              "title": "Define a simple problem using questions, observations and information"
+            },
+            {
+              "id": "SCIENCE-G2-ED-ELO2",
+              "title": "Develop a sketch or model showing how shape supports function"
+            },
+            {
+              "id": "SCIENCE-G2-ED-ELO3",
+              "title": "Compare test data from two solutions to identify strengths and weaknesses"
+            }
+          ]
+        }
+      ]
+    },
+    "socialStudies": {
+      "title": "Social Studies",
+      "world": "Caribbean Community Quest",
+      "icon": "\ud83e\udded",
+      "strands": [
+        {
+          "id": "SS-G2-HCT",
+          "title": "Historical and Cultural Thinking",
+          "outcomes": [
+            {
+              "id": "SS-G2-HCT-ELO1",
+              "title": "Our ancestors"
+            },
+            {
+              "id": "SS-G2-HCT-ELO2",
+              "title": "Our families"
+            },
+            {
+              "id": "SS-G2-HCT-ELO3",
+              "title": "Family interactions"
+            },
+            {
+              "id": "SS-G2-HCT-ELO4",
+              "title": "Family occasions"
+            },
+            {
+              "id": "SS-G2-HCT-ELO5",
+              "title": "Our festivals"
+            },
+            {
+              "id": "SS-G2-HCT-ELO6",
+              "title": "Historical sites"
+            }
+          ]
+        },
+        {
+          "id": "SS-G2-CP",
+          "title": "Civic Participation",
+          "outcomes": [
+            {
+              "id": "SS-G2-CP-ELO1",
+              "title": "Keeping neighbours safe and healthy"
+            },
+            {
+              "id": "SS-G2-CP-ELO2",
+              "title": "Resolving conflict in communities"
+            },
+            {
+              "id": "SS-G2-CP-ELO3",
+              "title": "Governing the community"
+            },
+            {
+              "id": "SS-G2-CP-ELO4",
+              "title": "Accidents at home and in the community"
+            },
+            {
+              "id": "SS-G2-CP-ELO5",
+              "title": "Safety in the community"
+            }
+          ]
+        },
+        {
+          "id": "SS-G2-ST",
+          "title": "Spatial Thinking",
+          "outcomes": [
+            {
+              "id": "SS-G2-ST-ELO1",
+              "title": "Locating my community"
+            },
+            {
+              "id": "SS-G2-ST-ELO2",
+              "title": "Features of my community"
+            },
+            {
+              "id": "SS-G2-ST-ELO3",
+              "title": "Use location information to understand community position"
+            },
+            {
+              "id": "SS-G2-ST-ELO4",
+              "title": "Plants and animals in the community"
+            },
+            {
+              "id": "SS-G2-ST-ELO5",
+              "title": "Weather"
+            },
+            {
+              "id": "SS-G2-ST-ELO6",
+              "title": "The environment as a resource"
+            },
+            {
+              "id": "SS-G2-ST-ELO7",
+              "title": "Caring for the environment"
+            }
+          ]
+        },
+        {
+          "id": "SS-G2-EDM",
+          "title": "Economic Decision Making",
+          "outcomes": [
+            {
+              "id": "SS-G2-EDM-ELO1",
+              "title": "Human resources"
+            },
+            {
+              "id": "SS-G2-EDM-ELO2",
+              "title": "Land and natural resources"
+            },
+            {
+              "id": "SS-G2-EDM-ELO3",
+              "title": "Community workers"
+            },
+            {
+              "id": "SS-G2-EDM-ELO4",
+              "title": "Goods and services"
+            },
+            {
+              "id": "SS-G2-EDM-ELO5",
+              "title": "Jobs in the community"
+            },
+            {
+              "id": "SS-G2-EDM-ELO6",
+              "title": "Workplace rules"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -12,6 +12,7 @@ const ROOT = __dirname;
 const RUNTIME_DIR = path.join(ROOT, "runtime");
 const DATA_FILE = path.join(RUNTIME_DIR, "analytics.json");
 const SPELLING_FILE = path.join(RUNTIME_DIR, "spelling-levels.json");
+const CURRICULUM_FILE = path.join(ROOT, "data", "curriculum-grade2.json");
 const OLLAMA_URL = String(process.env.OLLAMA_URL || "").trim();
 const OLLAMA_MODEL = String(process.env.OLLAMA_MODEL || "qwen2.5:3b").trim();
 const ADMIN_PASSWORD = String(process.env.ADMIN_PASSWORD || "");
@@ -46,6 +47,33 @@ function loadSpelling() {
 let spelling = loadSpelling();
 let spellingWriteQueue = Promise.resolve();
 
+function loadCurriculum() {
+  try {
+    const parsed = JSON.parse(fs.readFileSync(CURRICULUM_FILE, "utf8"));
+    return parsed && parsed.subjects ? parsed : { version: 1, grade: 2, subjects: {} };
+  } catch (err) {
+    console.error("curriculum load failed", err.message);
+    return { version: 1, grade: 2, subjects: {} };
+  }
+}
+
+const curriculum = loadCurriculum();
+const CURRICULUM_OUTCOMES = new Set(
+  Object.values(curriculum.subjects || {}).flatMap(subject =>
+    (subject.strands || []).flatMap(strand => (strand.outcomes || []).map(outcome => outcome.id))
+  )
+);
+
+const CURRICULUM_OUTCOME_SUBJECT = new Map();
+for (const subject of Object.values(curriculum.subjects || {})) {
+  for (const strand of subject.strands || []) {
+    for (const outcome of strand.outcomes || []) {
+      if (outcome?.id) CURRICULUM_OUTCOME_SUBJECT.set(outcome.id, subject.title || "Unknown");
+    }
+  }
+}
+
+
 function writeSpelling() {
   const snapshot = JSON.stringify(spelling, null, 2);
   const tmp = SPELLING_FILE + ".tmp";
@@ -71,6 +99,7 @@ const emptyDb = () => ({
   players: {},
   profiles: {},
   titles: {},
+  learning: { totals: { attempts: 0, correct: 0 }, subjects: {}, outcomes: {} },
   days: {},
   activity: []
 });
@@ -85,6 +114,11 @@ function loadDb() {
       players: parsed.players || {},
       profiles: parsed.profiles || {},
       titles: parsed.titles || {},
+      learning: {
+        totals: { attempts: 0, correct: 0, ...(parsed.learning?.totals || {}) },
+        subjects: parsed.learning?.subjects || {},
+        outcomes: parsed.learning?.outcomes || {}
+      },
       days: parsed.days || {},
       activity: Array.isArray(parsed.activity) ? parsed.activity.slice(-MAX_ACTIVITY) : []
     };
@@ -149,7 +183,10 @@ function cleanText(value, max = 180) {
 }
 
 function cleanNickname(value) {
-  return cleanText(value, 18) || "Player";
+  const raw = (cleanText(value, 18).replace(/[^\p{L}\p{N} ._'’\-]/gu, "").trim() || "Player");
+  const tokens = raw.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+  const unsafe = ["fuck","shit","bitch","asshole","dick","pussy","cunt"].some(word => tokens.includes(word));
+  return unsafe ? "Player" : raw;
 }
 
 function cleanClientId(value) {
@@ -645,17 +682,15 @@ function cleanAppearance(value = {}) {
   };
 }
 
-const blockedWords = ["fuck", "shit", "bitch", "asshole", "dick", "pussy", "cunt"];
-
-function moderateChat(text) {
-  let out = cleanText(text, 180);
-  for (const word of blockedWords) {
-    const safeWord = word.replace(/[.*+?^$()|[\]\\]/g, "\\$&");
-    const re = new RegExp("\\b" + safeWord + "\\b", "gi");
-    out = out.replace(re, "•••");
-  }
-  return out;
-}
+const QUICK_CHAT_MESSAGES = Object.freeze({
+  hello: "👋 Hi everyone!",
+  good_game: "🎮 Good game!",
+  ready: "✅ I'm ready!",
+  great_job: "⭐ Great job!",
+  try_again: "💪 Let's try again!",
+  thanks: "😊 Thanks!",
+  bye: "👋 Bye for now!"
+});
 
 function getPlayer(clientId, nickname = "Player", appearance = {}) {
   const now = new Date().toISOString();
@@ -970,6 +1005,120 @@ app.post("/api/usage", (req, res) => {
   trimOldDays();
   persistSoon();
   res.status(202).json({ ok: true });
+});
+
+app.get("/api/curriculum/grade2", (_req, res) => {
+  res.setHeader("Cache-Control", "public, max-age=300");
+  res.json(curriculum);
+});
+
+app.post("/api/learning/progress", (req, res) => {
+  const clientId = cleanClientId(req.body?.clientId);
+  if (!clientId) return res.status(400).json({ error: "Invalid client ID." });
+
+  const profileId = cleanProfileId(req.body?.profileId);
+  const nickname = cleanNickname(req.body?.nickname);
+  const outcomeId = cleanText(req.body?.outcomeId, 80);
+  if (!CURRICULUM_OUTCOMES.has(outcomeId)) {
+    return res.status(400).json({ error: "Unknown curriculum outcome." });
+  }
+
+  const correct = Boolean(req.body?.correct);
+  const subject = CURRICULUM_OUTCOME_SUBJECT.get(outcomeId) || "Unknown";
+  const gameId = cleanTitleId(req.body?.gameId);
+  const learningActivity = cleanText(req.body?.activity, 40);
+  const band = ["Support", "Core", "Challenge"].includes(req.body?.band) ? req.body.band : "Core";
+  const stageInput = req.body?.stage === "Flight Ready" ? "Ready" : req.body?.stage;
+  const stage = ["Learning", "Practising", "Ready", "Mastered"].includes(stageInput) ? stageInput : "Learning";
+  const score = Math.round(clampNumber(req.body?.score, 0, 100, 0));
+  const player = getPlayer(clientId, nickname, db.players[clientId]?.appearance || {});
+  const profile = getProfile(clientId, profileId, nickname, player.appearance || {});
+
+  db.learning ||= { totals: { attempts: 0, correct: 0 }, subjects: {}, outcomes: {} };
+  db.learning.totals.attempts = (db.learning.totals.attempts || 0) + 1;
+  if (correct) db.learning.totals.correct = (db.learning.totals.correct || 0) + 1;
+
+  const subjectRow = db.learning.subjects[subject || "Unknown"] ||= { attempts: 0, correct: 0, profiles: {} };
+  subjectRow.attempts += 1;
+  if (correct) subjectRow.correct += 1;
+  subjectRow.profiles[profile.key] = true;
+
+  const outcome = db.learning.outcomes[outcomeId] ||= {
+    attempts: 0, correct: 0, support: 0, core: 0, challenge: 0, stages: {}, profiles: {}, lastSeen: null
+  };
+  outcome.attempts += 1;
+  if (correct) outcome.correct += 1;
+  outcome[band.toLowerCase()] = (outcome[band.toLowerCase()] || 0) + 1;
+  outcome.stages[stage] = (outcome.stages[stage] || 0) + 1;
+  outcome.profiles[profile.key] = true;
+  outcome.lastSeen = new Date().toISOString();
+
+  profile.learning ||= { attempts: 0, correct: 0, outcomes: {}, subjects: {} };
+  profile.learning.attempts += 1;
+  if (correct) profile.learning.correct += 1;
+  profile.learning.subjects[subject || "Unknown"] ||= { attempts: 0, correct: 0 };
+  profile.learning.subjects[subject || "Unknown"].attempts += 1;
+  if (correct) profile.learning.subjects[subject || "Unknown"].correct += 1;
+  profile.learning.outcomes[outcomeId] = {
+    score, band, stage, lastSeen: outcome.lastSeen,
+    gameId, activity: learningActivity
+  };
+
+  if (correct && stage === "Mastered") {
+    activity("learning_mastery", { nickname: profile.nickname, profileId, outcomeId, subject, gameId, score });
+  }
+  persistSoon();
+  res.status(202).json({ ok: true });
+});
+
+app.get("/api/admin/learning/summary", requireAdmin, (_req, res) => {
+  const subjectRows = Object.entries(db.learning?.subjects || {}).map(([subject, row]) => ({
+    subject,
+    attempts: row.attempts || 0,
+    correct: row.correct || 0,
+    accuracy: row.attempts ? Math.round((row.correct || 0) / row.attempts * 100) : 0,
+    profiles: Object.keys(row.profiles || {}).length
+  })).sort((a,b) => b.attempts - a.attempts);
+
+  const outcomes = Object.entries(db.learning?.outcomes || {}).map(([outcomeId, row]) => ({
+    outcomeId,
+    attempts: row.attempts || 0,
+    correct: row.correct || 0,
+    accuracy: row.attempts ? Math.round((row.correct || 0) / row.attempts * 100) : 0,
+    profiles: Object.keys(row.profiles || {}).length,
+    lastSeen: row.lastSeen || null
+  })).sort((a,b) => b.attempts - a.attempts);
+
+  const profiles = Object.values(db.profiles || {}).filter(profile => (profile.learning?.attempts || 0) > 0).map(profile => {
+    const learning = profile.learning || {};
+    const outcomeStates = Object.values(learning.outcomes || {});
+    const subjects = Object.entries(learning.subjects || {}).map(([subject,row]) => ({
+      subject,
+      attempts: row.attempts || 0,
+      correct: row.correct || 0,
+      accuracy: row.attempts ? Math.round((row.correct || 0) / row.attempts * 100) : 0
+    }));
+    return {
+      profileId: profile.profileId || "default",
+      nickname: profile.nickname || "Player",
+      attempts: learning.attempts || 0,
+      correct: learning.correct || 0,
+      accuracy: learning.attempts ? Math.round((learning.correct || 0) / learning.attempts * 100) : 0,
+      mastered: outcomeStates.filter(x => x.stage === "Mastered").length,
+      ready: outcomeStates.filter(x => x.stage === "Ready").length,
+      support: outcomeStates.filter(x => x.band === "Support").length,
+      outcomesPractised: outcomeStates.length,
+      subjects,
+      lastSeen: profile.lastSeen || null
+    };
+  }).sort((a,b) => String(b.lastSeen || "").localeCompare(String(a.lastSeen || "")));
+
+  res.json({
+    totals: db.learning?.totals || { attempts: 0, correct: 0 },
+    subjects: subjectRows,
+    outcomes,
+    profiles
+  });
 });
 
 app.get("/api/leaderboard", (_req, res) => {
@@ -1374,8 +1523,9 @@ io.on("connection", socket => {
     if (ident.chatWindow.length >= 6) return ack({ ok: false, error: "Slow down a little." });
     if (ident.chatWindow.length && now - ident.chatWindow.at(-1) < 650) return ack({ ok: false, error: "Messages are being sent too quickly." });
 
-    const text = moderateChat(payload?.text);
-    if (!text) return ack({ ok: false, error: "Type a message first." });
+    const messageId = cleanText(payload?.messageId, 32);
+    const text = QUICK_CHAT_MESSAGES[messageId] || "";
+    if (!text) return ack({ ok: false, error: "Choose an approved quick-chat message." });
     ident.chatWindow.push(now);
 
     const msg = { id: crypto.randomUUID(), nickname: ident.nickname, appearance: ident.appearance, text, ts: new Date().toISOString() };

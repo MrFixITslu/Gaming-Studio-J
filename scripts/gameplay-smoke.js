@@ -45,12 +45,97 @@ const beeJs = fs.readFileSync("games/spelling-bee/spelling-bee.js", "utf8");
 const beeHtml = fs.readFileSync("games/spelling-bee/index.html", "utf8");
 const beeCss = fs.readFileSync("games/spelling-bee/spelling-bee.css", "utf8");
 const melonHtml = fs.readFileSync("games/mr-melons-adventure/index.html", "utf8");
+const lobbyHtml = fs.readFileSync("lobby.html", "utf8");
+const lobbyJs = fs.readFileSync("assets/lobby.js", "utf8");
+const serverJs = fs.readFileSync("server.js", "utf8");
+
+const curriculum = JSON.parse(fs.readFileSync("data/curriculum-grade2.json", "utf8"));
+const scienceJs = fs.readFileSync("games/island-science-explorers/game.js", "utf8");
+const socialJs = fs.readFileSync("games/caribbean-community-quest/game.js", "utf8");
+const learningEngineJs = fs.readFileSync("assets/learning-engine.js", "utf8");
+
+function outcomeIds(subjectKey) {
+  return curriculum.subjects[subjectKey].strands.flatMap(strand => strand.outcomes.map(o => o.id));
+}
+const subjectSources = {
+  languageArts: beeJs,
+  mathematics: melonHtml,
+  science: scienceJs,
+  socialStudies: socialJs
+};
+for (const [subjectKey, source] of Object.entries(subjectSources)) {
+  for (const outcomeId of outcomeIds(subjectKey)) {
+    assert(source.includes(outcomeId), subjectKey + " has no game activity reference for " + outcomeId);
+  }
+}
+assert(outcomeIds("languageArts").length === 7, "Language Arts ELO map must contain 7 outcomes.");
+assert(outcomeIds("mathematics").length === 34, "Mathematics ELO map must contain 34 outcomes.");
+assert(outcomeIds("science").length === 13, "Science ELO map must contain 13 outcomes.");
+assert(outcomeIds("socialStudies").length === 24, "Social Studies ELO map must contain 24 outcomes.");
+assert(scienceJs.includes("evidenceScene") && scienceJs.includes("bindEvidenceScene"), "Science must require interactive evidence collection.");
+assert(socialJs.includes("communityScene") && socialJs.includes("bindCommunityScene"), "Social Studies must include interactive community exploration.");
+assert(beeJs.includes("buildLanguageChallenges") && beeJs.includes("LANG-G2-LS-ELO1"), "Bee Academy Language Arts mission missing.");
+assert(learningEngineJs.includes('return "Ready"'), "Shared mastery stage must be subject-neutral.");
+
+assert(serverJs.includes("CURRICULUM_OUTCOME_SUBJECT.get(outcomeId)"), "Server must derive learning subject from validated curriculum outcome.");
+const swJs=fs.readFileSync("sw.js","utf8");
+assert(swJs.includes('gaming-studio-j-v6'), "PWA cache version must be bumped for Grade 2 worlds.");
+assert(swJs.includes('learning-engine.js?v=2') && swJs.includes('learning-worlds.css?v=2'), "PWA cache must include current learning assets.");
+
+assert(!lobbyHtml.includes('id="chatInput"'), "Kid-safe lobby must not expose free-text chat.");
+assert(lobbyHtml.includes('id="chatPreset"'), "Kid-safe lobby quick-chat selector missing.");
+assert(lobbyJs.includes('messageId'), "Lobby client must send approved quick-chat IDs.");
+assert(serverJs.includes("QUICK_CHAT_MESSAGES"), "Server quick-chat allow-list missing.");
+
+for (const [label,source] of [
+  ["Spelling Bee",beeHtml],
+  ["Mr. Melon",melonHtml],
+  ["Science",fs.readFileSync("games/island-science-explorers/index.html","utf8")],
+  ["Social Studies",fs.readFileSync("games/caribbean-community-quest/index.html","utf8")]
+]) {
+  assert(!/https?:\/\//i.test(source), label + " child page must not load external web resources.");
+  assert(!/target=["']_blank["']/i.test(source), label + " child page must not open external/new-tab links.");
+}
+assert(!lobbyJs.includes("payload?.text"), "Lobby server/client must not accept arbitrary child chat text.");
 
 assert(!melonHtml.includes('MELONCREW'), "Mr. Melon must not require the old MELONCREW access code.");
 assert(!melonHtml.includes('id="friendCode"'), "Mr. Melon must not render an access-code field.");
 assert(!melonHtml.includes('id="enterBtn"'), "Mr. Melon must not render an access gate button.");
 assert(!melonHtml.includes('id="gate"'), "Mr. Melon must open directly to the main menu.");
 assert(melonHtml.includes('<div id="mainMenu">'), "Mr. Melon main menu must be immediately available.");
+
+// Grade 2 mathematics generators must always have one unambiguous correct option.
+const mathSandbox = { Math, Set };
+mathSandbox.mathRnd = loadFunction(melonHtml, "mathRnd", mathSandbox);
+mathSandbox.mathPick = loadFunction(melonHtml, "mathPick", mathSandbox);
+mathSandbox.mathShuffle = loadFunction(melonHtml, "mathShuffle", mathSandbox);
+mathSandbox.numericOptions = loadFunction(melonHtml, "numericOptions", mathSandbox);
+mathSandbox.choiceOptions = loadFunction(melonHtml, "choiceOptions", mathSandbox);
+for (const name of ["mathProblemNumberSense","mathProblemOperations","mathProblemPatterns","mathProblemGeometry","mathProblemMeasurement","mathProblemData"]) {
+  mathSandbox[name] = loadFunction(melonHtml, name, mathSandbox);
+}
+function validateMathProblem(problem, label) {
+  assert(problem && typeof problem.q === "string" && problem.q.length > 8, label + " question missing.");
+  assert(String(problem.outcome || "").startsWith("MATH-G2-"), label + " outcome must be Grade 2 mathematics.");
+  assert(Array.isArray(problem.options) && problem.options.length === 4, label + " must have exactly 4 choices.");
+  const values = problem.options.map(v => String(v));
+  assert(new Set(values).size === 4, label + " choices must be unique.");
+  assert(values.filter(v => v === String(problem.ans)).length === 1, label + " must contain exactly one correct answer.");
+  assert(typeof problem.why === "string" && problem.why.length > 8, label + " explanation missing.");
+  if (typeof problem.ans === "number") {
+    assert(Number.isFinite(problem.ans) && problem.ans >= 0 && problem.ans <= 100, label + " numeric answer outside Grade 2 working range.");
+  }
+}
+for (const band of ["Support","Core","Challenge"]) {
+  for (let i=0;i<180;i++) {
+    validateMathProblem(mathSandbox.mathProblemNumberSense(band), "Number Sense");
+    validateMathProblem(mathSandbox.mathProblemOperations(band), "Operations");
+    validateMathProblem(mathSandbox.mathProblemPatterns(band), "Patterns");
+    validateMathProblem(mathSandbox.mathProblemGeometry(band), "Geometry");
+    validateMathProblem(mathSandbox.mathProblemMeasurement(band), "Measurement");
+    validateMathProblem(mathSandbox.mathProblemData(band), "Data");
+  }
+}
 
 for (const file of [
   "games/spelling-bee/spelling-bee-hero.svg",
@@ -188,14 +273,50 @@ assert(melonHtml.includes("levelCompleting=true;pendingLevelBuild=true"), "Mr Me
 assert(melonHtml.includes("player.onGround=false;player.swim=false;player.shootCd=0;player.freezeCd=0"), "Mr Melon transition state reset missing.");
 assert(melonHtml.includes("function clearGameInputs()"), "Mr Melon held-input reset missing.");
 
-const makeMathProblem = loadFunction(melonHtml, "makeMathProblem", { Math });
-for (let level = 0; level < 8; level++) {
-  for (let i = 0; i < 120; i++) {
-    const problem = makeMathProblem(level);
-    assert(problem && typeof problem.q === "string" && problem.q.length > 20, "Invalid maths prompt at level " + level);
-    assert(Number.isFinite(problem.ans) && problem.ans >= 0, "Invalid maths answer at level " + level);
-    assert(typeof problem.why === "string" && problem.why.length > 2, "Missing maths explanation at level " + level);
+const mathStart = melonHtml.indexOf("function mathRnd(");
+const mathEnd = melonHtml.indexOf('let currentQuizSolution=', mathStart);
+assert(mathStart >= 0 && mathEnd > mathStart, "Mr. Melon Grade 2 maths generator block missing.");
+const mathSource = melonHtml.slice(mathStart, mathEnd);
+for (const band of ["Support", "Core", "Challenge"]) {
+  const sandbox = { Math, window: { GSJLearning: { band: () => band } } };
+  const makeMathProblem = vm.runInNewContext(mathSource + "; makeMathProblem", sandbox);
+  for (let level = 0; level < 8; level++) {
+    for (let i = 0; i < 160; i++) {
+      const problem = makeMathProblem(level);
+      assert(problem && typeof problem.q === "string" && problem.q.length > 15, "Invalid maths prompt at level " + level);
+      assert(/^MATH-G2-/.test(problem.outcome || ""), "Maths problem missing OECS outcome at level " + level);
+      assert((typeof problem.ans === "number" && Number.isFinite(problem.ans) && problem.ans >= 0) || (typeof problem.ans === "string" && problem.ans.length > 0), "Invalid maths answer at level " + level);
+      assert(Array.isArray(problem.options) && problem.options.length >= 3, "Maths choices missing at level " + level);
+      assert(problem.options.some(v => String(v) === String(problem.ans)), "Correct maths answer not present in choices.");
+      assert(new Set(problem.options.map(String)).size === problem.options.length, "Duplicate maths choices generated.");
+      assert(typeof problem.why === "string" && problem.why.length > 5, "Missing maths explanation at level " + level);
+    }
   }
 }
+const answerQuizSource = extractFunction(melonHtml, "answerQuiz");
+assert(!answerQuizSource.includes("player.hp"), "Wrong academic answers must not damage Mr. Melon's health.");
+assert(answerQuizSource.includes("GSJLearning"), "Mr. Melon maths attempts must feed the shared mastery engine.");
+assert(!melonHtml.includes("square metres remain usable"), "Area questions outside the intended Grade 2 default scope returned.");
+assert(!melonHtml.includes("metres each second"), "Speed-rate questions outside the intended Grade 2 default scope returned.");
 
-console.log("Gameplay smoke checks passed for Spelling Bee and Mr. Melon's Adventure.");
+for (const file of [
+  "assets/learning-engine.js",
+  "data/curriculum-grade2.json",
+  "games/island-science-explorers/index.html",
+  "games/island-science-explorers/game.js",
+  "games/caribbean-community-quest/index.html",
+  "games/caribbean-community-quest/game.js"
+]) assert(fs.existsSync(file), "Missing Grade 2 learning platform file: " + file);
+
+const allOutcomeIds = new Set(Object.values(curriculum.subjects).flatMap(s => s.strands.flatMap(st => st.outcomes.map(o => o.id))));
+assert(allOutcomeIds.size >= 70, "Grade 2 curriculum map is unexpectedly incomplete.");
+for (const [file, prefix] of [["games/island-science-explorers/game.js","SCIENCE-G2-"],["games/caribbean-community-quest/game.js","SS-G2-"]]) {
+  const src=fs.readFileSync(file,"utf8"), refs=[...src.matchAll(/(?:SCIENCE|SS)-G2-[A-Z]+-ELO\d+/g)].map(m=>m[0]);
+  assert(refs.length >= 8, "Too few curriculum-linked challenges in " + file);
+  refs.forEach(id=>assert(allOutcomeIds.has(id), "Unknown curriculum outcome " + id + " in " + file));
+}
+const learningEngine = fs.readFileSync("assets/learning-engine.js","utf8");
+assert(learningEngine.includes('stage:"Mastered"') || learningEngine.includes('return "Mastered"'), "Shared learning engine mastery state missing.");
+assert(learningEngine.includes('return "Support"') && learningEngine.includes('return "Challenge"'), "Adaptive Support/Core/Challenge logic missing.");
+
+console.log("Gameplay smoke checks passed for all Grade 2 learning worlds.");

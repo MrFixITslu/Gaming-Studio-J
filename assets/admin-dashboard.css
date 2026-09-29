@@ -26,3 +26,5 @@ body{margin:0;background:#0d0f13;color:#fff;min-height:100vh}
 .spelling-difficult{padding:13px;border-radius:13px;background:#11161c;border:1px solid #29313a}.spelling-difficult p{margin:5px 0 0;color:#cbd4df;font-size:12px;line-height:1.55}
 @media(max-width:900px){.spelling-metric-grid{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:560px){.spelling-metric-grid{grid-template-columns:repeat(2,1fr)}}
+
+.learning-learners{margin-top:18px;border-top:1px solid #ffffff13;padding-top:16px}.learning-learners h3{margin:0 0 12px}.learner-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}.learner-card{background:#09182b;border:1px solid #ffffff14;border-radius:14px;padding:13px}.learner-card>div:first-child{display:flex;justify-content:space-between;gap:8px;align-items:start}.learner-card small{color:#8199aa;font-size:.7rem}.learner-stats{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.learner-stats span{background:#ffffff08;border-radius:999px;padding:5px 8px;font-size:.68rem;color:#9fb6c6}.learner-card p{font-size:.72rem;color:#89a1b2;line-height:1.45;margin:10px 0 0}

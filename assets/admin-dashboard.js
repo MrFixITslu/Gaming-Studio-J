@@ -91,6 +91,26 @@ function renderSpellingOverview(data){
   box.innerHTML='<div class="spelling-metric-grid">'+metrics.map(x=>'<div class="spelling-metric"><b>'+fmtInt(x[1])+'</b><span>'+x[0]+'</span></div>').join("")+'</div>'+
     '<div class="spelling-difficult"><b>Words needing the most practice</b><p>'+(difficult.length?difficult.slice(0,8).map(x=>x.word+' ('+x.count+')').join(' • '):'No difficult-word data yet.')+'</p></div>';
 }
+function renderLearningOverview(data){
+  const box=$("#learningOverview");if(!box)return;
+  const totals=data?.totals||{},subjects=data?.subjects||[],outcomes=data?.outcomes||[],profiles=data?.profiles||[];
+  const attempts=totals.attempts||0,correct=totals.correct||0,accuracy=attempts?Math.round(correct/attempts*100):0;
+  const weakest=outcomes.filter(x=>x.attempts>=2).sort((a,b)=>a.accuracy-b.accuracy||b.attempts-a.attempts).slice(0,6);
+  box.innerHTML='<div class="spelling-metric-grid">'+
+    '<div class="spelling-metric"><b>'+fmtInt(attempts)+'</b><span>Learning attempts</span></div>'+
+    '<div class="spelling-metric"><b>'+accuracy+'%</b><span>Overall accuracy</span></div>'+
+    '<div class="spelling-metric"><b>'+fmtInt(outcomes.length)+'</b><span>Outcomes practised</span></div>'+
+    '<div class="spelling-metric"><b>'+fmtInt(subjects.reduce((n,s)=>n+(s.profiles||0),0))+'</b><span>Subject-profile touches</span></div>'+
+    '</div>'+
+    '<div class="spelling-difficult"><b>Subject performance</b><p>'+(subjects.length?subjects.map(s=>s.subject+' '+s.accuracy+'% ('+s.attempts+')').join(' • '):'No curriculum attempts yet.')+'</p></div>'+
+    '<div class="spelling-difficult"><b>Outcomes needing support</b><p>'+(weakest.length?weakest.map(x=>x.outcomeId+' '+x.accuracy+'%').join(' • '):'No repeated weak outcomes yet.')+'</p></div>';
+  const learners=$("#learnerProgress");if(!learners)return;
+  if(!profiles.length){learners.innerHTML='<div class="empty-admin">No learner mastery data yet.</div>';return}
+  learners.innerHTML='<h3>Learner progress</h3><div class="learner-grid">'+profiles.slice(0,24).map(p=>{
+    const subjectLine=(p.subjects||[]).map(s=>s.subject.replace("Language Arts","English")+' '+s.accuracy+'%').join(' • ');
+    return '<article class="learner-card"><div><b>'+escapeHtml(p.nickname||"Player")+'</b><small>'+fmtInt(p.attempts)+' attempts • '+p.accuracy+'% accuracy</small></div><div class="learner-stats"><span><b>'+fmtInt(p.mastered)+'</b> mastered</span><span><b>'+fmtInt(p.ready)+'</b> ready</span><span><b>'+fmtInt(p.support)+'</b> support</span></div><p>'+escapeHtml(subjectLine||"Learning journey started")+'</p></article>';
+  }).join('')+'</div>';
+}
 function renderLeaderboard(rows){
   const body=$("#leaderboardRows");body.textContent="";
   if(!rows.length){body.innerHTML='<tr><td colspan="6" class="empty-admin">No scores submitted yet.</td></tr>';return}
@@ -131,13 +151,14 @@ function renderActivity(rows){
 }
 async function loadDashboard(showErrors=true){
   try{
-    const [summary,leaderboard,activity,spelling]=await Promise.all([
+    const [summary,leaderboard,activity,spelling,learning]=await Promise.all([
       api("./api/admin/summary"),
       api("./api/admin/leaderboard"),
       api("./api/admin/activity"),
-      api("./api/admin/spelling/summary")
+      api("./api/admin/spelling/summary"),
+      api("./api/admin/learning/summary")
     ]);
-    showDashboard();renderSummary(summary);renderLeaderboard(leaderboard.leaderboard||[]);renderSpellingOverview(spelling);renderActivity(activity.activity||[]);
+    showDashboard();renderSummary(summary);renderLeaderboard(leaderboard.leaderboard||[]);renderSpellingOverview(spelling);renderLearningOverview(learning);renderActivity(activity.activity||[]);
   }catch(err){
     if(err.status===401)return showLogin("");
     if(err.status===503)return showLogin(err.message);

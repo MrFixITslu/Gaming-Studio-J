@@ -9,7 +9,7 @@ var ANALYTICS_CLIENT_KEY="gsj_client_id_v1";
 var EVENT_KEY="gsj_game_events_v1";
 var TITLE_ID="spelling-bee",TITLE_NAME="Spelling Bee";
 var FLIGHT_AUDIO_KEY="gsj_spelling_flight_audio_v1";
-var state={levels:[],level:null,wordIndex:0,save:null,buildLetters:[],buildChosen:[],flight:null,raf:0};
+var state={levels:[],level:null,wordIndex:0,save:null,buildLetters:[],buildChosen:[],flight:null,raf:0,languageChallenges:[],languageIndex:0,languageCorrect:0};
 var flightAudio={enabled:localStorage.getItem(FLIGHT_AUDIO_KEY)!=="off",ctx:null,master:null,engine1:null,engine2:null,engineGain:null,wind:null,windGain:null,windFilter:null,wingLfo:null,wingLfoGain:null,wingPitchLfo:null,wingPitchGain1:null,wingPitchGain2:null,buzzFilter:null};
 
 function $(id){return document.getElementById(id)}
@@ -297,7 +297,10 @@ function renderPracticeWord(){
 function renderPracticeState(){
   var word=state.level.words[state.wordIndex],ws=wordSave(word),done=isMastered(word);
   $("buildStep").classList.toggle("done",!!ws.build);$("spellStep").classList.toggle("done",!!ws.spell);$("sentenceStep").classList.toggle("done",!!ws.sentence);$("masteryState").textContent=done?"FLIGHT READY":"LEARNING";$("wordReadyText").textContent=done?"✓ This word is Flight Ready!":"Complete all three activities.";
-  if(done&&!ws.reported){ws.reported=true;saveAll();postProgress("word_mastered",{word:word})}
+  if(done&&!ws.reported){
+    ws.reported=true;saveAll();postProgress("word_mastered",{word:word});
+    window.GSJLearning?.record?.("LANG-G2-WR-ELO3",true,{subject:"Language Arts",gameId:"spelling-bee",activity:"word-mastery"});
+  }
   renderWordList();updateReady();
 }
 function checkSpelling(){
@@ -322,6 +325,97 @@ function renderStory(){
   if(words.length){var escaped=words.map(escapeRegExp),re=new RegExp("\\b("+escaped.join("|")+")\\b","gi");story=escapeHtml(story).replace(re,function(match){return '<button class="story-word" data-story-word="'+escapeHtml(match.toLowerCase())+'">'+escapeHtml(match)+'</button>'})}else story=escapeHtml(story);
   $("storyCopy").innerHTML=story.replace(/\n/g,"<br>");$("storyWordCount").textContent=state.level.words.length+" spelling words in this mission";
   qsa("[data-story-word]").forEach(function(b){b.addEventListener("click",function(){var word=b.dataset.storyWord,sup=supportFor(word);speak(word+". "+sup.definition);toast(sup.definition)})});
+}
+function storySentences(){
+  var story=plainStoryText(state.level&&state.level.story||"");
+  return story.split(/(?<=[.!?])\s+|\n+/).map(function(x){return x.trim()}).filter(function(x){return x.length>8});
+}
+function languageChoices(answer,distractors,band){
+  var out=[answer];
+  (distractors||[]).forEach(function(x){if(x&&out.indexOf(x)<0)out.push(x)});
+  out=shuffle(out);
+  if(band==="Support"&&out.length>3){
+    var right=out.find(function(x){return x===answer}),wrong=out.filter(function(x){return x!==answer}).slice(0,2);
+    out=shuffle([right].concat(wrong));
+  }
+  return out.slice(0,4);
+}
+function buildLanguageChallenges(){
+  if(!state.level||!state.level.words.length)return [];
+  var words=state.level.words,first=words[0],second=words[1]||first,third=words[2]||first;
+  var sentences=storySentences(),storyLine=sentences[0]||supportFor(first).example;
+  var thirdSupport=supportFor(third);
+  var defDistractors=words.filter(function(w){return normalWord(w)!==normalWord(third)}).slice(0,3).map(function(w){return supportFor(w).definition});
+  return [
+    {type:"listenSequence",outcome:"LANG-G2-LS-ELO1",title:"Listen & Follow",q:"Listen carefully and tap the two words in the order you hear them.",sequence:[first,second],pool:shuffle(words.slice(0,Math.min(4,words.length))),why:"Careful listening helps us follow multi-step directions and communicate clearly."},
+    {type:"choice",outcome:"LANG-G2-RV-ELO1",title:"Story Detective",q:"Which sentence came from this week's Story Hangar?",answer:storyLine,choices:[storyLine,"A robot flew to a silver moon before breakfast.","The purple submarine parked beside a cloud.","A dinosaur mailed a letter to the sun."],why:"Good readers return to the text and use details from what they actually read."},
+    {type:"choice",outcome:"LANG-G2-RV-ELO2",title:"Context Clue Mission",q:"What does “"+third+"” mean in this week's learning mission?",answer:thirdSupport.definition,choices:[thirdSupport.definition].concat(defDistractors),why:"Readers use context, examples and what they already know to work out word meanings."},
+    {type:"choice",outcome:"LANG-G2-RV-ELO3",title:"Text Explorer",q:"The Story Hangar uses characters and events to tell what happened. What kind of text is it mainly?",answer:"A story or narrative",choices:["A story or narrative","A shopping list","A calendar","A number chart"],why:"Text type and author choices help readers know how to approach and understand a text."},
+    {type:"choice",outcome:"LANG-G2-WR-ELO1",title:"Idea Organizer",q:"Which plan best organizes a short paragraph about a school garden?",answer:"Topic sentence → supporting details → ending",choices:["Topic sentence → supporting details → ending","Ending → random word → title","Details only with no main idea","Three unrelated sentences"],why:"Writers gather and organize ideas so the reader can follow the main idea and supporting details."},
+    {type:"choice",outcome:"LANG-G2-WR-ELO2",title:"Revision Workshop",q:"Which revision gives the reader clearer detail?",answer:"I saw a bright red kite dancing above the beach.",choices:["I saw a bright red kite dancing above the beach.","I saw a thing.","It was there.","Something happened."],why:"Revision improves vocabulary and detail so writing is clearer and more interesting."},
+    {type:"choice",outcome:"LANG-G2-WR-ELO3",title:"Writing Check",q:"Which sentence uses a capital letter and end punctuation correctly?",answer:"The children played outside.",choices:["The children played outside.","the children played outside.","The children played outside","the children played outside"],why:"Writing conventions such as capitals and punctuation make meaning clear."}
+  ];
+}
+function recordLanguage(challenge,correct){
+  return window.GSJLearning?.record?.(challenge.outcome,correct,{subject:"Language Arts",gameId:"spelling-bee",activity:"bee-academy"});
+}
+function finishLanguageLab(){
+  var total=state.languageChallenges.length,pct=Math.round(state.languageCorrect/Math.max(1,total)*100);
+  $("languageLabContent").innerHTML='<div class="academy-result"><div class="big">'+(pct>=85?"🏆":pct>=60?"🌟":"🐝")+'</div><h3>'+(pct>=85?"Bee Academy complete!":pct>=60?"Strong learning mission!":"Good practice—keep going!")+'</h3><p>You completed '+state.languageCorrect+' of '+total+' activities on the first try. Every activity stays available for review through your mastery path.</p><button class="flight-btn" id="academyReplay" type="button">Practise Again</button></div>';
+  if(pct>=85)addAchievement("bee-academy","Bee Academy Graduate","Complete the weekly Language Arts mission.","🧠",55);
+  $("academyReplay").onclick=startLanguageLab;
+}
+function renderLanguageChallenge(){
+  var ch=state.languageChallenges[state.languageIndex];
+  if(!ch){finishLanguageLab();return}
+  var band=window.GSJLearning?.band?.(ch.outcome)||"Support",pct=Math.round(state.languageIndex/state.languageChallenges.length*100);
+  var wrap='<div class="academy-progress"><span>'+(state.languageIndex+1)+'/'+state.languageChallenges.length+'</span><div class="track"><i style="width:'+pct+'%"></i></div><span>'+escapeHtml(band)+'</span></div><div class="academy-step"><span class="eyebrow">'+escapeHtml(ch.title)+'</span><h3>'+escapeHtml(ch.q)+'</h3>';
+  if(ch.type==="listenSequence"){
+    var pool=ch.pool.slice();
+    ch.sequence.forEach(function(w){if(pool.indexOf(w)<0)pool.push(w)});
+    pool=shuffle(pool).slice(0,band==="Support"?3:4);
+    ch.sequence.forEach(function(w){if(pool.indexOf(w)<0){pool[pool.length-1]=w}});
+    wrap+='<button class="listen-pill" id="academyHear" type="button">🔊 Hear directions</button><div class="academy-sequence">'+pool.map(function(w){return '<button type="button" data-seq-word="'+escapeHtml(w)+'">'+escapeHtml(w)+'</button>'}).join("")+'</div><div class="academy-feedback" id="academyFeedback">Listen first, then tap the words in order.</div><div class="step-actions"><button class="flight-btn" id="academyNext" type="button" disabled>Next →</button></div></div>';
+    $("languageLabContent").innerHTML=wrap;
+    var pos=0,mistake=false,recorded=false;
+    function hear(){speak("First choose "+ch.sequence[0]+". Then choose "+ch.sequence[1]+".")}
+    $("academyHear").onclick=hear;
+    qsa("[data-seq-word]").forEach(function(btn){btn.onclick=function(){
+      var expected=ch.sequence[pos];
+      if(normalWord(btn.dataset.seqWord)===normalWord(expected)){
+        btn.classList.add("used");btn.disabled=true;pos++;
+        if(pos>=ch.sequence.length){
+          if(!recorded){recordLanguage(ch,!mistake);recorded=true;if(!mistake)state.languageCorrect++}
+          $("academyFeedback").className="academy-feedback good";$("academyFeedback").textContent="✓ You followed both directions in order. "+ch.why;$("academyNext").disabled=false;
+        }else{$("academyFeedback").textContent="Good. Now choose the second word."}
+      }else{
+        mistake=true;if(!recorded){recordLanguage(ch,false);recorded=true}
+        $("academyFeedback").className="academy-feedback bad";$("academyFeedback").textContent="Listen again. The first/next word is not that one.";hear();
+      }
+    }});
+    $("academyNext").onclick=function(){state.languageIndex++;renderLanguageChallenge()};
+    hear();
+    return;
+  }
+  var choices=languageChoices(ch.answer,ch.choices.filter(function(x){return x!==ch.answer}),band);
+  wrap+='<div class="academy-choices">'+choices.map(function(c,i){return '<button class="academy-choice" type="button" data-academy-choice="'+i+'">'+escapeHtml(c)+'</button>'}).join("")+'</div><div class="academy-feedback" id="academyFeedback">Choose the best answer. You will see why after you answer.</div><div class="step-actions"><button class="flight-btn" id="academyNext" type="button" disabled>Next →</button></div></div>';
+  $("languageLabContent").innerHTML=wrap;
+  var answered=false;
+  qsa("[data-academy-choice]").forEach(function(btn){btn.onclick=function(){
+    if(answered)return;answered=true;var choice=choices[Number(btn.dataset.academyChoice)],ok=choice===ch.answer;
+    qsa("[data-academy-choice]").forEach(function(b){b.disabled=true;if(b.textContent===ch.answer)b.classList.add("correct")});
+    if(!ok)btn.classList.add("wrong");else state.languageCorrect++;
+    recordLanguage(ch,ok);
+    $("academyFeedback").className="academy-feedback "+(ok?"good":"bad");
+    $("academyFeedback").textContent=(ok?"✓ Correct. ":"Let's learn it. ")+ch.why;
+    $("academyNext").disabled=false;speak((ok?"Correct. ":"Let's learn it. ")+ch.why);
+  }});
+  $("academyNext").onclick=function(){state.languageIndex++;renderLanguageChallenge()};
+}
+function startLanguageLab(){
+  if(!state.level)return;
+  state.languageChallenges=buildLanguageChallenges();state.languageIndex=0;state.languageCorrect=0;
+  renderLanguageChallenge();
 }
 function setTab(id){qsa(".practice-tabs button").forEach(function(b){b.classList.toggle("active",b.dataset.tab===id)});qsa(".practice-panel").forEach(function(p){p.classList.toggle("active",p.id===id)})}
 function postProgress(event,extra){
@@ -577,7 +671,10 @@ function endFlight(success){
     $("reviewBox").innerHTML=difficult.length?"<b>Words to practise</b><p>"+difficult.map(escapeHtml).join(" • ")+"</p>":"<b>Excellent spelling!</b><p>You did not choose any wrong-letter flowers.</p>";
     stopPlaneAudio();showScreen("resultsScreen");reportUsage("score",{score:accuracy});
     if(success&&fullMission)reportUsage("complete",{score:accuracy});
-    if(fullMission)postProgress(success?"complete":"divert",{accuracy:accuracy,mistakes:f.mistakes,totalLetters:f.totalLetters,difficultWords:difficult.slice(0,12)});
+    if(fullMission){
+      postProgress(success?"complete":"divert",{accuracy:accuracy,mistakes:f.mistakes,totalLetters:f.totalLetters,difficultWords:difficult.slice(0,12)});
+      window.GSJLearning?.record?.("LANG-G2-WR-ELO3",success&&accuracy>=80,{subject:"Language Arts",gameId:"spelling-bee",activity:"flight-assessment"});
+    }
     if(success&&fullMission)addAchievement("first-flight","First Flower Landing","Complete a Spelling Bee weekly flight mission.","🌼",45);
     if(success&&fullMission&&accuracy===100)addAchievement("perfect-flight","Perfect Flight","Complete a Spelling Bee flight with 100% spelling accuracy.","⭐",70);
   });
@@ -626,7 +723,14 @@ function bindFlightPointerControls(){
 function initBindings(){
   $("homeBtn").addEventListener("click",function(){stopPlaneAudio();location.href="../../"});$("refreshLevels").addEventListener("click",loadLevels);$("backToMissions").addEventListener("click",function(){state.level=null;showScreen("missionsScreen");renderMissionGrid()});
   qsa(".practice-tabs button").forEach(function(b){b.addEventListener("click",function(){setTab(b.dataset.tab)})});
-  $("speakWord").addEventListener("click",function(){speak(state.level.words[state.wordIndex])});$("hearSentence").addEventListener("click",function(){speak(supportFor(state.level.words[state.wordIndex]).example)});$("spellHear").addEventListener("click",function(){speak(state.level.words[state.wordIndex])});$("resetBuild").addEventListener("click",resetBuild);$("checkSpelling").addEventListener("click",checkSpelling);$("spellInput").addEventListener("keydown",function(e){if(e.key==="Enter")checkSpelling()});$("nextWordBtn").addEventListener("click",function(){state.wordIndex=(state.wordIndex+1)%state.level.words.length;renderWordList();renderPracticeWord()});$("readStory").addEventListener("click",function(){speak(state.level.story||"")});$("storyReadCheck").addEventListener("change",function(){levelSave(state.level.id).storyRead=this.checked;saveAll();if(this.checked)postProgress("story_read",{})});$("startFlightBtn").addEventListener("click",startFlight);$("flightSpeak").addEventListener("click",function(){if(state.flight)speak("Spell "+state.flight.word)});
+  $("startLanguageLab").addEventListener("click",startLanguageLab);
+  $("speakWord").addEventListener("click",function(){speak(state.level.words[state.wordIndex])});$("hearSentence").addEventListener("click",function(){speak(supportFor(state.level.words[state.wordIndex]).example)});$("spellHear").addEventListener("click",function(){speak(state.level.words[state.wordIndex])});$("resetBuild").addEventListener("click",resetBuild);$("checkSpelling").addEventListener("click",checkSpelling);$("spellInput").addEventListener("keydown",function(e){if(e.key==="Enter")checkSpelling()});$("nextWordBtn").addEventListener("click",function(){state.wordIndex=(state.wordIndex+1)%state.level.words.length;renderWordList();renderPracticeWord()});$("readStory").addEventListener("click",function(){speak(state.level.story||"")});$("storyReadCheck").addEventListener("change",function(){
+    levelSave(state.level.id).storyRead=this.checked;saveAll();
+    if(this.checked){
+      postProgress("story_read",{});
+      window.GSJLearning?.record?.("LANG-G2-RV-ELO1",true,{subject:"Language Arts",gameId:"spelling-bee",activity:"story-reading"});
+    }
+  });$("startFlightBtn").addEventListener("click",startFlight);$("flightSpeak").addEventListener("click",function(){if(state.flight)speak("Spell "+state.flight.word)});
   qsa("[data-steer]").forEach(function(b){b.addEventListener("pointerdown",function(e){e.preventDefault();steer(Number(b.dataset.steer))})});bindFlightPointerControls();$("flightSoundBtn").addEventListener("click",toggleFlightAudio);$("retryFlight").addEventListener("click",startFlight);$("reviewWords").addEventListener("click",backToPractice);$("resultMissions").addEventListener("click",function(){stopPlaneAudio();state.flight=null;state.level=null;showScreen("missionsScreen");renderMissionGrid()});
   window.addEventListener("keydown",function(e){if(!$("flightScreen").classList.contains("active"))return;if(e.key==="ArrowLeft"||e.key==="a"||e.key==="A"){e.preventDefault();steer(-1)}if(e.key==="ArrowRight"||e.key==="d"||e.key==="D"){e.preventDefault();steer(1)}if(e.key===" "){e.preventDefault();if(state.flight)speak("Spell "+state.flight.word)}});
 }
