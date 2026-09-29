@@ -124,6 +124,60 @@ const evaluateShield = loadFunction(beeJs, "evaluateGate", {
 evaluateShield({ letter: "X", resolved: false, el: null }, false);
 assert(shieldState.flight.mistakes === 0 && shieldState.flight.shield === false, "Starter shield must absorb the first wrong-letter choice.");
 
+
+assert(beeJs.includes('e1.frequency.value=185') && beeJs.includes('e2.frequency.value=370'), "Bee flight audio must use wing-buzz frequencies, not the old engine drone.");
+assert(beeJs.includes('wingLfo') && beeJs.includes('lfo.frequency.value=7.2'), "Bee buzz should include organic wing flutter modulation.");
+
+let spokenUtterance = null, speechDone = 0, fallbackTimer = null;
+function MockUtterance(text) { this.text = text; this.rate = 1; this.pitch = 1; this.lang = ""; this.onend = null; this.onerror = null; }
+const mockSpeech = {
+  cancel: () => {},
+  speak: u => { spokenUtterance = u; }
+};
+const speakFn = loadFunction(beeJs, "speak", {
+  window: { speechSynthesis: mockSpeech },
+  speechSynthesis: mockSpeech,
+  SpeechSynthesisUtterance: MockUtterance,
+  toast: () => {},
+  setTimeout: fn => { fallbackTimer = fn; return 1; },
+  Math
+});
+speakFn("bee. The bee landed on a flower.", { onDone: () => { speechDone++; } });
+assert(spokenUtterance && speechDone === 0, "Speech completion callback must wait for the utterance to finish.");
+spokenUtterance.onend();
+assert(speechDone === 1, "Speech completion callback must fire when narration ends.");
+if (fallbackTimer) fallbackTimer();
+assert(speechDone === 1, "Speech completion callback must be idempotent when fallback timer fires later.");
+
+let sentenceDone = null, spawnAfterSentence = 0, endedFlight = 0;
+const wordFlight = {
+  transitioning: false, ending: false, gates: [], word: "bee", wordIndex: 0,
+  words: ["bee", "sun"], wordLetters: ["B", "E", "E"], bonusFuel: 0
+};
+const finishWordFn = loadFunction(beeJs, "finishWord", {
+  state: { flight: wordFlight },
+  clearGates: () => {},
+  supportFor: () => ({ example: "The bee landed on a bright flower." }),
+  burstPetals: () => {},
+  flightSfx: () => {},
+  message: () => {},
+  speak: (text, options) => {
+    if (options && typeof options.onDone === "function") sentenceDone = options.onDone;
+  },
+  updateFlightHud: () => {},
+  lettersOf: word => Array.from(word.toUpperCase()),
+  spawnGates: () => { spawnAfterSentence++; },
+  endFlight: () => { endedFlight++; },
+  setTimeout: fn => { fn(); },
+  Math
+});
+finishWordFn();
+assert(wordFlight.wordIndex === 0 && wordFlight.transitioning === true, "Word must not advance while the sentence is still speaking.");
+assert(typeof sentenceDone === "function", "Completed-word narration must provide an onDone continuation.");
+sentenceDone();
+assert(wordFlight.wordIndex === 1 && wordFlight.word === "sun", "Next word must load only after narration finishes.");
+assert(wordFlight.transitioning === false && spawnAfterSentence === 1 && endedFlight === 0, "Gameplay must resume after the completed sentence.");
+
 assert(melonHtml.includes("levelCompleting=true;pendingLevelBuild=true"), "Mr Melon level-completion guard missing.");
 assert(melonHtml.includes("player.onGround=false;player.swim=false;player.shootCd=0;player.freezeCd=0"), "Mr Melon transition state reset missing.");
 assert(melonHtml.includes("function clearGameInputs()"), "Mr Melon held-input reset missing.");
