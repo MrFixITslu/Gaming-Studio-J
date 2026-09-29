@@ -46,6 +46,12 @@ const beeHtml = fs.readFileSync("games/spelling-bee/index.html", "utf8");
 const beeCss = fs.readFileSync("games/spelling-bee/spelling-bee.css", "utf8");
 const melonHtml = fs.readFileSync("games/mr-melons-adventure/index.html", "utf8");
 
+assert(!melonHtml.includes('MELONCREW'), "Mr. Melon must not require the old MELONCREW access code.");
+assert(!melonHtml.includes('id="friendCode"'), "Mr. Melon must not render an access-code field.");
+assert(!melonHtml.includes('id="enterBtn"'), "Mr. Melon must not render an access gate button.");
+assert(!melonHtml.includes('id="gate"'), "Mr. Melon must open directly to the main menu.");
+assert(melonHtml.includes('<div id="mainMenu">'), "Mr. Melon main menu must be immediately available.");
+
 for (const file of [
   "games/spelling-bee/spelling-bee-hero.svg",
   "games/spelling-bee/spelling-bee-player.svg",
