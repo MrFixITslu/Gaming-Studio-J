@@ -178,3 +178,38 @@ OLLAMA_MODEL=qwen2.5:3b
 The `gaming-studio-j` container must be able to resolve/reach the configured Ollama host. If your existing Ollama container is on another Docker network, either attach both containers to a shared network or point `OLLAMA_URL` at a host/IP reachable from Gaming Studio J.
 
 Spelling mission definitions are persisted in the existing `gaming_studio_j_runtime` Docker volume as `spelling-levels.json`. Anonymous learning activity and aggregate difficult-word counts are stored with the existing server analytics data.
+
+## Grade 2 Learning Worlds
+
+Gaming Studio J includes a shared Grade 2 learning layer mapped to the OECS Learning Hub curriculum. The four learning worlds are:
+
+- **Spelling Bee** — Language Arts: spelling, vocabulary, sentence context, reading and story-based practice.
+- **Mr. Melon's Adventure** — Mathematics: Number Sense, Operations, Patterns, Geometry, Measurement, Data Handling and introductory Probability.
+- **Island Science Explorers** — Science: material properties, plant/ecosystem relationships, Earth systems and engineering design.
+- **Caribbean Community Quest** — Social Studies: heritage, civic participation, spatial thinking, environment, work, goods and services.
+
+The curriculum map lives in `data/curriculum-grade2.json`. Each assessment activity records a curriculum outcome ID through `assets/learning-engine.js`.
+
+### Adaptive mastery
+
+Each outcome moves through **Learning → Practising → Ready → Mastered**. The engine chooses a **Support**, **Core** or **Challenge** path from recent performance. Wrong answers trigger explanation and review rather than loss of game health or lives. Mastered concepts are scheduled for later review instead of being considered permanently finished after one success.
+
+Math scoring is deterministic. AI is not used to decide whether a child's mathematical or factual answer is correct.
+
+### Child safety
+
+- No advertising or third-party trackers in learning worlds.
+- No precise location collection.
+- No public free-text chat; multiplayer uses a server-side allow-list of preset Quick Chat phrases.
+- Academic errors are not punished with health or lives.
+- Shared Studio profiles reduce repeated entry of identifying information.
+- Social Studies civic content is factual, age-appropriate and non-partisan.
+
+Curriculum references:
+- https://oecslearninghub.org/curriculum/grade2-subjects
+- https://oecslearninghub.org/curriculum/grade2-subjects/language-arts
+- https://oecslearninghub.org/curriculum/grade2-subjects/mathematics
+- https://oecslearninghub.org/curriculum/grade2-subjects/science
+- https://oecslearninghub.org/curriculum/grade2-subjects/social-studies
+
+The admin dashboard aggregates learning attempts, subject accuracy, and curriculum outcomes that repeatedly need support.

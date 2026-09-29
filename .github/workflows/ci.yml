@@ -29,6 +29,9 @@ jobs:
           node --check assets/lobby.js
           node --check assets/admin-dashboard.js
           node --check assets/spelling-admin.js
+          node --check assets/learning-engine.js
+          node --check games/island-science-explorers/game.js
+          node --check games/caribbean-community-quest/game.js
           node --check games/spelling-bee/spelling-bee.js
           node --check scripts/gameplay-smoke.js
           node scripts/gameplay-smoke.js
@@ -39,6 +42,7 @@ jobs:
         run: |
           node -e "JSON.parse(require('fs').readFileSync('package.json','utf8'))"
           node -e "JSON.parse(require('fs').readFileSync('data/catalog.json','utf8'))"
+          node -e "const c=JSON.parse(require('fs').readFileSync('data/curriculum-grade2.json','utf8'));if(c.grade!==2||Object.keys(c.subjects||{}).length!==4)process.exit(1)"
           node -e "JSON.parse(require('fs').readFileSync('manifest.webmanifest','utf8'))"
           node -e "const m=JSON.parse(require('fs').readFileSync('games/mr-melons-adventure/manifest.webmanifest','utf8'));if(m.display!=='fullscreen'||m.orientation!=='landscape')process.exit(1)"
 
@@ -56,6 +60,17 @@ jobs:
           test -f assets/spelling-admin.js
           test -f assets/spelling-bee-icon.svg
           test -f assets/spelling-bee-cover.svg
+          test -f assets/learning-engine.js
+          test -f assets/learning-worlds.css
+          test -f assets/science-explorers-icon.svg
+          test -f assets/science-explorers-cover.svg
+          test -f assets/community-quest-icon.svg
+          test -f assets/community-quest-cover.svg
+          test -f data/curriculum-grade2.json
+          test -f games/island-science-explorers/index.html
+          test -f games/island-science-explorers/game.js
+          test -f games/caribbean-community-quest/index.html
+          test -f games/caribbean-community-quest/game.js
           test -f Dockerfile
           test -f docker-compose.yml
           test -f nginx.conf
@@ -90,4 +105,7 @@ jobs:
           curl -fsS http://127.0.0.1:18080/healthz
           curl -fsS http://127.0.0.1:18080/games/spelling-bee/index.html >/dev/null
           curl -fsS http://127.0.0.1:18080/games/mr-melons-adventure/index.html >/dev/null
-          docker exec gaming-studio-j-ci sh -c 'test -r /app/games/spelling-bee/index.html && test -r /app/games/mr-melons-adventure/index.html'
+          curl -fsS http://127.0.0.1:18080/games/island-science-explorers/index.html >/dev/null
+          curl -fsS http://127.0.0.1:18080/games/caribbean-community-quest/index.html >/dev/null
+          curl -fsS http://127.0.0.1:18080/api/curriculum/grade2 >/dev/null
+          docker exec gaming-studio-j-ci sh -c 'test -r /app/games/spelling-bee/index.html && test -r /app/games/mr-melons-adventure/index.html && test -r /app/games/island-science-explorers/index.html && test -r /app/games/caribbean-community-quest/index.html'

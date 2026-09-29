@@ -204,8 +204,8 @@ $("#profileForm").addEventListener("submit",e=>{
 });
 ["#bodyColor","#accentColor","#accessoryInput"].forEach(sel=>$(sel).addEventListener("input",renderPreview));
 $("#chatForm").addEventListener("submit",e=>{
-  e.preventDefault();const input=$("#chatInput"),text=input.value.trim();if(!text)return;
-  socket.emit("chat:send",{text},res=>{if(res?.ok)input.value="";else toast(res?.error||"Message not sent.");});
+  e.preventDefault();const messageId=$("#chatPreset").value;if(!messageId)return;
+  socket.emit("chat:send",{messageId},res=>{if(!res?.ok)toast(res?.error||"Message not sent.");});
 });
 $("#createRoomBtn").onclick=()=>socket.emit("room:create",{},res=>{
   if(!res?.ok){toast(res?.error||"Could not create room.");return}

@@ -7,10 +7,7 @@
 <meta name="description" content="Spelling Bee — learn weekly spelling words, read them in stories, then fly a 3D spelling mission.">
 <title>Spelling Bee — Gaming Studio J</title>
 <link rel="icon" href="../../assets/spelling-bee-icon.svg">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./spelling-bee.css?v=7">
+<link rel="stylesheet" href="./spelling-bee.css?v=8">
 </head>
 <body>
 <div class="app-shell">
@@ -45,6 +42,7 @@
       <div class="practice-tabs" role="tablist">
         <button class="active" data-tab="flightSchool" type="button">🎧 Flight School</button>
         <button data-tab="storyHangar" type="button">📖 Story Hangar</button>
+        <button data-tab="languageLab" type="button">🧠 Bee Academy</button>
       </div>
 
       <div class="practice-panel active" id="flightSchool">
@@ -92,6 +90,23 @@
           <div class="story-head"><div><span class="eyebrow">STORY HANGAR</span><h2 id="storyTitle">Weekly story</h2><p>Tap a highlighted spelling word to hear it and review its meaning.</p></div><button class="listen-pill" id="readStory" type="button">🔊 Read story</button></div>
           <div class="story-copy" id="storyCopy"></div>
           <div class="story-footer"><label class="story-check"><input type="checkbox" id="storyReadCheck"> I finished reading this story</label><span id="storyWordCount"></span></div>
+        </section>
+      </div>
+
+      <div class="practice-panel" id="languageLab">
+        <section class="story-card academy-card">
+          <div class="story-head">
+            <div><span class="eyebrow">BEE ACADEMY</span><h2>Language mission</h2><p>Listen, read, think and improve sentences using this week's words and story.</p></div>
+            <button class="listen-pill" id="startLanguageLab" type="button">▶ Start mission</button>
+          </div>
+          <div id="languageLabContent" class="academy-content">
+            <div class="academy-intro">
+              <div>👂<b>Listen</b><small>Follow directions</small></div>
+              <div>📖<b>Read</b><small>Use context clues</small></div>
+              <div>✍️<b>Write</b><small>Build clear sentences</small></div>
+            </div>
+            <p>Bee Academy uses the weekly words to practise Grade 2 listening, reading and writing. Mistakes give explanations and another chance.</p>
+          </div>
         </section>
       </div>
 
@@ -175,6 +190,7 @@
   </main>
 </div>
 <div class="toast-area" id="toastArea" aria-live="polite"></div>
-<script src="./spelling-bee.js?v=7"></script>
+<script src="../../assets/learning-engine.js?v=2"></script>
+<script src="./spelling-bee.js?v=9"></script>
 </body>
 </html>

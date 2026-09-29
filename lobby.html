@@ -48,13 +48,21 @@
     </section>
 
     <section class="lobby-panel chat-panel">
-      <div class="panel-head"><div><span class="eyebrow">CHILL ZONE</span><h2>Lobby chat</h2></div><span class="small">Friendly chat • no message history stored on server</span></div>
+      <div class="panel-head"><div><span class="eyebrow">CHILL ZONE</span><h2>Quick Chat</h2></div><span class="small">Preset phrases only • kid-safe</span></div>
       <div id="chatLog" class="chat-log" aria-live="polite"></div>
       <form id="chatForm" class="chat-form">
-        <input class="field" id="chatInput" maxlength="180" placeholder="Say hi to the crew…" autocomplete="off">
+        <select class="field" id="chatPreset" aria-label="Choose a quick chat message">
+          <option value="hello">👋 Hi everyone!</option>
+          <option value="good_game">🎮 Good game!</option>
+          <option value="ready">✅ I'm ready!</option>
+          <option value="great_job">⭐ Great job!</option>
+          <option value="try_again">💪 Let's try again!</option>
+          <option value="thanks">😊 Thanks!</option>
+          <option value="bye">👋 Bye for now!</option>
+        </select>
         <button class="btn primary" type="submit">Send</button>
       </form>
-      <p class="chat-note" id="chatNotice">Be kind. Messages are filtered and rate-limited.</p>
+      <p class="chat-note" id="chatNotice">Free-text chat is disabled. Only approved quick-chat phrases can be sent.</p>
     </section>
 
     <section class="lobby-panel rooms-panel">
@@ -76,6 +84,6 @@
   <div class="lobby-toast" id="lobbyToast" role="status" aria-live="polite"></div>
 </div>
 <script src="/socket.io/socket.io.js"></script>
-<script src="./assets/lobby.js?v=1"></script>
+<script src="./assets/lobby.js?v=2"></script>
 </body>
 </html>

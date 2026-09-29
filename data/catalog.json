@@ -11,19 +11,20 @@
       "type": "game",
       "status": "playable",
       "featured": true,
-      "description": "Jump, stomp enemies, freeze troublemakers, solve maths challenges and explore the Melon Kingdom solo or with friends.",
-      "shortDescription": "A colourful 1–4 player action-platform adventure with live multiplayer, powers, secrets and maths challenges.",
+      "description": "Explore the Melon Kingdom, master OECS Grade 2 mathematics, solve problems, collect secrets and battle Captain Rind.",
+      "shortDescription": "A platform adventure where Grade 2 number sense, operations, patterns, geometry, measurement and data power Mr. Melon's progress.",
       "url": "./games/mr-melons-adventure/index.html",
       "thumbnail": "./assets/mr-melon-cover.svg",
       "icon": "./assets/mr-melon-icon.svg",
       "tags": [
+        "Education",
+        "Mathematics",
         "Adventure",
         "Platformer",
-        "Action",
-        "Puzzle",
+        "Problem Solving",
         "Multiplayer"
       ],
-      "players": "1–4 players",
+      "players": "1\u20134 players",
       "input": [
         "Touch",
         "Keyboard"
@@ -32,7 +33,7 @@
       "badge": "Featured",
       "accent": "#8CF45B",
       "created": "2026-09-23",
-      "updated": "2026-09-25",
+      "updated": "2026-09-29",
       "touchReady": true,
       "creator": "Gaming Studio J",
       "screenshots": [
@@ -45,13 +46,14 @@
       "type": "game",
       "status": "playable",
       "featured": true,
-      "description": "Master 10–12 weekly spelling words in Flight School, read them in a story, then pilot a 3D flight through the correct letters before your fuel runs out.",
-      "shortDescription": "Learn weekly spelling words, use them in sentences and fly through the correct letters in a 3D spelling adventure.",
+      "description": "Build Grade 2 literacy through weekly spelling, vocabulary, sentence context, reading stories and a 3D bee flight mission.",
+      "shortDescription": "Weekly spelling and Language Arts practice wrapped in a friendly 3D bee adventure.",
       "url": "./games/spelling-bee/index.html",
       "thumbnail": "./assets/spelling-bee-cover.svg",
       "icon": "./assets/spelling-bee-icon.svg",
       "tags": [
         "Education",
+        "Language Arts",
         "Spelling",
         "Reading",
         "3D",
@@ -66,13 +68,81 @@
       "badge": "New",
       "accent": "#63E3FF",
       "created": "2026-09-25",
-      "updated": "2026-09-25",
+      "updated": "2026-09-29",
       "touchReady": true,
       "creator": "Gaming Studio J",
       "screenshots": [
         "./assets/spelling-bee-cover.svg"
       ]
+    },
+    {
+      "id": "island-science-explorers",
+      "title": "Island Science Explorers",
+      "type": "game",
+      "status": "playable",
+      "featured": true,
+      "description": "Investigate materials, plant needs, ecosystems, erosion, water and engineering through evidence-based Grade 2 science missions.",
+      "shortDescription": "A Caribbean-inspired science adventure built around predicting, testing, observing and explaining evidence.",
+      "url": "./games/island-science-explorers/index.html",
+      "thumbnail": "./assets/science-explorers-cover.svg",
+      "icon": "./assets/science-explorers-icon.svg",
+      "tags": [
+        "Education",
+        "Science",
+        "Experiments",
+        "Engineering",
+        "Caribbean"
+      ],
+      "players": "1 player",
+      "input": [
+        "Touch",
+        "Keyboard"
+      ],
+      "age": "Everyone",
+      "badge": "New",
+      "accent": "#3FA35E",
+      "created": "2026-09-29",
+      "updated": "2026-09-29",
+      "touchReady": true,
+      "creator": "Gaming Studio J",
+      "screenshots": [
+        "./assets/science-explorers-cover.svg"
+      ]
+    },
+    {
+      "id": "caribbean-community-quest",
+      "title": "Caribbean Community Quest",
+      "type": "game",
+      "status": "playable",
+      "featured": true,
+      "description": "Explore heritage, safety, maps, the environment, community workers, goods and services through Grade 2 Social Studies missions.",
+      "shortDescription": "Help a fictional Caribbean community thrive through maps, heritage, safety and market-day decisions.",
+      "url": "./games/caribbean-community-quest/index.html",
+      "thumbnail": "./assets/community-quest-cover.svg",
+      "icon": "./assets/community-quest-icon.svg",
+      "tags": [
+        "Education",
+        "Social Studies",
+        "Community",
+        "Maps",
+        "Caribbean"
+      ],
+      "players": "1 player",
+      "input": [
+        "Touch",
+        "Keyboard"
+      ],
+      "age": "Everyone",
+      "badge": "New",
+      "accent": "#E0A24D",
+      "created": "2026-09-29",
+      "updated": "2026-09-29",
+      "touchReady": true,
+      "creator": "Gaming Studio J",
+      "screenshots": [
+        "./assets/community-quest-cover.svg"
+      ]
     }
   ],
-  "version": 4
+  "version": 5
 }

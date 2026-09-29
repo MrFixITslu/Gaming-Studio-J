@@ -11,8 +11,8 @@
   --shadow:0 16px 34px rgba(122,74,10,.14);
   --shadow-sm:0 6px 16px rgba(122,74,10,.12);
   --radius:26px;
-  --font-head:"Baloo 2",ui-rounded,system-ui,sans-serif;
-  --font-body:"Nunito",ui-sans-serif,system-ui,-apple-system,sans-serif;
+  --font-head:ui-rounded,"Arial Rounded MT Bold","Trebuchet MS",system-ui,sans-serif;
+  --font-body:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
 }
 
 /* ===== Base ===== */
@@ -365,3 +365,19 @@ button,input{font:inherit}
 }
 @media(min-width:851px){.mobile-controls{display:none}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
+
+/* Bee Academy - Grade 2 Language Arts */
+.academy-card{max-width:1040px}
+.academy-content{margin-top:18px}
+.academy-intro{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:18px 0}
+.academy-intro>div{display:grid;grid-template-columns:auto 1fr;gap:3px 9px;align-items:center;border:1px solid #ffffff18;background:#0b1b33;border-radius:16px;padding:16px;font-size:1.6rem}
+.academy-intro b{font-size:1rem;color:#eef9ff}.academy-intro small{grid-column:2;color:#8faabd}
+.academy-step{border:1px solid #ffffff18;background:#08162b;border-radius:18px;padding:20px;margin-top:14px}
+.academy-step h3{font-size:clamp(1.25rem,3vw,1.8rem);margin:8px 0 14px}.academy-step p{color:#a9c0d0;line-height:1.55}
+.academy-choices{display:grid;gap:10px;margin:14px 0}
+.academy-choice{border:1px solid #ffffff1c;background:#102540;color:#eef7ff;padding:14px 16px;border-radius:14px;text-align:left;font-weight:800;cursor:pointer;min-height:50px}
+.academy-choice:hover{background:#153153}.academy-choice.correct{border-color:#75e3a1;background:#12362f}.academy-choice.wrong{border-color:#ff8e9b;background:#3b1a24}
+.academy-sequence{display:flex;flex-wrap:wrap;gap:9px;margin:14px 0}.academy-sequence button{border:1px solid #ffffff1e;background:#133153;color:#fff;padding:12px 15px;border-radius:13px;font-weight:900;cursor:pointer}.academy-sequence button.used{opacity:.35}
+.academy-feedback{border-radius:14px;background:#0d2039;padding:14px 16px;color:#bfd2df;line-height:1.55;min-height:52px}.academy-feedback.good{background:#11322c;color:#d8f9e5}.academy-feedback.bad{background:#361922;color:#ffd7dc}
+.academy-progress{display:flex;align-items:center;gap:10px;margin-bottom:14px}.academy-progress .track{height:9px;background:#ffffff14;border-radius:99px;overflow:hidden;flex:1}.academy-progress .track i{display:block;height:100%;background:linear-gradient(90deg,#69ddff,#83efae);border-radius:inherit}.academy-result{text-align:center;padding:24px}.academy-result .big{font-size:4rem}.academy-result h3{font-size:2rem;margin:8px 0}.academy-result p{color:#9eb5c5}
+@media(max-width:700px){.academy-intro{grid-template-columns:1fr}.academy-intro>div{grid-template-columns:auto 1fr}}
