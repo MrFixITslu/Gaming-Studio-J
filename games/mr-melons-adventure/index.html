@@ -1109,9 +1109,13 @@ function answerQuiz(btn,choice,ans,buttons){
     toast((firstTry?"Solved! ":"Repaired! ")+currentQuizSolution+" • +"+(firstTry?5:3)+" melons","🧠");sfx("quizgood");achievement("brainy","Melon Problem Solver","🧠");
     const skill=window.GSJLearning?.record?.(currentQuizOutcome,true,{subject:"Mathematics",gameId:"mr-melons-adventure",activity:firstTry?"math-challenge":"math-repair"});
     if(skill)toast("Math power! "+skill.stage+" • "+skill.band,"📚");
+    const resumeFinalVictory=!!currentQuiz?.finalGate;
     if(currentQuiz&&!currentQuiz.taken){currentQuiz.taken=true;levelMathSolved++}
     persist();updateHUD();
-    setTimeout(()=>{$("quizOverlay").style.display="none";quizOpen=false;paused=false},1050);
+    setTimeout(()=>{
+      $("quizOverlay").style.display="none";quizOpen=false;paused=false;
+      if(resumeFinalVictory)bossDefeated();
+    },1050);
     return;
   }
   currentQuizAttempts++;
@@ -1382,6 +1386,14 @@ function bossDefeated(){
     save.score+=750;save.coins+=10;persist();
     toast("Captain Rind retreated! The road beyond the Citadel is open.","🏰");
     sfx("level");
+    return;
+  }
+
+  const required=requiredMathForLevel(LEVELS[save.level]);
+  if(levelMathSolved<required){
+    const left=required-levelMathSolved;
+    toast("Final Math Gate: solve "+left+" more challenge"+(left===1?"":"s")+" to restore the Melon Kingdom.","🧠");
+    openQuiz({type:"quiz",taken:false,mathGate:true,finalGate:true});
     return;
   }
 

@@ -79,6 +79,7 @@ assert(socialJs.includes("Great repair!") && socialJs.includes("try again"), "So
 assert(melonHtml.includes("requiredMathForLevel") && melonHtml.includes("Math Gate:"), "Mr. Melon must require mathematics before opening level portals.");
 assert(melonHtml.includes("levelMathSolved++"), "Mr. Melon math gate must count successfully solved challenges.");
 assert(melonHtml.includes("math-repair"), "Mr. Melon must record repaired math attempts separately.");
+assert(melonHtml.includes("Final Math Gate:") && melonHtml.includes("finalGate:true"), "Mr. Melon's final victory must also require the math gate.");
 assert(beeJs.includes("buildLanguageChallenges") && beeJs.includes("LANG-G2-LS-ELO1"), "Bee Academy Language Arts mission missing.");
 assert(learningEngineJs.includes('return "Ready"'), "Shared mastery stage must be subject-neutral.");
 assert(learningEngineJs.includes("startBreakCoach"), "Shared learning engine must include the child break coach.");
