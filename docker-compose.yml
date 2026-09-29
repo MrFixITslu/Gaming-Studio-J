@@ -12,6 +12,7 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
       ADMIN_SESSION_SECRET: ${ADMIN_SESSION_SECRET:-}
       V79_PLATFORM_SHARED_SECRET: ${V79_PLATFORM_SHARED_SECRET:-}
+      V79_PLATFORM_SHARED_SECRET_FILE: /run/secrets/v79-readonly-platform-token
       OLLAMA_URL: ${OLLAMA_URL:-}
       OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5:3b}
 
@@ -22,6 +23,7 @@ services:
 
     volumes:
       - gsj_runtime:/app/runtime
+      - ${HOME}/.v79-secrets/owner-readonly-platform.token:/run/secrets/v79-readonly-platform-token:ro
 
     networks:
       - proxy_network
