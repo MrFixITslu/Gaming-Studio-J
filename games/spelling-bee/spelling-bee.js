@@ -567,22 +567,22 @@ function evaluateGate(gate,missed){
     if(f.combo%6===0){f.shield=true;bonusMsg=" · 🛡 Shield earned!"}
     if(f.combo%4===0&&f.combo%6!==0){f.bonusFuel=(f.bonusFuel||0)+7;bonusMsg=" · 🍯 Honey boost!"}
     flightSfx("correct");message("✓ "+gate.letter+" — direct hit!"+bonusMsg,750);updateFlightHud();
-    if(f.letterIndex>=f.wordLetters.length)setTimeout(finishWord,480);else setTimeout(spawnGates,Math.max(300,470-f.wordIndex*8));
+    if(f.letterIndex>=f.wordLetters.length)setTimeout(function(){if(state.flight===f&&!f.ending)finishWord()},480);else setTimeout(function(){if(state.flight===f&&!f.ending)spawnGates()},Math.max(300,470-f.wordIndex*8));
   }else{
     if(missed){
       f.flightMisses=(f.flightMisses||0)+1;f.combo=0;updateFlightHud();
       message("Almost! Steer into a flower next time — no nectar lost.",850);
-      setTimeout(spawnGates,650);return;
+      setTimeout(function(){if(state.flight===f&&!f.ending)spawnGates()},650);return;
     }
     if(f.shield){
       f.shield=false;f.combo=0;updateFlightHud();
       flightSfx("correct");message("🛡 Shield absorbed the miss — keep going!",950);
-      setTimeout(spawnGates,900);return;
+      setTimeout(function(){if(state.flight===f&&!f.ending)spawnGates()},900);return;
     }
     f.mistakes++;f.streak=0;f.combo=0;f.difficult[f.word]=(f.difficult[f.word]||0)+1;updateFlightHud();
     flightSfx("wrong");var msg=missed?"Missed the flowers — line up with "+correct+".":"Wrong petal. Find "+correct+".";
-    if(f.mistakes>f.allowance){message("Nectar is empty — heading home safely.",1700);setTimeout(function(){endFlight(false)},1700)}
-    else{message(msg,950);speak("Try again. Find "+correct);setTimeout(spawnGates,900)}
+    if(f.mistakes>f.allowance){message("Nectar is empty — heading home safely.",1700);setTimeout(function(){if(state.flight===f)endFlight(false)},1700)}
+    else{message(msg,950);speak("Try again. Find "+correct);setTimeout(function(){if(state.flight===f&&!f.ending)spawnGates()},900)}
   }
 }
 function finishWord(){
@@ -637,6 +637,7 @@ function startFlight(){
     allowance:fullMission?Math.max(1,Math.floor(total*.2)):Math.max(3,Math.floor(total*.2)),
     correct:0,mistakes:0,flightMisses:0,streak:0,bestStreak:0,combo:0,bestCombo:0,shield:true,bonusFuel:0,difficult:{},last:0
   };
+  var thisFlight=state.flight;
   $("originLabel").textContent="HIVE";
   $("destinationLabel").textContent=(fullMission?(state.level.destination||"DESTINATION"):"WARM-UP GARDEN").toUpperCase();
   $("welcomeSign").textContent=(fullMission?(state.level.destination||"WELCOME"):"WARM-UP GARDEN").toUpperCase();
@@ -649,8 +650,8 @@ function startFlight(){
   speak((fullMission?"Full mission. ":"Warm up flight. ")+"First word: "+state.flight.word);
   if(!state.raf)state.raf=requestAnimationFrame(flightLoop);
   setTimeout(function(){
-    if(!state.flight||state.flight.ending)return;
-    setFlightPhase("cruise");setPlaneAudioPhase("cruise");state.flight.active=true;
+    if(state.flight!==thisFlight||thisFlight.ending)return;
+    setFlightPhase("cruise");setPlaneAudioPhase("cruise");thisFlight.active=true;
     message("Find the next letter. Tap or drag to steer.",1300);spawnGates();
   },3300);
 }
@@ -693,12 +694,12 @@ function beginLanding(success,done){
   message(success?"Destination garden ahead — choose a flower to land.":"Low nectar — landing at the Practice Garden.",1900);
   speak(success?"Destination garden ahead. Prepare to land on a flower.":"We are heading safely to the Practice Garden.");
   setTimeout(function(){
-    if(!state.flight)return;
+    if(state.flight!==f)return;
     $("touchdownSmoke").classList.remove("active");void $("touchdownSmoke").offsetWidth;$("touchdownSmoke").classList.add("active");
     flightSfx("touchdown");
     message("Gentle flower landing — great flying!",1250);
     speak("Landed safely. Welcome to "+destination+".");
-    setTimeout(function(){if(done)done()},1450);
+    setTimeout(function(){if(state.flight===f&&done)done()},1450);
   },3600);
 }
 function backToPractice(){stopPlaneAudio();state.flight=null;renderWordList();renderPracticeWord();showScreen("practiceScreen")}
