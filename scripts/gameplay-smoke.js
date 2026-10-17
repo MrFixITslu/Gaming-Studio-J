@@ -327,4 +327,57 @@ const learningEngine = fs.readFileSync("assets/learning-engine.js","utf8");
 assert(learningEngine.includes('stage:"Mastered"') || learningEngine.includes('return "Mastered"'), "Shared learning engine mastery state missing.");
 assert(learningEngine.includes('return "Support"') && learningEngine.includes('return "Challenge"'), "Adaptive Support/Core/Challenge logic missing.");
 
+
+// Spelling Bee's delayed takeoff and retry gates must never manipulate a
+// replacement flight after a double-tap, return to practice, or new attempt.
+const retryState = { level: { id: "synthetic", destination: "Garden", words: ["bee", "sun", "sky"] }, flight: null, raf: 0 };
+const retryTimeouts = [];
+let retrySpawns = 0;
+const retryStart = loadFunction(beeJs, "startFlight", {
+  state: retryState, masteredWords: level => level.words.slice(),
+  studioProfile: () => ({}), levelSave: () => ({}), saveAll: () => {},
+  lettersOf: word => Array.from(word.toUpperCase()),
+  $: () => ({ textContent: "", classList: { remove() {}, add() {} } }),
+  seedClouds: () => {}, seedCruiseIslands: () => {}, seedVegetation: () => {},
+  setPlaneLane: () => {}, setFlightPhase: () => {}, setPlaneAudioPhase: () => {},
+  updateFlightHud: () => {}, showScreen: () => {}, startPlaneAudio: () => {},
+  postProgress: () => {}, message: () => {}, speak: () => {},
+  requestAnimationFrame: () => 1, flightLoop: () => {},
+  setTimeout: fn => { retryTimeouts.push(fn); }, spawnGates: () => { retrySpawns++; },
+  Math
+});
+retryStart();
+const supersededFlight = retryState.flight;
+retryStart();
+const newestFlight = retryState.flight;
+assert(supersededFlight !== newestFlight && retryTimeouts.length === 2,
+  "Test setup must model two distinct flights and pending takeoff timers.");
+retryTimeouts[0]();
+assert(!newestFlight.active && retrySpawns === 0,
+  "Superseded takeoff must not activate the new flight or spawn stale gates.");
+retryTimeouts[1]();
+assert(newestFlight.active && retrySpawns === 1,
+  "Only the newest takeoff should activate and spawn gates.");
+
+const staleGateState = { flight: {
+  transitioning: false, ending: false, wordLetters: ["B"], letterIndex: 0,
+  gates: [], shield: false, mistakes: 0, combo: 0, flightMisses: 0,
+  difficult: {}, word: "bee"
+} };
+const retryGateTimers = [];
+let staleGatesSpawned = 0;
+const evaluateStale = loadFunction(beeJs, "evaluateGate", {
+  state: staleGateState, removeOtherGates: () => {},
+  updateFlightHud: () => {}, message: () => {},
+  setTimeout: fn => { retryGateTimers.push(fn); },
+  spawnGates: () => { staleGatesSpawned++; },
+  flightSfx: () => {}, speak: () => {}
+});
+evaluateStale(null, true);
+assert(retryGateTimers.length === 1, "Miss should schedule one gate retry.");
+staleGateState.flight = { active: true };
+retryGateTimers[0]();
+assert(staleGatesSpawned === 0, "Old gate timer must not spawn gates for replacement flight.");
+
+
 console.log("Gameplay smoke checks passed for all Grade 2 learning worlds.");
